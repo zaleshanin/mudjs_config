@@ -1,5 +1,6 @@
 /*TODO
 - вынести список говорунов в переменную/массив [#говоруны]
+- вынести #prompt и #battleprompt в chars, на случай если у чаров разный prompt
 */
 
 /* Этот файл будет сохранен в браузере (в LocalStorage.settings).
@@ -34,7 +35,7 @@ var chars = {
  * Триггера - автоматические действия как реакция на какую-то строку в мире.
  *-------------------------------------------------------------------------*/
 $('.trigger').on('text', function(e, text) {
-    //<1111/1111 2222/2222 333/333 [time][exits]>[0W0D]
+    //[#prompt] example: <1111/1111 2222/2222 333/333 [time][exits]>[0W0D]
     match = (/^<([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) \[(.*)]\[.*]>\[.*]$/).exec(text);
 	if (match) {
     	if(test) echo('prompt ok');
@@ -46,8 +47,30 @@ $('.trigger').on('text', function(e, text) {
             if(test) echo(' --> char inited\n');
         }
         
-	}
+    }
+    //[#battleprompt] во время драки ничего не делаем (пока)
    
+    //[#weapon]
+    if (text.match(' у тебя оружие, и оно упало на землю!$')) {
+        //my_char.eqChanged = true;
+        //my_char.armed = 0;
+        if (test) echo('(armed=0)\n');
+    }
+    if (text.match(' ВЫБИЛ.? у тебя оружие!$')) {
+        //my_char.eqChanged = true;
+        //my_char.armed = 1;
+        if (test) echo('(armed=1)\n');
+    }
+    if (my_char.action.act === '\\get' && my_char.action.command === my_char.weapon && text.match('^Ты берешь .*\.$')) {
+        //clearAction();
+        //if (my_char.armed === 0) my_char.armed = 1;
+        if (test) echo('(armed=1)\n');
+    }
+    if (text.match('^Ты вооружаешься .*\.$')) {
+        //if (my_char.action.act === '\\wield' && my_char.action.command === my_char.weapon) clearAction();
+        //my_char.armed = 2;
+        if (test) echo('(armed=2)\n');
+    }
 
 
     if (text.match('ВЫБИЛ.? у тебя оружие, и оно упало на землю!$')) {
@@ -324,8 +347,55 @@ function isEqual(ch) {
     return false;    
 }
 
+function doAct(act, comm, tag) {
+	// if (test) echo('doAct(' + act + ', ' + comm + ', ' + tag + ')');
+	// pchar.action = new Action(act, comm, tag);
+
+	// var result = '';
+
+	// if (act)
+    // 	result += act;
+
+	// if (act === 'cast' && comm !== undefined) {
+    // 	result += ' \'' + comm + '\'';
+	// } else if (act !== comm && comm !== undefined) {
+    // 	result += ' ' + (act==='order'?tag:comm);
+	// }
+
+	// if (tag /*&& tag !== 'self'*/) {
+    // 	result += ' ' + (act==='order'?comm:tag);
+	// }
+
+	// if (result !== '') {
+    // 	send(result);
+    // 	echo('-->[' + result + ']\n');
+	// } else
+    // 	echo('\ndoAct(' + act + ',' + comm + ',' + tag + '): ERROR\n');
+}
+
+//[#checks] [#проверялки]
+function checkEquip() {
+/*
+	if (my_char.armed === 0 && my_char.action.act !== '\\get') {
+    	doAct('\\get', my_char.weapon);
+    }
+*/
+/*    
+	if (my_char.armed === 1 && my_char.action.act !== '\\wield') {
+    	doAct('\\wield', my_char.weapon);
+    }
+*/
+}
+
+
 
 //[#Конструкторы]
+function Action(act, command, target) {
+	this.act = act; //spelling, wearing, drinking, eating, getting, slooking
+	this.command = command;
+	this.target = target;
+}
+
 function Pchar (name, char){
     if (test)
         echo(' -->Pchar() (name:' + name + ';weapon:' + char.weapon + ')');
@@ -333,8 +403,18 @@ function Pchar (name, char){
     this.init = true;
 
     this.name = name;
+
     this.weapon = char.weapon;
+    //[#armed] 0 - без оружия(оружие на земле), 1 - оружие в мешке, 2 - вооружен
+	this.armed = false; 
 
     this.food = char.food;
     this.water = char.water;
+    //[#action] act - команда к выполеннию (н-р: \\get, \\wield)
+    this.action = {
+    	act: undefined,
+    	command: undefined,
+    	target: undefined
+	};
+
 }
