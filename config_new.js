@@ -24,7 +24,7 @@ var chars = {
     	food: 'mushroom'
 	},
 	Zaleshanin: {
-    	weapon: 'frozen',
+    	weapon: 'long',
     	class: 'thief',
     	water: 'flask',//'flask',
     	food: 'rusk'
@@ -49,36 +49,38 @@ $('.trigger').on('text', function(e, text) {
         
     }
     //[#battleprompt] во время драки ничего не делаем (пока)
+
+    if(!my_char.init) return;
    
     //[#weapon]
     if (text.match(' у тебя оружие, и оно упало на землю!$')) {
-        //my_char.eqChanged = true;
-        //my_char.armed = 0;
+        my_char.eqChanged = true;
+        my_char.armed = 0;
         if (test) echo('(armed=0)\n');
     }
     if (text.match(' ВЫБИЛ.? у тебя оружие!$')) {
-        //my_char.eqChanged = true;
-        //my_char.armed = 1;
+        my_char.eqChanged = true;
+        my_char.armed = 1;
         if (test) echo('(armed=1)\n');
     }
     if (my_char.action.act === '\\get' && my_char.action.command === my_char.weapon && text.match('^Ты берешь .*\.$')) {
-        //clearAction();
-        //if (my_char.armed === 0) my_char.armed = 1;
+        clearAction();
+        if (my_char.armed === 0) my_char.armed = 1;
         if (test) echo('(armed=1)\n');
     }
     if (text.match('^Ты вооружаешься .*\.$')) {
-        //if (my_char.action.act === '\\wield' && my_char.action.command === my_char.weapon) clearAction();
-        //my_char.armed = 2;
+        if (my_char.action.act === '\\wield' && my_char.action.command === my_char.weapon) clearAction();
+        my_char.armed = 2;
         if (test) echo('(armed=2)\n');
     }
 
-
+/*
     if (text.match('ВЫБИЛ.? у тебя оружие, и оно упало на землю!$')) {
 //        echo('>>> Подбираю оружие с пола, очистив буфер команд.\n');
 //        send('\\');
 //        send('взять ' + weapon + '|надеть ' + weapon);
     }
-
+*/
     if (text.match('^Ты умираешь от голода|^Ты умираешь от жажды')) {
         if (mudprompt.p2.pos === 'stand' || mudprompt.p2.pos === 'sit' || mudprompt.p2.pos === 'rest') {
 //        echo('>>> Правильно питаюсь, когда не сплю и не сражаюсь.\n');
@@ -329,18 +331,18 @@ function charInit() {
 
 function getCharName() {
     let result = '';
-    if(isEqual(mudprompt.group.leader))
+    if(isEqualChar(mudprompt.group.leader))
         return mudprompt.group.ln;
 
     for (var i in mudprompt.group.pc) {
-        if(isEqual(mudprompt.group.pc[i])) {
+        if(isEqualChar(mudprompt.group.pc[i])) {
             return mudprompt.group.pc[i].sees;
         };
     }        
     return result;
 }
 
-function isEqual(ch) {
+function isEqualChar(ch) {
     if(ch.hit==mudprompt.hit && ch.max_hit==mudprompt.max_hit)
         return true;
 
@@ -348,46 +350,49 @@ function isEqual(ch) {
 }
 
 function doAct(act, comm, tag) {
-	// if (test) echo('doAct(' + act + ', ' + comm + ', ' + tag + ')');
-	// pchar.action = new Action(act, comm, tag);
+	if (test) echo('doAct(' + act + ', ' + comm + ', ' + tag + ')');
+	pchar.action = new Action(act, comm, tag);
 
-	// var result = '';
+	var result = '';
 
-	// if (act)
-    // 	result += act;
+	if (act)
+    	result += act;
 
-	// if (act === 'cast' && comm !== undefined) {
-    // 	result += ' \'' + comm + '\'';
-	// } else if (act !== comm && comm !== undefined) {
-    // 	result += ' ' + (act==='order'?tag:comm);
-	// }
+	if (act === 'cast' && comm !== undefined) {
+    	result += ' \'' + comm + '\'';
+	} else if (act !== comm && comm !== undefined) {
+    	result += ' ' + (act==='order'?tag:comm);
+	}
 
-	// if (tag /*&& tag !== 'self'*/) {
-    // 	result += ' ' + (act==='order'?comm:tag);
-	// }
+	if (tag /*&& tag !== 'self'*/) {
+    	result += ' ' + (act==='order'?comm:tag);
+	}
 
-	// if (result !== '') {
-    // 	send(result);
-    // 	echo('-->[' + result + ']\n');
-	// } else
-    // 	echo('\ndoAct(' + act + ',' + comm + ',' + tag + '): ERROR\n');
+	if (result !== '') {
+    	send(result);
+    	echo('-->[' + result + ']\n');
+	} else
+    	echo('\ndoAct(' + act + ',' + comm + ',' + tag + '): ERROR\n');
 }
 
 //[#checks] [#проверялки]
+function checking() {
+	if (test) echo(' -->checking()');
+
+	if (pchar.eqChanged)
+    	checkEquip();
+}
+
 function checkEquip() {
-/*
+    if (test) echo(' -->checkEquip()');
+    
 	if (my_char.armed === 0 && my_char.action.act !== '\\get') {
     	doAct('\\get', my_char.weapon);
     }
-*/
-/*    
 	if (my_char.armed === 1 && my_char.action.act !== '\\wield') {
     	doAct('\\wield', my_char.weapon);
     }
-*/
 }
-
-
 
 //[#Конструкторы]
 function Action(act, command, target) {
@@ -410,7 +415,9 @@ function Pchar (name, char){
 
     this.food = char.food;
     this.water = char.water;
-    //[#action] act - команда к выполеннию (н-р: \\get, \\wield)
+    //[#action] act - команда к выполеннию (н-р: \\get, \\wield, cast)
+    //          command - 'acid blast' | target 
+    //          target - цель
     this.action = {
     	act: undefined,
     	command: undefined,
