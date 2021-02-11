@@ -17,8 +17,8 @@ var my_char = {init: false};
 
 var chars = {
 	Miyamoto: {
-    	weapon: 'heavy',
-    	class: 'necromancer',
+    	weapon: 'mace',
+    	class: 'cleric',
     	clan: 'invader',
     	water: 'spring',//'flask',
     	food: 'mushroom'
@@ -35,8 +35,8 @@ var chars = {
  * Триггера - автоматические действия как реакция на какую-то строку в мире.
  *-------------------------------------------------------------------------*/
 $('.trigger').on('text', function(e, text) {
-    //[#prompt] example: <1111/1111 2222/2222 333/333 [time][exits]>[0W0D]
-    match = (/^<([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) \[(.*)]\[.*]>\[.*]$/).exec(text);
+    //[#prompt] + [#battleprompt] example: <1111/1111 2222/2222 333/333 [time][exits]>[0W0D]
+    match = (/^<([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) \[(.*)]\[.*]>\[.*](\([0-9]{1,3}%:[0-9]{1,3}%\))?$/).exec(text);
 	if (match) {
     	if(test) echo('prompt ok');
     	if (!my_char.init) {
@@ -44,12 +44,12 @@ $('.trigger').on('text', function(e, text) {
             if(test) echo('\n');
         }
         else{
-            if(test) echo(' --> char inited\n');
+            if(test) echo(' --> status:\n');
+            checking();
         }
         
     }
-    //[#battleprompt] во время драки ничего не делаем (пока)
-
+ 
     if(!my_char.init) return;
    
     //[#weapon]
@@ -65,7 +65,10 @@ $('.trigger').on('text', function(e, text) {
     }
     if (my_char.action.act === '\\get' && my_char.action.command === my_char.weapon && text.match('^Ты берешь .*\.$')) {
         clearAction();
-        if (my_char.armed === 0) my_char.armed = 1;
+        if (my_char.armed === 0) {
+            my_char.armed = 1;
+            my_char.eqChanged = true;
+        }
         if (test) echo('(armed=1)\n');
     }
     if (text.match('^Ты вооружаешься .*\.$')) {
@@ -350,8 +353,8 @@ function isEqualChar(ch) {
 }
 
 function doAct(act, comm, tag) {
-	if (test) echo('doAct(' + act + ', ' + comm + ', ' + tag + ')');
-	pchar.action = new Action(act, comm, tag);
+	if (test) echo('-->doAct(' + act + ', ' + comm + ', ' + tag + ')');
+	my_char.action = new Action(act, comm, tag);
 
 	var result = '';
 
@@ -369,22 +372,29 @@ function doAct(act, comm, tag) {
 	}
 
 	if (result !== '') {
-    	send(result);
     	echo('-->[' + result + ']\n');
+    	send(result);
 	} else
     	echo('\ndoAct(' + act + ',' + comm + ',' + tag + '): ERROR\n');
+}
+function clearAction() {
+    if(test) echo(' -->clearAction()');
+	for (var key in my_char.action) {
+    	my_char.action[key] = undefined;
+	}
 }
 
 //[#checks] [#проверялки]
 function checking() {
 	if (test) echo(' -->checking()');
 
-	if (pchar.eqChanged)
+	if (my_char.eqChanged)
     	checkEquip();
 }
 
 function checkEquip() {
     if (test) echo(' -->checkEquip()');
+    my_char.eqChanged=false;
     
 	if (my_char.armed === 0 && my_char.action.act !== '\\get') {
     	doAct('\\get', my_char.weapon);
