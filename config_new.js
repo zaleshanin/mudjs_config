@@ -389,7 +389,7 @@ function promptRecived(afk) {
     my_char.afk = afk;
 
     if(test) echo(' --> status:'
-    +'afk:'+my_char.afk+';'
+    +(my_char.afk ? '[afk]' : '' )
     +' pos:'+mudprompt.p2.pos
     +(mudprompt.p2.posf!=''?'; posf:'+mudprompt.p2.posf:'')
     +'\n');
