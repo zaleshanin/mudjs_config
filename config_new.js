@@ -17,8 +17,8 @@ var my_char = {init: false};
 
 var chars = {
 	Miyamoto: {
-    	weapon: 'mace',
-    	class: 'cleric',
+    	weapon: 'tempered',
+    	class: 'necromancer',
     	clan: 'invader',
     	water: 'spring',//'flask',
     	food: 'mushroom'
@@ -37,17 +37,12 @@ var chars = {
 $('.trigger').on('text', function(e, text) {
     //[#prompt] + [#battleprompt] example: <1111/1111 2222/2222 333/333 [time][exits]>[0W0D]
     match = (/^<([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) \[(.*)]\[.*]>\[.*](\([0-9]{1,3}%:[0-9]{1,3}%\))?$/).exec(text);
-	if (match) {
-    	if(test) echo('prompt ok');
-    	if (!my_char.init) {
-        	charInit();
-            if(test) echo('\n');
-        }
-        else{
-            if(test) echo(' --> status:\n');
-            checking();
-        }
-        
+    if(match) {
+        promptRecived(false);
+    }
+    match = (/^<AFK>[\s]?$/).exec(text);
+    if(match) {
+        promptRecived(true);
     }
  
     if(!my_char.init) return;
@@ -383,6 +378,24 @@ function clearAction() {
     	my_char.action[key] = undefined;
 	}
 }
+//[#prompt]
+function promptRecived(afk) {
+    if(test) echo('prompt(ok)');
+    
+    if (!my_char.init) {
+        charInit();
+        if(test) echo('\n');
+    } 
+    my_char.afk = afk;
+
+    if(test) echo(' --> status:'
+    +'afk:'+my_char.afk+';'
+    +' pos:'+mudprompt.p2.pos
+    +(mudprompt.p2.posf!=''?'; posf:'+mudprompt.p2.posf:'')
+    +'\n');
+    checking();
+    
+}
 
 //[#checks] [#проверялки]
 function checking() {
@@ -416,6 +429,7 @@ function Pchar (name, char){
         echo(' -->Pchar() (name:' + name + ';weapon:' + char.weapon + ')');
 
     this.init = true;
+    this.afk = false;
 
     this.name = name;
 
