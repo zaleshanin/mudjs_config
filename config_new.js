@@ -10,6 +10,8 @@
  */
 
 var test = true; //true - для вывода всякой отладочной информации
+var melt_counter = 0; //противодействие автовыкидыванию
+
 var match;
 
 var my_char = {init: false};
@@ -52,7 +54,19 @@ $('.trigger').on('text', function(e, text) {
         if(my_char.action.act === 'afk') {
             clearAction();
         }
+<<<<<<< HEAD
 
+=======
+    }
+
+    if(text.match('^Ты растворяешься в воздухе.$')) {
+        if(++melt_counter%10===0) 
+            send('who');
+        else 
+            send('where');
+        echo('[melt:'+melt_counter+']');
+        
+>>>>>>> 03333650ac688c2ac8e7efee9dc3622a7924e3ae
     }
  
    
@@ -500,10 +514,17 @@ function checking() {
         needsStatus = ''
         	+ (my_char.hunger ? '[h:' + my_char.hunger + ']' : '')
         	+ (my_char.thirst ? '[t:' + my_char.thirst + ']' : '');
+<<<<<<< HEAD
 
 	if (my_char.hunger + my_char.thirst > 0)
     	echo(needsStatus);
 
+=======
+
+	if (my_char.hunger + my_char.thirst > 0)
+    	echo(needsStatus);
+
+>>>>>>> 03333650ac688c2ac8e7efee9dc3622a7924e3ae
     if(my_char.eqChanged)
     	checkEquip();
 
@@ -529,7 +550,11 @@ function checkEquip() {
 
 function checkNeeds() {
 	if(test) echo('->checkNeeds(hunger:' + my_char.hunger + ' f:' + my_char.lfood 
+<<<<<<< HEAD
     + ' thirst:'+my_char.thirst+' w:' + my_char.lwater + ')');
+=======
+    + 'thirst:'+my_char.thirst+' w:' + my_char.lwater + ')');
+>>>>>>> 03333650ac688c2ac8e7efee9dc3622a7924e3ae
     if(my_char.hunger+my_char.thirst==0) {
         my_char.needsChanged = false;
         return;
