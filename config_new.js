@@ -10,6 +10,8 @@
  */
 
 var test = true; //true - для вывода всякой отладочной информации
+var melt_counter = 0; //противодействие автовыкидыванию
+
 var match;
 
 var my_char = {init: false};
@@ -44,8 +46,25 @@ $('.trigger').on('text', function(e, text) {
     if(match) {
         promptRecived(true);
     }
- 
     if(!my_char.init) return;
+
+    match = (/^Режим AFK в(ы)?ключен.$/).exec(text);
+    if(match) {
+        if(test)echo("[AFK trigger]");
+        if(my_char.action.act === 'afk') {
+            clearAction();
+        }
+    }
+
+    if(text.match('^Ты растворяешься в воздухе.$')) {
+        if(++melt_counter%10===0) 
+            send('who');
+        else 
+            send('where');
+        echo('[melt:'+melt_counter+']');
+        
+    }
+ 
    
     //[#weapon]
     if (text.match(' у тебя оружие, и оно упало на землю!$')) {
@@ -72,13 +91,12 @@ $('.trigger').on('text', function(e, text) {
         if (test) echo('(armed=2)\n');
     }
 
-/*
-    if (text.match('ВЫБИЛ.? у тебя оружие, и оно упало на землю!$')) {
-//        echo('>>> Подбираю оружие с пола, очистив буфер команд.\n');
-//        send('\\');
-//        send('взять ' + weapon + '|надеть ' + weapon);
+    if (text.match('^Ты не можешь сконцентрироваться.$')
+    || text.match('^Твоя попытка закончилась неудачей.$')) {
+        clearAction();
     }
-*/
+
+    //[#food][#drink]
     if (text.match('^Ты умираешь от голода|^Ты умираешь от жажды')) {
         if (mudprompt.p2.pos === 'stand' || mudprompt.p2.pos === 'sit' || mudprompt.p2.pos === 'rest') {
 //        echo('>>> Правильно питаюсь, когда не сплю и не сражаюсь.\n');
@@ -87,6 +105,77 @@ $('.trigger').on('text', function(e, text) {
 //        send('положить боч сумка');
         }
     }
+    if (text.match('^Ты ешь .*\.$') || text.match('^У тебя нет этого.$') || text.match('^Это несъедобно.$')) {
+        if (my_char.action.act !== undefined) {
+            if (my_char.action.act === 'eat') {
+                clearAction();
+            }
+            my_char.lfood = false;
+        }
+    }
+    if (text.match('^Ты больше не чувствуешь голода.$')) {
+        my_char.hunger = 0;
+        my_char.needsChanged = true;
+    }
+    if (text.match('^Ты хочешь есть.$')) {
+        my_char.hunger++;
+        my_char.needsChanged = true;
+    }
+    if (text.match('^Ты умираешь от голода!$')) {
+        my_char.hunger = 10;
+        my_char.needsChanged = true;
+    }
+    if (text.match('^Ты взмахиваешь руками, и с неба падает манна небесная.$')
+        || text.match('^Ты берешь соленый сухарик из пакета сухарей.$')
+        || text.match('^Ты взмахиваешь руками и создаешь магический гриб.$')
+    ) {
+        my_char.lfood = 1;
+        my_char.needsChanged = true;
+        if (my_char.action.command === 'create food'
+            || (my_char.action.act == 'get' && my_char.action.command === my_char.food))
+            clearAction();
+    }
+
+    if (text.match(' родник высыхает.$')) {
+        my_char.lwater = false;
+    }
+    if (text.match('^Ты не находишь это.$') || text.match('^Здесь пусто.$')) {
+        if (my_char.action.act !== undefined)
+            if (my_char.action.act === 'drink') {
+                clearAction();
+            }
+        my_char.lwater = false;
+    }
+    if (text.match('^Ты хочешь пить.$')) {
+        my_char.thirst++;
+        my_char.needsChanged = true;
+        // echo('[буль-буль:' + my_char.thirst + ']\n');
+    }
+    if (text.match('^Ты умираешь от жажды!$')) {
+        my_char.thirst = 10;
+        my_char.needsChanged = true;
+        // echo('[буль-буль:' + my_char.thirst + ']\n');
+    }
+    if (text.match(' родник пробивается сквозь землю.$')
+        || text.match('^Жестяная фляга наполнена.$')
+        || text.match('^Ты хочешь сделать тут озеро?')) {
+        if(test)echo("[water creation trigger]");
+        my_char.lwater = 1;
+        if (my_char.action.command == 'create spring' || my_char.action.command == 'create water')
+            clearAction();
+    }
+    if (text.match('^Ты пьешь [^\s]* из ')) {
+        if (my_char.action.act == 'drink')
+            clearAction();
+    }
+    if (text.match('^Ты больше не чувствуешь жажды.$')) {
+        my_char.thirst = 0;
+        my_char.lwater = false;
+        my_char.needsChanged = true;
+    }
+
+    //[#else]
+
 
     if (text.match('Обессилев, ты падаешь лицом вниз!')) {
 //        echo('>>> ЕЩЕ РАЗОК!!!\n');
@@ -373,7 +462,7 @@ function doAct(act, comm, tag) {
     	echo('\ndoAct(' + act + ',' + comm + ',' + tag + '): ERROR\n');
 }
 function clearAction() {
-    if(test) echo(' -->clearAction()');
+    if(test) echo(' -->clearAction()\n');
 	for (var key in my_char.action) {
     	my_char.action[key] = undefined;
 	}
@@ -388,21 +477,52 @@ function promptRecived(afk) {
     } 
     my_char.afk = afk;
 
-    if(test) echo(' --> status:'
-    +(my_char.afk ? '[afk]' : '' )
-    +' pos:'+mudprompt.p2.pos
-    +(mudprompt.p2.posf!=''?'; posf:'+mudprompt.p2.posf:'')
-    +'\n');
+    if(my_char.was_afk!==undefined && my_char.afk) {
+        my_char.was_afk=undefined;
+    }
+
+    if(my_char.last_pose!==undefined) {
+        if(my_char.last_pose==mudprompt.p2.pos){
+            my_char.last_pose=undefined;
+        }
+        if(my_char.action.act==mudprompt.p2.pos)
+            clearAction();
+    } 
+
     checking();
     
 }
 
 //[#checks] [#проверялки]
 function checking() {
-	if (test) echo(' -->checking()');
+	if(test) echo(' -->checking()');
+    if(test) echo(' --> status:'
+    +(my_char.afk ? '[afk]' : '' )
+    +(my_char.last_pose!=undefined?'[last:'+my_char.last_pose+']':'')
+    +(my_char.was_afk!=undefined?'[was_afk]':'')
+    +(my_char.action.act!=undefined?'[act:'+my_char.action.act+']':'')
+    +' pos:'+mudprompt.p2.pos
+    +(mudprompt.p2.posf!=''?'; posf:'+mudprompt.p2.posf:'')
+    +'\n');
 
-	if (my_char.eqChanged)
+    let needsStatus = '';
+	if (my_char.needsChanged)
+        needsStatus = ''
+        	+ (my_char.hunger ? '[h:' + my_char.hunger + ']' : '')
+        	+ (my_char.thirst ? '[t:' + my_char.thirst + ']' : '');
+
+	if (my_char.hunger + my_char.thirst > 0)
+    	echo(needsStatus);
+
+    if(my_char.eqChanged)
     	checkEquip();
+
+    if(my_char.needsChanged)
+    	checkNeeds();
+    
+    if(!my_char.needsChanged && !my_char.eqChanged 
+        && (my_char.last_pose!=undefined || my_char.was_afk!=undefined)) 
+        restoreStatus();
 }
 
 function checkEquip() {
@@ -414,6 +534,126 @@ function checkEquip() {
     }
 	if (my_char.armed === 1 && my_char.action.act !== '\\wield') {
     	doAct('\\wield', my_char.weapon);
+    }
+}
+
+function checkNeeds() {
+	if(test) echo('->checkNeeds(hunger:' + my_char.hunger + ' f:' + my_char.lfood 
+    + 'thirst:'+my_char.thirst+' w:' + my_char.lwater + ')');
+    if(my_char.hunger+my_char.thirst==0) {
+        my_char.needsChanged = false;
+        return;
+    }
+	if(my_char.action.act !== undefined) {
+        return;
+    }
+
+    if((my_char.hunger <= 1 && my_char.thirst <=1) 
+        && !(my_char.pract && (my_char.hunger || my_char.thirst))) {
+            if(test) echo('-->[not so hunger/thirst - EXIT]');
+            return;
+    }
+
+    if(['fight', 'stun', 'incap', 'mort', 'dead'].indexOf(mudprompt.p2.pos) !== -1) {
+        return;
+    }
+
+    if(my_char.afk) {
+        changeAFK();
+        my_char.needsChanged = true;
+        return;
+    }
+
+    //[#food]
+    if(my_char.hunger) {
+        if(!my_char.lfood) {
+            if (my_char.food == 'manna' || my_char.food == 'mushroom') {
+                if(checkPose('stand')) {
+                    my_char.needsChanged = true;
+                    doAct('cast', 'create food');
+                    return;    
+                }
+            }
+            if (my_char.food === 'rusk') {
+                if(checkPose('rest')){
+                    my_char.needsChanged = true;
+                    doAct('get rusk pack');
+                    return;
+                }
+            }
+        } else {
+            if(checkPose('rest')){
+                my_char.needsChanged = true;
+                doAct('eat', my_char.food);
+                return;
+            }
+        }
+
+        if(my_char.action.act!==undefined) return;
+    }
+    //[#drink]
+   	if(my_char.thirst) {
+        if (!my_char.lwater) {
+            if (my_char.water === 'spring') {
+                if(checkPose('stand')) {
+                    my_char.needsChanged = true;
+                    doAct('cast', 'create spring');
+                    return;    
+                }
+                if (my_char.water === 'flask') {
+                    if (test) echo('->(water === flask)');
+                  	if (test) echo('-->(create water=' + my_char.spells['create water'] + ')');
+                    if (my_char.spells['create water'] !== undefined) {
+                        if (test) echo('->(create water !== undefined)');
+                        if(checkPose('stand')) {
+                            my_char.needsChanged = true;
+                            doAct('cast', 'create water', my_char.water);
+                            return;
+                        }
+                    }
+                    	
+                }
+            }
+    	}  else {
+            if(checkPose('stand')) {
+                my_char.needsChanged = true;
+                doAct('drink', my_char.water);
+                return;
+            }
+        }
+	}
+}
+function checkPose(need_pose) {
+    if(test) echo('->checkPose('+need_pose+')');
+    if(need_pose==mudprompt.p2.pos) 
+        return true;
+    
+    if(need_pose=='rest' && mudprompt.p2.pos!=='sleep') 
+        return true;
+
+    my_char.last_pose = mudprompt.p2.pos;
+    doAct(need_pose);
+    return false;
+}
+function changeAFK(){
+    my_char.was_afk = my_char.afk ? true : false;
+    doAct('afk');
+}
+function restoreStatus() {
+    if(test) echo('->restoreStatus()');
+    if(test && my_char.last_pose!=undefined) echo('[last:'+my_char.last_pose+']');
+    if(test && my_char.was_afk) echo('[was_afk]');
+    if(my_char.action.act!==undefined) {
+        if(test)echo('['+my_char.action.act+'->EXIT]');
+        return;
+    }
+    if(my_char.last_pose!==undefined && my_char.last_pose!=mudprompt.p2.pos) {
+        doAct(my_char.last_pose);
+        return;
+    }
+    if(my_char.was_afk && !my_char.afk) {
+        doAct('afk');
+        return;
     }
 }
 
@@ -431,6 +671,10 @@ function Pchar (name, char){
     this.init = true;
     this.afk = false;
 
+    this.pract = false;
+    this.last_pose = undefined;
+    this.was_afk = undefined;
+
     this.name = name;
 
     this.weapon = char.weapon;
@@ -439,6 +683,11 @@ function Pchar (name, char){
 
     this.food = char.food;
     this.water = char.water;
+    this.thirst = 0;
+	this.hunger = 0;
+	this.lfood = false;
+	this.lwater = false;
+
     //[#action] act - команда к выполеннию (н-р: \\get, \\wield, cast)
     //          command - 'acid blast' | target 
     //          target - цель
@@ -448,4 +697,55 @@ function Pchar (name, char){
     	target: undefined
 	};
 
+    this.spells = new Spells(char);
+
 }
+
+function Spells(char) {
+	if (char.class === 'necromancer') {
+    	this['learning'] = new Spell('LRN', 33, 'protective', 1);
+    	this['magic missile'] = new Spell('mm', 2, 'combat');
+    	this['chill touch'] = new Spell('ChT', 7, 'combat');
+    	this['create water'] = new Spell('CrW', 11, 'creation');
+    	this['create food'] = new Spell('CrF', 12, 'creation');
+    	this['armor'] = new Spell('ARM', 13, 'protective', 2, 3);
+    	this['detect good'] = new Spell('DtG', 13, 'detection', 3);
+    	this['detect undead'] = new Spell('DtU', 13, 'detection', 3);
+    	this['detect invis'] = new Spell('DtI', 13, 'detection', 1);
+    	this['burning hands'] = new Spell('BnH', 14, 'combat');
+    	this['protection negative'] = new Spell('PrN', 13, 'protective', 2);
+    	this['protection good'] = new Spell('PrG', 17, 'protective', 2);
+    	this['protective shield'] = new Spell('PrS', 18, 'protective', 2);
+    	this['shield'] = new Spell('SHD', 18, 'protective', 2, 3);
+    	this['poison'] = new Spell('PSN', 23, 'maladictions');
+    	this['lightning bolt'] = new Spell('LiB', 23, 'combat');
+    	this['fly'] = new Spell('FLY', 23, 'protective',1);
+    	this['dispel affects'] = new Spell('DAf', 24, 'maladictions');
+    	this['cancellation'] = new Spell('CNL', 28, 'maladictions');
+    	this['giant strength'] = new Spell('GSt', 28, 'protective', 2, 2);
+    	this['sonic resonance'] = new Spell('SoR', 28, 'combat');
+    	this['stone skin'] = new Spell('StS', 30, 'protective', 2);
+    	this['dark shroud'] = new Spell('DSh', 21, 'protective', 2, 2);
+    	this['magic concentrate'] = new Spell('MCt', 60, 'protective', 2);
+    	this['create spring'] = new Spell('CrS', 31, 'creation');
+	}
+	if(char.clan === 'invader') {
+    	this['shadow cloak'] = new Spell('ShC', 10, 'protective', 2);
+	}
+}
+
+function Spell(brief, level, sclass, buff, group, party, aAntogonist, aAlly) {
+	//buff: 0 - никогда, 1 - всегда, 2 - fullbuff, 3 - только при прокачке
+	//group (кастовать на членов группы): 0-no, 1-yes, 2-full, 3-target
+	//party (кастуется на всю группу)
+	this.brief = brief;
+	this.level = level;
+	this.class = sclass;
+	this.buff = buff===undefined ? 0 : buff;
+	this.group = group===undefined ? 0 : group;
+	this.party = party===undefined ? false : party;
+	this.antogonist = aAntogonist;
+	this.ally = aAlly;
+	this.progress = 0;
+}
+
