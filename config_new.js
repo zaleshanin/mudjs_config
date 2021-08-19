@@ -64,7 +64,7 @@ $('.trigger').on('text', function (e, text) {
 
     }
 
-    if (text.match('^Ok\.$')) {
+    if (text.match('^(Ok|Твой последователь должен быть рядом с тобой)\.$')) {
         if(test) echo('-->"Ok." match!!!<--\n');
         if (my_char.action.act !== undefined) {
             if (my_char.action.act==='order') {
@@ -247,7 +247,10 @@ $('.trigger').on('input', function (e, text) {
             });
             echo('(total:' + args.length + ')\n');
         }
-        if (args[0] === 'all') {
+        if (args[0] === 'clear') {
+            my_char.order = null;
+            my_char.ordersChange = true;
+        } else if (args[0] === 'all') {
             my_char.order = new Order(args.join(' ').replace(args[0] + ' ', ''));
             if (test) echo('-->' + my_char.order.command);
             my_char.ordersChange = true;
