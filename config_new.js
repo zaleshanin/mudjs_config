@@ -72,13 +72,7 @@ $('.trigger').on('text', function(e, text) {
         if (test) echo('(armed=2)\n');
     }
 
-/*
-    if (text.match('ВЫБИЛ.? у тебя оружие, и оно упало на землю!$')) {
-//        echo('>>> Подбираю оружие с пола, очистив буфер команд.\n');
-//        send('\\');
-//        send('взять ' + weapon + '|надеть ' + weapon);
-    }
-*/
+    //[#food][#drink]
     if (text.match('^Ты умираешь от голода|^Ты умираешь от жажды')) {
         if (mudprompt.p2.pos === 'stand' || mudprompt.p2.pos === 'sit' || mudprompt.p2.pos === 'rest') {
 //        echo('>>> Правильно питаюсь, когда не сплю и не сражаюсь.\n');
@@ -87,6 +81,75 @@ $('.trigger').on('text', function(e, text) {
 //        send('положить боч сумка');
         }
     }
+    if (text.match('^Ты ешь .*\.$') || text.match('^У тебя нет этого.$') || text.match('^Это несъедобно.$')) {
+        if (my_char.action.act !== undefined) {
+            if (my_char.action.act === 'eat') {
+                clearAction();
+            }
+            my_char.lfood = false;
+        }
+    }
+    if (text.match('^Ты больше не чувствуешь голода.$')) {
+        my_char.hunger = 0;
+        my_char.needsChanged = true;
+    }
+    if (text.match('^Ты хочешь есть.$')) {
+        my_char.hunger++;
+        my_char.needsChanged = true;
+    }
+    if (text.match('^Ты умираешь от голода!$')) {
+        my_char.hunger = 10;
+        my_char.needsChanged = true;
+    }
+    if (text.match('^Ты взмахиваешь руками, и с неба падает манна небесная.$')
+        || text.match('^Ты берешь соленый сухарик из пакета сухарей.$')
+        || text.match('^Ты взмахиваешь руками и создаешь магический гриб.$')
+    ) {
+        my_char.lfood = 1;
+        my_char.needsChanged = true;
+        if (my_char.action.command === 'create food'
+            || (my_char.action.act == 'get' && my_char.action.command === my_char.food))
+            clearAction();
+    }
+
+    if (text.match(' родник высыхает.$')) {
+        my_char.lwater = false;
+    }
+    if (text.match('^Ты не находишь это.$') || text.match('^Здесь пусто.$')) {
+        if (my_char.action.act !== undefined)
+            if (my_char.action.act === 'drink') {
+                clearAction();
+            }
+        my_char.lwater = false;
+    }
+    if (text.match('^Ты хочешь пить.$')) {
+        my_char.thirst++;
+        my_char.needsChanged = true;
+        // echo('[буль-буль:' + my_char.thirst + ']\n');
+    }
+    if (text.match('^Ты умираешь от жажды!$')) {
+        my_char.thirst = 10;
+        my_char.needsChanged = true;
+        // echo('[буль-буль:' + my_char.thirst + ']\n');
+    }
+    if (text.match(' родник пробивается сквозь землю.$')
+        || text.match('^Жестяная фляга наполнена.$')) {
+        my_char.lwater = 1;
+        if (my_char.action.command == 'create spring' || my_char.action.command == 'create water')
+            clearAction();
+    }
+    if (text.match('^Ты пьешь воду из')) {
+        if (my_char.action.act == 'drink')
+            clearAction();
+    }
+    if (text.match('^Ты больше не чувствуешь жажды.$')) {
+        my_char.thirst = 0;
+        my_char.lwater = false;
+        my_char.needsChanged = true;
+    }
+
+    //[#else]
+
 
     if (text.match('Обессилев, ты падаешь лицом вниз!')) {
 //        echo('>>> ЕЩЕ РАЗОК!!!\n');
@@ -417,6 +480,101 @@ function checkEquip() {
     }
 }
 
+function checkNeeds() {
+	if (test) echo('->checkNeeds(mode: pose:' + mudprompt.p2.pos + ' w:' + my_char.lwater + ' f:' + my_char.lfood + ')');
+	if (my_char.action.act === undefined)
+    	my_char.needsChanged = false;
+
+    if((my_char.hunger <= 1 && my_char.thirst <=1) 
+        && !(my_char.pract && (my_char.hunger || my_char.thirst))) {
+            return;
+    }
+
+    if(['fight', 'stun', 'incap', 'mort', 'dead'].indexOf(mudprompt.p2.pos) !== -1) {
+        return;
+    }
+
+    if(my_char.afk) {
+        changeAFK();
+        my_char.needsChanged = true;
+        return;
+    }
+
+    //[#food]
+    if(my_char.hunger) {
+        if(!my_char.lfood) {
+            if (my_char.food == 'manna' || my_char.food == 'mushroom') {
+                if(checkPose('stand')) {
+                    my_char.needsChanged = true;
+                    doAct('cast', 'create food');
+                    return;    
+                }
+            }
+            if (my_char.food === 'rusk') {
+                if(checkPose('rest')){
+                    my_char.needsChanged = true;
+                    doAct('get rusk pack');
+                    return;
+                }
+            }
+        } else {
+            if(checkPose('rest')){
+                my_char.needsChanged = true;
+                doAct('eat', my_char.food);
+                return;
+            }
+        }
+    }
+    //[#drink]
+   	if (pchar.thirst) {
+        if (!pchar.lwater) {
+            if (pchar.water === 'spring') {
+                if(checkPose('stand')) {
+                    my_char.needsChanged = true;
+                    doAct('cast', 'create spring');
+                    return;    
+                }
+                if (pchar.water === 'flask') {
+                    if (test) echo('->(water === flask)');
+                  	if (test) echo('-->(create water=' + my_char.spells['create water'] + ')');
+                    if (pchar.spells['create water'] !== undefined) {
+                        if (test) echo('->(create water !== undefined)');
+                        if(checkPose('stand')) {
+                            pchar.needsChanged = true;
+                            doAct('cast', 'create water', pchar.water);
+                            return;
+                        }
+                    }
+                    	
+                } else {
+                    if(checkPose('stand')) {
+                        pchar.needsChanged = true;
+                        doAct('drink', pchar.water)
+                        return;
+                    }
+                 }
+            	
+        	}
+    	}
+	}
+}
+function checkPose(need_pose) {
+    if(test) echo('->checkPose('+need_pose+')');
+    if(need_pose==mudprompt.p2.pos) 
+        return true;
+    
+    if(need_pose=='rest' && mudprompt.p2.pos!=='sleep') 
+        return true;
+
+    my_char.last_pose = mudprompt.p2.pos;
+    doAct(need_pose);
+    return false;
+}
+function changeAFK(){
+    my_char.was_afk = my_char.afk ? true : false;
+    doAct('afk');
+}
+
 //[#Конструкторы]
 function Action(act, command, target) {
 	this.act = act; //spelling, wearing, drinking, eating, getting, slooking
@@ -431,6 +589,10 @@ function Pchar (name, char){
     this.init = true;
     this.afk = false;
 
+    this.pract = false;
+    this.last_pose = undefined;
+    this.was_afk = undefined;
+
     this.name = name;
 
     this.weapon = char.weapon;
@@ -439,6 +601,11 @@ function Pchar (name, char){
 
     this.food = char.food;
     this.water = char.water;
+    this.thirst = 0;
+	this.hunger = 0;
+	this.lfood = false;
+	this.lwater = false;
+
     //[#action] act - команда к выполеннию (н-р: \\get, \\wield, cast)
     //          command - 'acid blast' | target 
     //          target - цель
