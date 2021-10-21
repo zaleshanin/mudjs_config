@@ -31,6 +31,7 @@ var chars = {
         food: 'rusk'
     }
 };
+var buffQueue = [];
 
 /*--------------------------------------------------------------------------
  * Триггера - автоматические действия как реакция на какую-то строку в мире.
@@ -41,7 +42,7 @@ $('.trigger').on('text', function (e, text) {
     if (match) {
         promptRecived(false);
     }
-    match = (/^<AFK>[\s]?$/).exec(text);
+    match = (/^<(AFK|АФК)>[\s]?$/).exec(text);
     if (match) {
         promptRecived(true);
     }
@@ -64,7 +65,7 @@ $('.trigger').on('text', function (e, text) {
 
     }
 
-    if (text.match('^Ok\.$')) {
+    if (text.match('^(Ok|Твой последователь должен быть рядом с тобой)\.$')) {
         if(test) echo('-->"Ok." match!!!<--\n');
         if (my_char.action.act !== undefined) {
             if (my_char.action.act==='order') {
@@ -72,6 +73,21 @@ $('.trigger').on('text', function (e, text) {
             }
         }
     }
+
+    buffPatterns.forEach(function (elem) {
+        if (my_char.spells[elem[0]] !== undefined) {
+            if (text.match(elem[1])) {
+                if(test) {
+                    echo("[buffPattert trigger]:"+elem[0]);
+                }
+                my_char.affChanged = true;
+                buffQueue.push(new BuffQueue(elem[0], elem[2], elem[3], my_char.action));
+                if (my_char.action.command !== undefined
+                    && my_char.action.command === 'cancellation')
+                    clearAction();
+            }
+        }
+    });
 
     //[#weapon]
     if (text.match(' у тебя оружие, и оно упало на землю!$')) {
@@ -98,14 +114,17 @@ $('.trigger').on('text', function (e, text) {
         if (test) echo('(armed=2)\n');
     }
 
-<<<<<<< HEAD
-=======
     if (text.match('^Ты не можешь сконцентрироваться.$')
-        || text.match('^Твоя попытка закончилась неудачей.$')) {
+        || text.match('^Твоя попытка закончилась неудачей.$')
+        || text.match('На кого именно ты хочешь произнести заклинание')) {
+            if(test) echo('[spell fail trigger]')
         clearAction();
+        if (my_char.fullbuff.target && text.match('На кого именно ты хочешь произнести заклинание')) {
+        	my_char.fullbuff = new Fullbuff();
+        	echo('[target not found -> fullbuff canceled]\n');
+    	}
     }
 
->>>>>>> 18b286ad208d99672ab008ac2c221864eb8f9951
     //[#food][#drink]
     if (text.match('^Ты умираешь от голода|^Ты умираешь от жажды')) {
         if (mudprompt.p2.pos === 'stand' || mudprompt.p2.pos === 'sit' || mudprompt.p2.pos === 'rest') {
@@ -166,23 +185,15 @@ $('.trigger').on('text', function (e, text) {
         my_char.needsChanged = true;
         // echo('[буль-буль:' + my_char.thirst + ']\n');
     }
-    if (text.match(' родник пробивается сквозь землю.$')
-<<<<<<< HEAD
-        || text.match('^Жестяная фляга наполнена.$')) {
-=======
+    if (text.match('^Ты щелкаешь пальцами, и из земли пробивается магический родник.$') //text.match(' родник пробивается сквозь землю.$')
         || text.match('^Жестяная фляга наполнена.$')
         || text.match('^Ты хочешь сделать тут озеро?')) {
         if (test) echo("[water creation trigger]");
->>>>>>> 18b286ad208d99672ab008ac2c221864eb8f9951
         my_char.lwater = 1;
         if (my_char.action.command == 'create spring' || my_char.action.command == 'create water')
             clearAction();
     }
-<<<<<<< HEAD
-    if (text.match('^Ты пьешь воду из')) {
-=======
     if (text.match('^Ты пьешь [^\s]* из ')) {
->>>>>>> 18b286ad208d99672ab008ac2c221864eb8f9951
         if (my_char.action.act == 'drink')
             clearAction();
     }
@@ -258,20 +269,74 @@ $('.trigger').on('input', function (e, text) {
             });
             echo('(total:' + args.length + ')\n');
         }
-        if (args[0] === 'all') {
+        if (args[0] === 'clear') {
+            my_char.order = null;
+            my_char.ordersChange = true;
+        } else if (args[0] === 'all') {
             my_char.order = new Order(args.join(' ').replace(args[0] + ' ', ''));
             if (test) echo('-->' + my_char.order.command);
             my_char.ordersChange = true;
             doOrder();
-            //order all stand
-            //order rat c fren
-            //order rat c fren char
-            //order rat c fren all
-            //order rat c fren 2.stone
         } else {
             send(text);
         }
     });
+
+    //обкаст fullbuff
+    command(e, 'fb', text, function (args) {
+        if(test)
+            echo('test fullbuff start --> ok. args['+args+"]("+args.length+")");
+
+        var bclass;
+        var match;
+
+        if (my_char.fullbuff.target) {
+        	my_char.fullbuff = new Fullbuff();
+        	echo('[fullbuff canceled]\n');
+    	}
+    	else {
+            match = (/^fb[\s]?([\S]*)?[\s]?([\S]*)?[\s]?([\S]*)?$/i).exec(args[0]);
+            if (match[1] === undefined || match[1] === "") {
+            	my_char.fullbuff = new Fullbuff(undefined, 'self');
+        	}
+        	else {
+            	bclass = getBuffClass(match[1]);
+            	if (match[2] === undefined) {
+                	if (bclass) {
+                    	//fb protect
+                    	my_char.fullbuff = new Fullbuff(bclass, 'self');
+                	} else if (match[1] === 'all') {
+                    	//fb all
+                    	my_char.fullbuff = new Fullbuff(undefined, 'self', true);
+                	} else {
+                    	//fb self
+                    	my_char.fullbuff = new Fullbuff(undefined, match[1]);
+                	}
+            	}
+            	else if (match[3] === undefined) {
+                	if (bclass) {
+                    	//fb protect all
+                    	//fb protect self
+                    	if (match[2] === 'all') {
+                        	my_char.fullbuff = new Fullbuff(bclass, 'self', true);
+                    	} else {
+                        	my_char.fullbuff = new Fullbuff(bclass, match[2]);
+                    	}
+                	} else if (match[1] === 'all') {
+                    	//fb all self
+                    	my_char.fullbuff = new Fullbuff(undefined, match[1], true);
+                	}
+            	} else {
+                	//fb protect all self
+                	my_char.fullbuff = new Fullbuff(bclass, match[3], true);
+            	}
+        	}
+        	echo('[fullbuff start]\n');
+        	checkBuff();
+        }
+    });
+
+
 
     // Установить жертву для выстрелов, например: /victim hassan
     command(e, '/victim', text, function (args) {
@@ -494,7 +559,7 @@ function doOrder() {
     var vict_name;
 	if (test) echo('->doOrder()');
 
-    if(my_char.order.command!== undefined) {
+    if(my_char.order.command!== undefined && mudprompt.group.npc!=undefined) {
         vict_name = mudprompt.group.npc[my_char.order.proced].sees;
         if(test) echo(' ->  (' + my_char.order.proced + ')' + vict_name +' -> ');
 
@@ -591,11 +656,26 @@ function checking() {
             + (my_char.hunger ? '[h:' + my_char.hunger + ']' : '')
             + (my_char.thirst ? '[t:' + my_char.thirst + ']' : '');
 
+    let group_length = 0;
+    if(mudprompt.group.pc!==undefined)
+        group_length += mudprompt.group.pc.length;
+
+    if(mudprompt.group.npc!=undefined)
+        group_length += mudprompt.group.npc.length;
+
+    if (my_char.group.length != group_length) 
+        checkGroup();
+
     if (my_char.hunger + my_char.thirst > 0)
         echo(needsStatus);
 
     if (my_char.eqChanged)
         checkEquip();
+
+    if (buffQueue.length)
+    	changeBuffsStatus();
+    if (my_char.affChanged)
+    	checkBuff();
 
     if (my_char.needsChanged)
         checkNeeds();
@@ -606,6 +686,315 @@ function checking() {
     if (!my_char.needsChanged && !my_char.eqChanged
     && (my_char.last_pose != undefined || my_char.was_afk != undefined))
         restoreStatus();
+}
+function checkGroup() {
+    if(test) echo("->checkGroup()");
+    my_char.group = [];
+    if(mudprompt.group.pc!==undefined)
+        setGroupMembersFrom(mudprompt.group.pc);
+
+    if(mudprompt.group.npc!==undefined)
+        setGroupMembersFrom(mudprompt.group.npc);
+}
+
+function setGroupMembersFrom(list) {
+    if(test) echo("-->setGroupMembersFrom("+list.length+")");
+
+    for(let member in list) {
+        let name = list[member].sees;
+        let i = 1;
+        let new_name = i+"."+name;
+
+        for (var k in my_char.group) {
+            if(my_char.group[k].name===new_name) {
+                new_name = ++i + "." + name;
+            }
+        }
+    
+        my_char.group.push(new GroupMember(i+'.'+name));
+    }
+}
+
+function checkBuff() {
+	if (test) echo('\n->chkBff()');
+    var test_msg;
+    
+    if (my_char.action.act === undefined) {
+        my_char.affChanged = false;
+    } else {
+        return;
+    }
+        
+    var havebuff = 0, activebuff = 0;
+	var targ;
+	var lSkippSpell;
+	var lDebuff = false;
+
+    for(var cast in my_char.spells) {
+        targ = 'self';
+        lSkippSpell = false;
+    	if (test) test_msg = '-->("' + cast + '" '+"["+my_char.spells[cast].class+"]"+'"->' + my_char.fullbuff.target + ')';
+
+        if (['combat', 'creation', 'maladictions'].indexOf(my_char.spells[cast].class) >= 0 //не бафф
+        	|| my_char.spells[cast].progress === 1) { // если еще не практился
+        	if (test) 
+                echo(test_msg+'->(skip class:' + my_char.spells[cast].class + '|' + my_char.spells[cast].progress + '%)');
+        	continue;
+    	}
+        
+        if(test) {
+            test_msg += '[key:'+my_char.spells[cast].mgroup+"-"+my_char.spells[cast].mbrief+']';
+        }
+       	//подсчет уже скастованных спеллов при фулбаффе
+        if(my_char.fullbuff.target!==undefined && my_char.spells[cast].buff!==0) {
+        	if(test) test_msg += ('->calc: ');
+        	//проверяем группу заклинания
+        	if(my_char.fullbuff.class===undefined
+            	|| my_char.fullbuff.class===my_char.spells[cast].class) {
+            	if(test) test_msg += ('(class:ok)');
+            	//проверяем касуемость заклинания
+            	if(my_char.fullbuff.all || my_char.spells[cast].buff<3) {
+                	if(test) test_msg += ('(buff:ok)');
+                	if(my_char.fullbuff.target==='self' || my_char.spells[cast].group>0) {
+                    	if(test) test_msg += ('(++)');
+                    	havebuff++;
+                    	if ((my_char.fullbuff.target==='self' && my_char.hasBuff(cast))
+                        	|| (my_char.fullbuff.buffs[cast] !== undefined)) {
+                        	if(test) test_msg += ('(--)');
+                        	activebuff++;
+                    	}
+                	}
+            	}
+        	}
+            if(test) echo(test_msg);
+
+            if (my_char.action.act === undefined) {
+                if (my_char.pract && my_char.spells[cast].progress === 0) {
+                    my_char.affChanged = true;
+                    doAct('slook', cast);
+                } else if (["stand", "sit", "rest"].indexOf(mudprompt.p2.pos) !== -1) {
+                    // смена цели бафа
+                    if(my_char.fullbuff.target) {
+                        if(my_char.fullbuff.target!=='self') {
+                            targ = my_char.fullbuff.target;
+                        } else if(my_char.spells[cast].group>0 && my_char.fullbuff.all) {
+                            my_char.group.forEach(function (member) {
+                                if (member.buffs[cast] === undefined || !member.buffs[cast]) {
+                                    if (test) echo('->(change target:' + member.name + ')');
+                                    targ = member.name;
+                                }
+                            });
+                        }
+                    }
+    
+                    // если по какой-то причине не кастуем баф lSkippSpell = true
+                    if ((((my_char.fullbuff.target===undefined && my_char.spells[cast].buff === 1)
+                            || my_char.fullbuff.target==='self') && my_char.hasBuff(cast))
+                        || (my_char.fullbuff.target!==undefined && my_char.fullbuff.target !== 'self' && my_char.fullbuff.buffs[cast])) {
+                        // если уже висит
+                        lSkippSpell = true;
+                        if (test) echo('->(have one)');
+                    }
+                    if ((my_char.fullbuff.target!==undefined && my_char.fullbuff.target !== 'self')
+                        && (my_char.spells[cast].group === 0 || my_char.spells[cast].party)) {
+                        //не кастуется на других или на группу
+                        lSkippSpell = true;
+                        if (test) echo('->(4self only|4group)');
+                    }
+                    if (my_char.spells[cast].antogonist !== undefined) { // если есть бафы противпоположности
+                        if (my_char.spells[cast].buff) { //если баф
+                            // активен баф не позваляющий повесить текущий
+                            my_char.spells[cast].antogonist.forEach(function (antst) {
+                                if (my_char.hasBuff(antst)) {
+                                    if (test) echo('->(skip antogonist)');
+                                    lSkippSpell = true;
+                                } else if (my_char.hasBuff(cast) && my_char.spells[cast].class==='maladictions' && my_char.spells[antst].progress > 1) {
+                                    lDebuff = true;
+                                    if (test) echo('->(DeBuff!!!)');
+                                }
+                                //при прокачке меняем на противоположный, если у того меньше %
+                                if (my_char.pract && my_char.spells[antst].progress < my_char.spells[cast].progress && my_char.spells[antst].progress > 1) {
+                                    cast = antst;
+                                    if (test) echo('->(changed:' + antst + ')');
+                                }
+                            });
+                        } else { // если это не баф (например лечение от слепоты)
+                            // если НЕ висит баф который нужно снять
+                            lSkippSpell = true;
+                            my_char.spells[cast].antogonist.forEach(function (antst) {
+                                if (my_char.hasBuff(antst)) lSkippSpell = false;
+                            });
+                            if (test && lSkippSpell) echo('->(skip antidot)');
+                        }
+                    }
+    
+                    if (my_char.spells[cast].ally !== undefined) { //если уже активен баф навешиваемый при применени текущего
+                        my_char.spells[cast].ally.forEach(function (ally) {
+                            if (my_char.hasBuff(ally)) {
+                                lSkippSpell = true;
+                                activebuff++;
+                                if (test) echo('->(skip ally)');
+                            }
+                        });
+                    }
+    
+                    if (!lSkippSpell) {
+                        if (my_char.spells[cast].buff === 0) {
+                            lSkippSpell = true;
+                            if (test) echo('->(skip 0)');
+                        }
+                        if (my_char.spells[cast].buff === 2 && (!my_char.fullbuff.target && !my_char.pract)) {
+                            lSkippSpell = true;
+                            if (test) echo('->(skip 2)');
+                        }
+                        if (my_char.spells[cast].buff === 3 && !my_char.pract && !my_char.fullbuff.all) {
+                            lSkippSpell = true;
+                            if (test) echo('->(skip 3)');
+                        }
+                        if (my_char.pract && my_char.spells[cast].progress == 100 && my_char.spells[cast].buff !== 1) {
+                            lSkippSpell = true;
+                            if (test) echo('->(skip 100%)');
+                        }
+                    }
+                    //не тот класс
+                    if(my_char.fullbuff.target 
+                        && (my_char.fullbuff.class!==undefined && (my_char.fullbuff.class !== my_char.spells[cast].class))
+                    ) {
+                        lSkippSpell = true;
+                        if (test) echo('->(wrong class)');
+                    }
+    
+                    if (lSkippSpell) {
+                        if (test) echo('-->(skipped чёта)');
+                        continue;
+                    }
+                    //echo('cast='+cast+'\n');
+                    if (mudprompt.p2.pos === "stand") {
+                        my_char.affChanged = true;
+                        doAct('cast', cast, targ);
+                        return;
+                    } else {
+                        echo('надо чё-та кастануть!!!');
+                        my_char.affChanged = true;
+                        doAct('stand');
+                        return;
+                    }
+                }
+            }
+    	}
+    
+
+
+
+    }
+	if (test) 
+        echo('\n(buffs:' + havebuff + ' activ:' + activebuff + ')\n');
+
+	if (my_char.fullbuff.target && havebuff === activebuff) {
+    	my_char.fullbuff = new Fullbuff();
+    	echo('[fullbuff done]');
+	}
+}//checkBuff()
+function changeBuffsStatus() {
+	if (test) echo('-->changeBuffsStatus()');
+	var buff;
+	while (buffQueue.length) {
+    	buff = buffQueue.pop();
+    	if (test) echo('->(' + buff.sBuff + ':' + buff.lStatus + ')');
+    	buffChange(buff.sBuff, buff.lStatus, buff.lActionDone, buff.action);
+	}
+}
+function buffChange(sBuff, lStatus, lActionDone, action) {
+	if (test) echo('-->buffChange()');
+
+	var forGroup = false;
+	var forGroupMember = false;
+	var forSelf = false;
+	var forTarg = false;
+
+	var lGroupAlly = false;
+	if (sBuff in my_char.spells) { //бывают аффекты которых нет в спелах
+    	if (test) echo('->(есть такой ' + sBuff + ')');
+
+    	if (my_char.spells[sBuff].ally !== undefined) {
+        	if (test) echo('->(есть ally)');
+        	my_char.spells[sBuff].ally.forEach(function (spell) {
+            	if (spell === action.command && my_char.spells[spell].group)
+                	if (test) echo('->(ally4group ' + spell + ')');
+            	lGroupAlly = true;
+        	});
+    	}
+    	if (my_char.spells[sBuff].group || lGroupAlly) {
+        	if (test) echo('->(ally4group&me)');
+        	forGroup = true;
+        	forSelf = true;
+    	}
+    	if (action.command === sBuff && action.target !== 'self') {
+        	if (test) echo('->(not4me?' + my_char.fullbuff.target + ')');
+        	if (action.target === my_char.fullbuff.target) {
+            	if (test) echo('->(not4me4' + my_char.fullbuff.target + ')');
+                forGroup = false;
+                forSelf = false;
+            	forTarg = true;
+        	} else {
+            	if (test) echo('->(4group?)');
+            	my_char.group.forEach(function (member) {
+                	if (member.name == action.target) {
+                    	if (test) echo('->(4' + member.name + ')');
+                    	forGroupMember = true;
+                	}
+            	});
+        	}
+
+    	}
+    	if (action.target === 'self' || (!forGroup && !forTarg && !forGroupMember)) {
+        	if (test) echo('->(4self)'+"(+target_self:"+(action.target === 'self')+")");
+        	forSelf = true;
+    	}
+    	if (!lStatus && my_char.spells[sBuff].party) {
+        	if (test) echo('->(remove from group)');
+        	forGroup = true;
+    	}
+
+    	if (sBuff !== action.command && my_char.spells[sBuff].antogonist !== undefined) {
+        	spells[sBuff].antogonist.forEach(function (spell) {
+            	if (spell === action.command) {
+                	sBuff = action.command;
+            	}
+        	});
+    	}
+	}
+	//Результаты:
+	if (test) echo('->(result_finale: 4Self:' + forSelf + ' 4Group:' + forGroup + ' 4Targ:' + forTarg + ' 4GroupMember:' + forGroupMember + ')');
+	if (forSelf) {
+    	//вешаем на себя
+    	if (test) echo('->(' + sBuff + ' self ' + lStatus + ')->result'+my_char.hasBuff(sBuff));
+    	//my_char.hasBuff(sBuff) = lStatus;
+	}
+	if (forGroup) {
+    	//вешаем на группу
+    	my_char.group.forEach(function (member) {
+        	if (test) echo('->(' + sBuff + ' ' + member.name + ' ' + lStatus + ')');
+        	member.buffs[sBuff] = lStatus;
+    	});
+	}
+	if (forTarg) {
+    	if (test) echo('->(' + sBuff + ' ' + action.target + ' ' + lStatus + ')');
+    	my_char.fullbuff.buffs[sBuff] = lStatus;
+	}
+	if (forGroupMember) {
+    	//вешаем на кого скастовано
+    	my_char.group.forEach(function (member) {
+        	if (member.name == action.target) {
+            	if (test) echo('->(' + sBuff + ' ' + action.target + ' ' + lStatus + ')');
+            	member.buffs[sBuff] = lStatus;
+        	}
+    	});
+	}
+
+	if (sBuff === action.command && lActionDone)
+    	clearAction();
+
 }
 
 function checkEquip() {
@@ -740,101 +1129,6 @@ function restoreStatus() {
     }
 }
 
-function checkNeeds() {
-	if (test) echo('->checkNeeds(mode: pose:' + mudprompt.p2.pos + ' w:' + my_char.lwater + ' f:' + my_char.lfood + ')');
-	if (my_char.action.act === undefined)
-    	my_char.needsChanged = false;
-
-    if((my_char.hunger <= 1 && my_char.thirst <=1) 
-        && !(my_char.pract && (my_char.hunger || my_char.thirst))) {
-            return;
-    }
-
-    if(['fight', 'stun', 'incap', 'mort', 'dead'].indexOf(mudprompt.p2.pos) !== -1) {
-        return;
-    }
-
-    if(my_char.afk) {
-        changeAFK();
-        my_char.needsChanged = true;
-        return;
-    }
-
-    //[#food]
-    if(my_char.hunger) {
-        if(!my_char.lfood) {
-            if (my_char.food == 'manna' || my_char.food == 'mushroom') {
-                if(checkPose('stand')) {
-                    my_char.needsChanged = true;
-                    doAct('cast', 'create food');
-                    return;    
-                }
-            }
-            if (my_char.food === 'rusk') {
-                if(checkPose('rest')){
-                    my_char.needsChanged = true;
-                    doAct('get rusk pack');
-                    return;
-                }
-            }
-        } else {
-            if(checkPose('rest')){
-                my_char.needsChanged = true;
-                doAct('eat', my_char.food);
-                return;
-            }
-        }
-    }
-    //[#drink]
-   	if (pchar.thirst) {
-        if (!pchar.lwater) {
-            if (pchar.water === 'spring') {
-                if(checkPose('stand')) {
-                    my_char.needsChanged = true;
-                    doAct('cast', 'create spring');
-                    return;    
-                }
-                if (pchar.water === 'flask') {
-                    if (test) echo('->(water === flask)');
-                  	if (test) echo('-->(create water=' + my_char.spells['create water'] + ')');
-                    if (pchar.spells['create water'] !== undefined) {
-                        if (test) echo('->(create water !== undefined)');
-                        if(checkPose('stand')) {
-                            pchar.needsChanged = true;
-                            doAct('cast', 'create water', pchar.water);
-                            return;
-                        }
-                    }
-                    	
-                } else {
-                    if(checkPose('stand')) {
-                        pchar.needsChanged = true;
-                        doAct('drink', pchar.water)
-                        return;
-                    }
-                 }
-            	
-        	}
-    	}
-	}
-}
-function checkPose(need_pose) {
-    if(test) echo('->checkPose('+need_pose+')');
-    if(need_pose==mudprompt.p2.pos) 
-        return true;
-    
-    if(need_pose=='rest' && mudprompt.p2.pos!=='sleep') 
-        return true;
-
-    my_char.last_pose = mudprompt.p2.pos;
-    doAct(need_pose);
-    return false;
-}
-function changeAFK(){
-    my_char.was_afk = my_char.afk ? true : false;
-    doAct('afk');
-}
-
 //[#Конструкторы]
 function Action(act, command, target) {
     this.act = act; //spelling, wearing, drinking, eating, getting, slooking
@@ -842,14 +1136,20 @@ function Action(act, command, target) {
     this.target = target;
 }
 
+function GroupMember(name) {
+    if(test) echo(' -->GroupMember('+name+')');
+    this.name = name;
+    this.buffs = {};
+}
+
 function Pchar(name, char) {
     if (test)
         echo(' -->Pchar() (name:' + name + ';weapon:' + char.weapon + ')');
 
-    this.init = true;
+    this.init = true; 
     this.afk = false;
 
-    this.pract = false;
+    this.pract = false; //признак состояния прокачки скилов
     this.last_pose = undefined;
     this.was_afk = undefined;
 
@@ -862,15 +1162,9 @@ function Pchar(name, char) {
     this.food = char.food;
     this.water = char.water;
     this.thirst = 0;
-<<<<<<< HEAD
-	this.hunger = 0;
-	this.lfood = false;
-	this.lwater = false;
-=======
     this.hunger = 0;
     this.lfood = false;
     this.lwater = false;
->>>>>>> 18b286ad208d99672ab008ac2c221864eb8f9951
 
     //[#action] act - команда к выполеннию (н-р: \\get, \\wield, cast)
     //          command - 'acid blast' | target 
@@ -884,7 +1178,22 @@ function Pchar(name, char) {
     this.ordersChange = false;
 
     this.spells = new Spells(char);
+    this.hasBuff = function(cast){
+        return ((mudprompt[this.spells[cast].mgroup]!==undefined && mudprompt[this.spells[cast].mgroup]!=='none') && mudprompt[this.spells[cast].mgroup].a.indexOf(my_char.spells[cast].mbrief)!==-1);
+    };
+    this.fullbuff = new Fullbuff();
+
 	this.order = new Order();
+
+    this.group = [];
+}
+
+function Fullbuff(bclass, btarget, all) {
+	echo('->Fullbuf('+bclass+','+btarget+','+all+')');
+	this.class = bclass === undefined ? undefined : bclass;
+	this.target = btarget === undefined ? undefined : btarget;
+	this.all = all === undefined ? false : all;
+	this.buffs = {};
 }
 
 function Order(comm) {
@@ -894,21 +1203,32 @@ function Order(comm) {
 }
 
 function Spells(char) {
+    this['rainbow shield'] = new Spell('R', 'pro',0,'protective');
+    if (char.clan === 'invader') {
+        this['shadow cloak'] = new Spell('S', 'cln', 10, 'protective', 2);
+    }
     if (char.class === 'necromancer') {
+        this['shield'] = new Spell('S', 'pro', 12, 'protective', 2, 3);
+        this['protective shield'] = new Spell('p', 'pro', 18, 'protective', 2);
+        this['armor'] = new Spell('a', 'pro', 20, 'protective', 2, 3);
+        this['dark shroud'] = new Spell('d', 'pro', 21, 'protective', 2, 2);
+        this['stone skin'] = new Spell('k', 'pro', 30, 'protective', 2);
+        this['protection good'] = new Spell('g', 'pro', 17, 'protective', 2);
+        this['spell resistance'] = new Spell('m', 'pro', 69, 'protective', 2, 0, false,[],['rainbow shield']);
+//Spell(brief, mgroup, level, sclass, buff, group, party, aAntogonist, aAlly)
+
+
+/*
         this['learning'] = new Spell('LRN', 33, 'protective', 1);
         this['magic missile'] = new Spell('mm', 2, 'combat');
         this['chill touch'] = new Spell('ChT', 7, 'combat');
         this['create water'] = new Spell('CrW', 11, 'creation');
         this['create food'] = new Spell('CrF', 12, 'creation');
-        this['armor'] = new Spell('ARM', 13, 'protective', 2, 3);
         this['detect good'] = new Spell('DtG', 13, 'detection', 3);
         this['detect undead'] = new Spell('DtU', 13, 'detection', 3);
         this['detect invis'] = new Spell('DtI', 13, 'detection', 1);
         this['burning hands'] = new Spell('BnH', 14, 'combat');
         this['protection negative'] = new Spell('PrN', 13, 'protective', 2);
-        this['protection good'] = new Spell('PrG', 17, 'protective', 2);
-        this['protective shield'] = new Spell('PrS', 18, 'protective', 2);
-        this['shield'] = new Spell('SHD', 18, 'protective', 2, 3);
         this['poison'] = new Spell('PSN', 23, 'maladictions');
         this['lightning bolt'] = new Spell('LiB', 23, 'combat');
         this['fly'] = new Spell('FLY', 23, 'protective', 1);
@@ -916,21 +1236,18 @@ function Spells(char) {
         this['cancellation'] = new Spell('CNL', 28, 'maladictions');
         this['giant strength'] = new Spell('GSt', 28, 'protective', 2, 2);
         this['sonic resonance'] = new Spell('SoR', 28, 'combat');
-        this['stone skin'] = new Spell('StS', 30, 'protective', 2);
-        this['dark shroud'] = new Spell('DSh', 21, 'protective', 2, 2);
         this['magic concentrate'] = new Spell('MCt', 60, 'protective', 2);
         this['create spring'] = new Spell('CrS', 31, 'creation');
-    }
-    if (char.clan === 'invader') {
-        this['shadow cloak'] = new Spell('ShC', 10, 'protective', 2);
+ */    
     }
 }
 
-function Spell(brief, level, sclass, buff, group, party, aAntogonist, aAlly) {
+function Spell(brief, mgroup, level, sclass, buff, group, party, aAntogonist, aAlly) {
     //buff: 0 - никогда, 1 - всегда, 2 - fullbuff, 3 - только при прокачке
     //group (кастовать на членов группы): 0-no, 1-yes, 2-full, 3-target
     //party (кастуется на всю группу)
-    this.brief = brief;
+    this.mbrief = brief;
+    this.mgroup = mgroup;
     this.level = level;
     this.class = sclass;
     this.buff = buff === undefined ? 0 : buff;
@@ -941,3 +1258,179 @@ function Spell(brief, level, sclass, buff, group, party, aAntogonist, aAlly) {
     this.progress = 0;
 }
 
+function getBuffClass(text) {
+	/*
+	det - detection, 
+	trv - transport&travel
+    enh - fightmaster&enhancement, 
+	pro - protective,
+    cln - clan skills and spells
+	*/
+	// detection  protective
+	if (text.match('^def.*|^pro.*')) {
+    	return 'protective';
+	}
+	if (text.match('^det')) {
+    	return 'detection';
+	}
+	return false;
+}
+function BuffQueue(sBuff, lStatus, lActionDone, action) {
+	this.sBuff = sBuff;
+	this.lStatus = lStatus;
+	this.lActionDone = lActionDone;
+	this.action = action;
+}
+var buffPatterns = [
+	// pattern, status, active
+	['ruler aura', '^Аура Рулера исчезает.$', false, false],
+	['ruler aura', '^Теперь ты чувствуешь себя более информированным, правя Миром.$', true, true],
+	['ruler aura', '^Ты и так уже знаешь многое в этом мире, неподвластное другим.$', true, true],
+	['learning', '^Желание учиться покидает тебя.$', false, false],
+	['learning', '^Ты концентрируешься на учебе.$', true, true],
+	['learning', '^.* будет учиться лучше!$', true, true],
+	['learning', '^Куда уж больше.$', true, true],
+	['learning', '^.* уже учится.$', true, true],
+	['learning', '^Ему это не поможет.$', true, true],
+	['aid', '^Ты можешь помочь еще кому-нибудь.$', false, false],
+	['aid', '^Волна тепла согревает твое тело.$', true, true],
+	['aid', '^Это заклинание использовалось совсем недавно.$', true, true],
+	['armor', '^Окружавшая тебя броня исчезает.$', false, false],
+	['armor', '^Священная броня окружает .*.$', true, true],
+    //['armor', '^Волшебная броня окружает .*.$', true, true],
+	['armor', '^.* окружает магическая броня, улучшающая защитные навыки.$', true, true],
+	//['armor', '^.* уже защищен(а)? заклинанием брони.$', true, true],
+	['armor', '^.* уже под воздействием этого заклинания брони.$', true, true],
+    ['shield', '^Щит, окружавший тебя, исчезает.$', false, false],
+	['shield', '^Божественная энергия окружает .* щитом.$', true, true],
+	//['shield', '^Волшебный щит окружает .*.$', true, true],
+    ['shield', '^.* окружает магический щит, помогающий блокировать удары.$', true, true],
+	//['shield', '^.* уже защищен(а)? заклинанием щита.$', true, true],
+	['shield', '^.* уже под воздействием этого заклинания.$', true, true],
+	['enhanced armor', '^Силовое поле, защищавшее тебя, исчезает.$', false, false],
+	['enhanced armor', '^Силовая защита окружает .*.$', true, true],
+	['enhanced armor', '^Силовое поле уже защищает тебя.$', true, true],
+	['enhanced armor', '^Силовое поле уже окружает .*.$', true, true],
+	['bless', '^Ты больше не чувствуешь божественного благословления.$', false, false],
+	['bless', '^Ты больше не чувствуешь божественного благословения.$', false, false],
+	['bless', '^Ты чувствуешь божественное благословение.$', true, true],
+	['bless', '^.* уже благословлен.', true, true],
+	['bless', '^Ты даришь .* благословение своих богов.', true, true],
+	['sanctuary', '^Белая аура вокруг тебя исчезает.$', false, false],
+	['sanctuary', '^Белая аура окружает .*.$', true, true],
+	['sanctuary', '^.* уже под защитой святилища.', true, true],
+	['sanctuary', '^.* уже под защитой темных богов.', true, true],
+	['observation', '^Ты больше не видишь состояния других.$', false, false],
+	['observation', '^Теперь ты замечаешь состояние других.$', true, true],
+	['observation', '^Ты уже замечаешь состояние других.$', true, true],
+	['fly', '^Ты медленно опускаешься на землю.$', false, false],
+	['fly', '^Твои ноги отрываются от земли.$', true, true],
+	['fly', '^.*? поднимается в воздух\.$', true, true],
+	['fly', '^.* уже находи.*ся в воздухе\.$', true, true],
+	['fly', '^.* уже находи.*ся в воздухе\.$', true, true],
+	['fly', '^.* может подняться в воздух и без твоей помощи\.$', true, true],
+	['stardust', '^Звездная пыль вокруг тебя рассеивается.$', false, false],
+	['stardust', '^Мерцающая звездная пыль закружилась вокруг .*\.$', true, true],
+	['stardust', '^Звездная пыль уже кружится вокруг .*\.$', true, true],
+	['stardust', '.* уже под защитой святилища.$', true, true],
+//	['stardust', '^.* уже под защитой святилища\.$', true, true],
+	['stardust', '^.* может подняться в воздух и без твоей помощи\.$', true, true],
+	['frenzy', '^Твой гнев проходит.$', false, false],
+	['frenzy', '^Дикая ярость наполняет тебя!$', true, true],
+	['frenzy', '^В глазах .* вспыхивает дикая ярость!$', true, true],
+	['frenzy', '^Твои боги не благосклонны к ', true, true],
+	['frenzy', '^Сейчас ничто не может разозлить ', true, true],
+	['frenzy', '^.* уже в ярости!$', true, true],
+	['stone skin', '^Твоя кожа становится мягче.$', false, false],
+	//['stone skin', '^Твоя кожа становится тверже камня.$', true, true],
+    ['stone skin', '^Твоя кожа становится серой, превращаясь в камень.$', true, true],
+	['stone skin', '^Твоя кожа уже тверда как камень.$', true, true],
+	['dragon skin', '^Твоя кожа становится мягче.$', false, false],
+	['dragon skin', '^Твоя кожа уже тверда, как драконья.$', true, true],
+	['dragon skin', '^Твоя кожа становится тверже драконьей.$', true, true],
+	['protective shield', '^Охранный щит вокруг тебя исчезает.$', false, false],
+	//['protective shield', '^Охранный щит окружает тебя.$', true, true],
+    ['protective shield', '^Тебя окружает тускло светящийся охранный щит, отклоняющий резкие толчки и удары.$', true, true],
+	['protective shield', '^Охранный щит уже окружает тебя.$', true, true],
+	['protective shield', '^Предохранительный щит окружает тебя.$', true, true],
+	['giant strength', '^Ты становишься слабее.$', false, false],
+	['giant strength', '^Слабость проходит... но лишь на мгновение.$', false, true],
+	['giant strength', '^Ты чувствуешь, как силы возвращаются к тебе.$', false, true],
+	['giant strength', ' станови[тшь]{1,2}ся намного сильнее.$', true, true],
+	['giant strength', '^.* не може[тшь]{1,2} быть еще сильнее.$', true, true],
+	['protection heat', '^Твоя защищенность от воздействия высоких температур понижается.$', false, false],
+	['protection heat', '^Твоя защищенность от воздействия высоких температур повышается.$', true, true],
+	['protection heat', '^Ты уже защищен от огня.$', true, true],
+	['protection cold', '^Твоя защищенность от воздействия низких температур понижается.$', false, false],
+	['protection cold', '^Твоя защищенность от воздействия низких температур повышается.$', true, true],
+	['protection cold', '^Ты уже защищен от холода.$', true, true],
+	['inspire', '^Твое воодушевление проходит.$', false, false],
+	['inspire', '^Ты чувствуешь воодушевление!$', true, true],
+	['inspire', '^Ты уже воодушевлен.$', true, true],
+	['detect invis', '^Ты более не чувствуешь присутствие невидимых сил.$', false, false],
+	['detect invis', '^Теперь ты чувствуешь присутствие невидимых сил.$', true, true],
+	['detect invis', '^Ты уже чувствуешь присутствие невидимых сил.$', true, true],
+	['improved detect', '^Ты теперь не замечаешь очень невидимые силы.$', false, false],
+	['improved detect', '^Теперь ты чувствуешь присутствие очень невидимых сил.$', true, true],
+	['improved detect', '^Ты уже чувствуешь присутствие очень невидимых сил.$', true, true],
+	['invisibility', '^Ты появляешься из ниоткуда.$', false, false],
+	['invisibility', '^Теперь окружающие видят тебя.$', false, false],
+	['invisibility', '^Ты становишься невидимым.$', true, true],
+	['invisibility', '^Тебя уже и так не видно.$', true, true],
+	['improved invis', '^Ты становишься видимым для окружающих.$', false, false],
+	['improved invis', '^Ты становишься совсем невидимым.$', true, true],
+	['detect good', '^Ты больше не видишь Золотой ауры.$', false, false],
+	['detect good', '^Теперь ты чувствуешь присутствие добра.$', true, true],
+	['detect good', '^Ты уже чувствуешь присутствие добрых сил.$', true, true],
+	['detect evil', '^Ты больше не видишь Красной ауры.$', false, false],
+	['detect evil', '^Теперь ты чувствуешь зло.$', true, true],
+	['detect evil', '^Ты уже чувствуешь присутствие дьявольских сил.$', true, true],
+	['protection good', '^Ты беззащитен перед добром.$', false, false],
+	['protection good', '^Ты чувствуешь защиту темных сил.$', true, true],
+//	['protection good', '^Ты уже защищен.$', true, true],
+	['protection evil', '^Ты чувствуешь себя беззащитнее перед злом.$', false, false],
+	['protection evil', '^Ты чувствуешь защиту светлых сил.$', true, true],
+//	['protection evil', '^Ты уже защищен.$', true, true],
+	['haste', '^Твои движения становятся намного быстрее.$', true, true],
+	['haste', '^Ты не можешь двигаться быстрее, чем сейчас!$', true, true],
+	['haste', ' не может двигаться еще быстрее.$', true, true],
+	['mental block', '^Теперь ты будешь блокировать все попытки ментального контакта с тобой.$', true, true],
+	['mental block', '^Ты теряешь способность блокировать ментальный контакт.$', false, false],
+	['identify', '^кинжал чаморро, откликается на имена \'чаморрийский кинжал chamorro dagger\'$', true, true],
+	['transform', '^Здоровье, приданное тебе магией, исчезает прочь.$', false, false],
+	['transform', '^Прилив жизненной силы затмевает твой разум.$', true, true],
+	['transform', '^Ты уже переполнен жизненной энергией.$', true, true],
+	['magic concentrate', '^Ты чувствуешь, как сверхмощная способность к разрушению заполняет все твое тело.', true, true],
+	['magic concentrate', '^Ты уже достаточно сконцентрирован.', true, true],
+	['magic concentrate', '^Ты теряешь невидимую нить, связывающую тебя с источником магической силы.', false, false],
+	['spell resistance', '^Теперь заклинания причиняют тебе меньший вред.', true, true],
+	['spell resistance', '^Ты уже имеешь эту защиту.', true, true],
+	['spell resistance', '^Заклинания вновь имеют полную силу против тебя.', false, false],
+	['blindness', '^Тебя ослепили!$', true, true],
+	['blindness', '^Не получилось.$', false, true],
+	['blindness', '^Ты вновь обретаешь зрение.$', false, true],
+	['blindness', '^Твое зрение в порядке.$', false, false],
+	['blindness', '^Твое зрение в порядке.$', false, true],
+	['faerie fire', '^Тебя окружает Розовая аура.$', true, true],
+	['faerie fire', '^Розовая аура вокруг тебя исчезает.$', false, false],
+	['dark shroud', '^Темная аура вокруг тебя исчезает.$', false, false],
+	['dark shroud', '^Белая аура вокруг тебя исчезает.$', false, false],
+	['dark shroud', '^Темная аура окружает .*.$', true, true],
+	['dark shroud', '^.* уже под защитой святилища.', true, true],
+	['dark shroud', '^.* уже под защитой темных богов.', true, true],
+    ['dark shroud', '^Темная аура защитит только злых персонажей.$', true, true],
+	['protection negative', '^Ты беззащитен перед своими атаками.$', false, false],
+	['protection negative', '^Ты приобретаешь иммунитет к негативным атакам.$', true, true],
+	['protection negative', '^У тебя уже есть иммунитет к негативным атакам.', true, true],
+	['shadow cloak', '^Призрачная мантия, окутывавшая тебя, тает.$', false, false],
+	['shadow cloak', '^Жажда чужих душ стихает внутри тебя.$', false, false],
+	//['shadow cloak', '^Призрачная мантия окутывает тебя.$', true, true],
+    ['shadow cloak', '^Призрачная мантия окутывает тебя. Ты погружаешься во тьму.$', true, true],
+    ['shadow cloak', '^В тебе загорается огонь, жаждущий душ ангелов.$', true, true],
+	['shadow cloak', '^Призрачная мантия уже защищает тебя.$', true, true],
+	['shadow cloak', '^Жажда душ уже горит в тебе.$', true, true],
+
+	['detect undead', '^Ты перестаешь чувствовать мертвецов.$', false, false],
+	['detect undead', '^Теперь ты чувствуешь нежить.$', true, true],
+	['detect undead', '^Ты уже чувствуешь нежить.', true, true],
+];
