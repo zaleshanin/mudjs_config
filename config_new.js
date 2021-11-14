@@ -12,10 +12,6 @@
 var test = true; //true - для вывода всякой отладочной информации
 var melt_counter = 0; //противодействие автовыкидыванию
 
-var match;
-
-var my_char = { init: false };
-
 var chars = {
     Miyamoto: {
         weapon: 'tempered',
@@ -27,10 +23,15 @@ var chars = {
     Zaleshanin: {
         weapon: 'long',
         class: 'thief',
-        water: 'flask',//'flask',
+        water: 'flask',
         food: 'rusk'
     }
 };
+
+var match;
+
+var my_char = new Pchar();
+
 var buffQueue = [];
 
 /*--------------------------------------------------------------------------
@@ -516,25 +517,25 @@ keydown = function (e) {
 function charInit() {
     if (test) echo(' -->charInit()');
 
-    let charname = getCharName();
+    let char_obj = getChar();
+console.log(char_obj);
+    if (test) echo(' -->charname=' + char_obj.sees);
 
-    if (test) echo(' -->charname=' + charname);
-
-    if (chars[charname] !== undefined)
-        my_char = new Pchar(charname, chars[charname]);
+    if (chars[char_obj.sees] !== undefined)
+        my_char = new Pchar(char_obj.sees, chars[char_obj.sees], char_obj.level);
     else {
-        if (test) echo(' -->chars[' + charname + '] == undefined');
+        if (test) echo(' -->chars[' + char_obj.sees + '] == undefined');
     }
 }
 
-function getCharName() {
+function getChar() {
     let result = '';
     if (isEqualChar(mudprompt.group.leader))
-        return mudprompt.group.ln;
+        return mudprompt.group.leader;
 
     for (var i in mudprompt.group.pc) {
         if (isEqualChar(mudprompt.group.pc[i])) {
-            return mudprompt.group.pc[i].sees;
+            return mudprompt.group.pc[i];
         };
     }
     return result;
@@ -733,12 +734,14 @@ function checkBuff() {
     for(var cast in my_char.spells) {
         targ = 'self';
         lSkippSpell = false;
-    	if (test) test_msg = '-->("' + cast + '" '+"["+my_char.spells[cast].class+"]"+'"->' + my_char.fullbuff.target + ')';
+    	if (test) test_msg = '-->("' + cast + '" '+"["+buffs[cast].class+"]"+'"->' + my_char.fullbuff.target + ')';
 
-        if (['combat', 'creation', 'maladictions'].indexOf(my_char.spells[cast].class) >= 0 //не бафф
-        	|| my_char.spells[cast].progress === 1) { // если еще не практился
+        if (['combat', 'creation', 'maladictions'].indexOf(buffs[cast].class) >= 0 //не бафф
+        	|| buffs[cast].progress === 1 || buffs[cast].level > my_char.level) { // если еще не практился
         	if (test) 
-                echo(test_msg+'->(skip class:' + my_char.spells[cast].class + '|' + my_char.spells[cast].progress + '%)');
+                echo(test_msg+'->(skip class:' + buffs[cast].class 
+                + '|' + buffs[cast].progress + '%'
+                + '|' + buffs[cast].level + ')');
         	continue;
     	}
         
@@ -752,10 +755,10 @@ function checkBuff() {
         	if(my_char.fullbuff.class===undefined
             	|| my_char.fullbuff.class===my_char.spells[cast].class) {
             	if(test) test_msg += ('(class:ok)');
-            	//проверяем касуемость заклинания
-            	if(my_char.fullbuff.all || my_char.spells[cast].buff<3) {
+            	//проверяем кастуемость заклинания
+            	if(my_char.fullbuff.all || buffs[cast].buff<3) {
                 	if(test) test_msg += ('(buff:ok)');
-                	if(my_char.fullbuff.target==='self' || my_char.spells[cast].group>0) {
+                	if(my_char.fullbuff.target==='self' || buff[cast].group>0) {
                     	if(test) test_msg += ('(++)');
                     	havebuff++;
                     	if ((my_char.fullbuff.target==='self' && my_char.hasBuff(cast))
@@ -882,10 +885,6 @@ function checkBuff() {
                 }
             }
     	}
-    
-
-
-
     }
 	if (test) 
         echo('\n(buffs:' + havebuff + ' activ:' + activebuff + ')\n');
@@ -913,18 +912,18 @@ function buffChange(sBuff, lStatus, lActionDone, action) {
 	var forTarg = false;
 
 	var lGroupAlly = false;
-	if (sBuff in my_char.spells) { //бывают аффекты которых нет в спелах
+	if (sBuff in buffs) {
     	if (test) echo('->(есть такой ' + sBuff + ')');
 
-    	if (my_char.spells[sBuff].ally !== undefined) {
+    	if (buffs[sBuff].ally !== undefined) {
         	if (test) echo('->(есть ally)');
-        	my_char.spells[sBuff].ally.forEach(function (spell) {
-            	if (spell === action.command && my_char.spells[spell].group)
+        	buffs[sBuff].ally.forEach(function (spell) {
+            	if (spell === action.command && buffs[spell].group)
                 	if (test) echo('->(ally4group ' + spell + ')');
             	lGroupAlly = true;
         	});
     	}
-    	if (my_char.spells[sBuff].group || lGroupAlly) {
+    	if (buffs[sBuff].group || lGroupAlly) {
         	if (test) echo('->(ally4group&me)');
         	forGroup = true;
         	forSelf = true;
@@ -951,12 +950,12 @@ function buffChange(sBuff, lStatus, lActionDone, action) {
         	if (test) echo('->(4self)'+"(+target_self:"+(action.target === 'self')+")");
         	forSelf = true;
     	}
-    	if (!lStatus && my_char.spells[sBuff].party) {
+    	if (!lStatus && buffs[sBuff].party) {
         	if (test) echo('->(remove from group)');
         	forGroup = true;
     	}
 
-    	if (sBuff !== action.command && my_char.spells[sBuff].antogonist !== undefined) {
+    	if (sBuff !== action.command && buffs[sBuff].antogonist !== undefined) {
         	spells[sBuff].antogonist.forEach(function (spell) {
             	if (spell === action.command) {
                 	sBuff = action.command;
@@ -1131,9 +1130,9 @@ function restoreStatus() {
 
 //[#Конструкторы]
 function Action(act, command, target) {
-    this.act = act; //spelling, wearing, drinking, eating, getting, slooking
-    this.command = command;
-    this.target = target;
+    this.act = act===undefined ? undefined : act; //spelling, wearing, drinking, eating, getting, slooking
+    this.command = command===undefined ? undefined : command;
+    this.target = target===undefined ? undefined : target;
 }
 
 function GroupMember(name) {
@@ -1142,25 +1141,26 @@ function GroupMember(name) {
     this.buffs = {};
 }
 
-function Pchar(name, char) {
+function Pchar(name, char, level) {
     if (test)
-        echo(' -->Pchar() (name:' + name + ';weapon:' + char.weapon + ')');
+        echo(' -->Pchar() (name:' + name + ';weapon:' + (char===undefined?undefined:char.weapon) + ')');
 
-    this.init = true; 
+    this.init = name===undefined ? false : true; 
     this.afk = false;
 
     this.pract = false; //признак состояния прокачки скилов
     this.last_pose = undefined;
     this.was_afk = undefined;
 
-    this.name = name;
+    this.name = name===undefined ? undefined : name;
+    this.level = level===undefined ? undefined : level;
 
-    this.weapon = char.weapon;
+    this.weapon = char===undefined ? undefined : char.weapon;
     //[#armed] 0 - без оружия(оружие на земле), 1 - оружие в мешке, 2 - вооружен
     this.armed = false;
 
-    this.food = char.food;
-    this.water = char.water;
+    this.food = char===undefined ? undefined : char.food;
+    this.water = char===undefined ? undefined : char.water;
     this.thirst = 0;
     this.hunger = 0;
     this.lfood = false;
@@ -1169,15 +1169,11 @@ function Pchar(name, char) {
     //[#action] act - команда к выполеннию (н-р: \\get, \\wield, cast)
     //          command - 'acid blast' | target 
     //          target - цель
-    this.action = {
-        act: undefined,
-        command: undefined,
-        target: undefined
-    };
+    this.action = new Action();
 
     this.ordersChange = false;
 
-    this.spells = new Spells(char);
+    this.spells = new Spells(char, level);
     this.hasBuff = function(cast){
         return ((mudprompt[this.spells[cast].mgroup]!==undefined && mudprompt[this.spells[cast].mgroup]!=='none') && mudprompt[this.spells[cast].mgroup].a.indexOf(my_char.spells[cast].mbrief)!==-1);
     };
@@ -1202,22 +1198,19 @@ function Order(comm) {
     this.name_num = [];
 }
 
-function Spells(char) {
-    this['rainbow shield'] = new Spell('R', 'pro',0,'protective');
-    if (char.clan === 'invader') {
-        this['shadow cloak'] = new Spell('S', 'cln', 10, 'protective', 2);
+function Spells(char, level) {
+    let spells = [];
+    if (char!==undefined && char.clan === 'invader') {
+        spells.push({'shadow cloak':10});
     }
-    if (char.class === 'necromancer') {
-        this['shield'] = new Spell('S', 'pro', 12, 'protective', 2, 3);
-        this['protective shield'] = new Spell('p', 'pro', 18, 'protective', 2);
-        this['armor'] = new Spell('a', 'pro', 20, 'protective', 2, 3);
-        this['dark shroud'] = new Spell('d', 'pro', 21, 'protective', 2, 2);
-        this['stone skin'] = new Spell('k', 'pro', 30, 'protective', 2);
-        this['protection good'] = new Spell('g', 'pro', 17, 'protective', 2);
-        this['spell resistance'] = new Spell('m', 'pro', 69, 'protective', 2, 0, false,[],['rainbow shield']);
-//Spell(brief, mgroup, level, sclass, buff, group, party, aAntogonist, aAlly)
-
-
+    if (char!==undefined && char.class === 'necromancer') {
+        spells.push({'shield':12});
+        spells.push({'protective shield':18});
+        spells.push({'armor':20});
+        spells.push({'dark shroud':21});
+        spells.push({'stone skin':30});
+        spells.push({'protection good':17});
+        spells.push({'spell resistance':69});
 /*
         this['learning'] = new Spell('LRN', 33, 'protective', 1);
         this['magic missile'] = new Spell('mm', 2, 'combat');
@@ -1240,21 +1233,30 @@ function Spells(char) {
         this['create spring'] = new Spell('CrS', 31, 'creation');
  */    
     }
-}
+    for(let oSpell of spells) {
+        for(let spell_name of Object.keys(oSpell)) {
+            if(test) console.log("Spells: "+spell_name+":"+oSpell[spell_name]+"("+char.name+":"+level+")");
 
-function Spell(brief, mgroup, level, sclass, buff, group, party, aAntogonist, aAlly) {
+            if(buffs[spell_name]!==undefined) 
+                if(oSpell[spell_name] <= level)
+                    this[spell_name] = buffs[spell_name];
+        }
+    }
+    if(test) console.log(this);
+}
+function Spell(brief, mgroup, sclass, buff, group, party, aAntogonist, aAlly, aligns) {
     //buff: 0 - никогда, 1 - всегда, 2 - fullbuff, 3 - только при прокачке
     //group (кастовать на членов группы): 0-no, 1-yes, 2-full, 3-target
     //party (кастуется на всю группу)
     this.mbrief = brief;
     this.mgroup = mgroup;
-    this.level = level;
     this.class = sclass;
     this.buff = buff === undefined ? 0 : buff;
     this.group = group === undefined ? 0 : group;
     this.party = party === undefined ? false : party;
     this.antogonist = aAntogonist;
     this.ally = aAlly;
+    this.aligns = aligns === undefined ? 'eng' : aligns;
     this.progress = 0;
 }
 
@@ -1434,3 +1436,36 @@ var buffPatterns = [
 	['detect undead', '^Теперь ты чувствуешь нежить.$', true, true],
 	['detect undead', '^Ты уже чувствуешь нежить.', true, true],
 ];
+var pets = {
+    'Легента': {
+        'spells' : ['armor', 'acute vision', 'continual light', 'control weather', 
+            'create food', 'create rose', 'create spring', 'detect invis', 'dragon skin', 
+            'enhanced armor', 'faerie fog', 'fly', 'giant strength', 'haste', 'improved detect', 
+            'improved invis', 'infravision', 'invisibility', 'knock', 'learning', 'link', 
+            'pass door', 'protection cold', 'protection heat', 'protective shield', 'refresh',
+            'shield', 'spell resistance', 'stardust', 'stone skin'
+        ]
+        //на других: armor, enhanced armor, fly, giant strength, haste, infravision, invisibility, learning, link, refresh, shield, stardust
+    },
+};
+
+var buffs = {
+    //Spell(brief, mgroup, level, sclass, buff, group, party, aAntogonist, aAlly, alligns)
+    'rainbow shield': new Spell('R', 'pro','protective'),
+
+    //invader:
+    'shadow cloak': new Spell('S', 'cln', 'protective', 2),
+
+    //protect:
+    //necr
+    'shield':  new Spell('S', 'pro', 'protective', 2, 3),
+    'protective shield': new Spell('p', 'pro', 'protective', 2),
+    'armor': new Spell('a', 'pro', 'protective', 2, 3),
+    'dark shroud': new Spell('d', 'pro', 'protective', 2, 2,false,[],['stardust','sanctuary'],'e'),
+    'stone skin': new Spell('k', 'pro', 'protective', 2),
+    'protection good': new Spell('g', 'pro', 'protective', 2),
+    'spell resistance': new Spell('m', 'pro', 'protective', 2, 0, false,[],['rainbow shield']),
+    //pets:
+    'stardust': new Spell('z', 'pro', 'protective', 2, 2,false,[],['dark shroud','sanctuary']),
+    'sanctuary': new Spell('s', 'pro', 'protective', 2, 2,false,[],['dark shroud','stardust']),
+};
