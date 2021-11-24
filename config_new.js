@@ -82,6 +82,21 @@ $('.trigger').on('text', function (e, text) {
         }
     });
 
+    buffPatterns.forEach(function (elem) {
+        if (my_char.spells[elem[0]] !== undefined) {
+            if (text.match(elem[1])) {
+                if(test) {
+                    echo("[buffPattert trigger]:"+elem[0]);
+                }
+                my_char.affChanged = true;
+                buffQueue.push(new BuffQueue(elem[0], elem[2], elem[3], my_char.action));
+                if (my_char.action.command !== undefined
+                    && my_char.action.command === 'cancellation')
+                    clearAction();
+            }
+        }
+    });
+
     //[#weapon]
     if (text.match(' у тебя оружие, и оно упало на землю!$')) {
         my_char.eqChanged = true;
@@ -120,6 +135,10 @@ $('.trigger').on('text', function (e, text) {
     if (text.match('^Ты просыпаешься и встаешь.$')
     || text.match('^Ты уже стоишь.$') || text.match('^Ты встаешь.$') || text.match('^Ты уже сражаешься!$')) {
         clearAction();
+        if (my_char.fullbuff.target && text.match('На кого именно ты хочешь произнести заклинание')) {
+        	my_char.fullbuff = new Fullbuff();
+        	echo('[target not found -> fullbuff canceled]\n');
+    	}
     }
 
     //[#food][#drink]
