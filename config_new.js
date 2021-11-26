@@ -1,6 +1,17 @@
 /*TODO
 - вынести список говорунов в переменную/массив [#говоруны]
 - вынести #prompt и #battleprompt в chars, на случай если у чаров разный prompt
+
+
+Нечто загорается загорается багровым пламенем!
+
+В твоей голове звучат торжественные слова на тайном наречии Азазеля:
+    litol achrayut, litol chelek, netilat lulav
+
+Чтобы воззвать к Азазелю, произнеси его имя и добавь тайные слова -- 
+например, сказать azazel sefer yetsirah. Используй их вовремя и с умом,
+ибо безжалостный Азазель не прощает ошибок.
+
 */
 
 /* Этот файл будет сохранен в браузере (в LocalStorage.settings).
@@ -297,7 +308,6 @@ $('.trigger').on('input', function (e, text) {
     command(e, 'ord(?:er)?', text, function (args) {
         args = args[1].toLowerCase().split(' ');
 
-        echo('>>> Начинаем всем приказывать \n');
         if (test) {
             args.forEach(function (t, number) {
                 //if (number > 0)
@@ -309,6 +319,7 @@ $('.trigger').on('input', function (e, text) {
             my_char.order = null;
             my_char.ordersChange = true;
         } else if (args[0] === 'all') {
+            echo('>>> Начинаем всем приказывать \n');
             my_char.order = new Order(args.join(' ').replace(args[0] + ' ', ''));
             if (test) echo('-->' + my_char.order.command);
             my_char.ordersChange = true;
@@ -737,7 +748,7 @@ function checkGroup() {
 
 function setGroupMembersFrom(list) {
     if(test) echo("-->setGroupMembersFrom("+list.length+")");
-    
+
     for(let member in list) {
         let name = list[member].sees;
         let level = list[member].level;
@@ -1757,6 +1768,11 @@ var pets = {
         ],
         'align' : 'n',
     },
+    'коровища': {
+        'spells' : ['aid', 'armor', 'bless', 'calm', 'continual light', 'control weather', 'create food', 'create spring', 'cure blindness', 'cure disease', 'cure poison', 'detect invis', 'dragon skin', 'enhanced armor', 'faerie fog', 'fly', 'frenzy', 'giant strength', 'group defense', 'group heal', 'heal', 'healing light', 'improved detect', 'infravision', 'inspire', 'learning', 'mind light', 'pass door', 'protection cold', 'protection heat', 'protective shield', 'refresh', 'remove curse', 'remove fear', 'restoring light', 'sanctify lands', 'sanctuary', 'shield', 'stone skin'
+        ],
+        'align' : 'n',
+    },
     'ночная тен' :{
         'spells' : ['armor', 'assist', 'create food', 'create spring', 'dark shroud', 'detect invis', 'fly', 'giant strength', 'improved detect', 'infravision', 'invisibility', 'knock', 'learning', 'link', 'pass door', 'protection cold', 'protection good', 'protection negative', 'protective shield', 'refresh', 'shield', 'spell resistance', 'stone skin'],
         'align' : 'e',
@@ -1765,6 +1781,7 @@ var pets = {
         'spells' : ['armor', 'assist', 'create food', 'create spring', 'detect invis', 'fly', 'giant strength', 'improved detect', 'infravision', 'invisibility', 'knock', 'learning', 'link', 'pass door', 'protection cold', 'protection negative', 'protective shield', 'refresh', 'shield', 'spell resistance', 'stone skin'],
         'align' : 'n',
     },
+    
 };
 
 var buffs = {
