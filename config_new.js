@@ -737,14 +737,13 @@ function checkGroup() {
 
 function setGroupMembersFrom(list) {
     if(test) echo("-->setGroupMembersFrom("+list.length+")");
-
+    
     for(let member in list) {
         let name = list[member].sees;
         let level = list[member].level;
         let i = 1;
         let new_name = i+"."+name;
-
-        while(my_char.group[new_name]!=undefined) {
+        while(my_char.group.members[new_name]!=undefined) {
             new_name = ++i + "." + name;
         }
     
