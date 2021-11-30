@@ -804,18 +804,21 @@ function checkBuff() {
         //пропускаем если прокачка спелов, а спел не обязательный (buff==1)
         if(my_char.pract && buffs[aSpell[1]].buff!=1) continue;
 
+        //пропускаем если при фулбафе не кастуется
+        if(buffs[aSpell[1]].buff==0) continue;
+
         
         if(oSpells[aSpell[1]]!=undefined) {
             //пропускаем если уже зареган спел большего уровня
             if(oSpells[aSpell[1]].level>=aSpell[2]) continue;
 
             //пропускаем если уже зареган, и бафается только на себя
-            if(buffs[aSpell[1]].buff==0) continue;
-        } 
-            
+            if(buffs[aSpell[1]].group==0) continue;
+        }            
 
         oSpells[aSpell[1]]=new MemberSpell(aSpell[0], aSpell[2]);
     }
+console.log("checkBuff():");    
     for(let spell_name in oSpells) {
         caster = oSpells[spell_name].member;
         spell_to_cast = spell_name;
@@ -1311,6 +1314,7 @@ function checkNeeds() {
 
     if ((my_char.hunger <= 1 && my_char.thirst <= 1)
         && !(my_char.pract && (my_char.hunger || my_char.thirst))) {
+            //TODO питаться если не полное здоровье/мана!!!
         if (test) echo('-->[not so hunger/thirst - EXIT]');
         return;
     }
@@ -1525,6 +1529,14 @@ function getSpells(char, level) {
         spells.push(['stone skin',30]);
         spells.push(['protection good',17]);
         spells.push(['spell resistance',69]);
+        spells.push(['mental block',36]);
+        spells.push(['magic concentrate',60]);
+        spells.push(['protection negative',15]);
+        spells.push(['protection cold',50]);
+        spells.push(['giant strength',28]);
+        spells.push(['detect invis',6]);
+        spells.push(['improved detect',40]);
+        spells.push(['infravision',21]);
 /*
         this['learning'] = new Spell('LRN', 33, 'protective', 1);
         this['magic missile'] = new Spell('mm', 2, 'combat');
@@ -1543,7 +1555,6 @@ function getSpells(char, level) {
         this['cancellation'] = new Spell('CNL', 28, 'maladictions');
         this['giant strength'] = new Spell('GSt', 28, 'protective', 2, 2);
         this['sonic resonance'] = new Spell('SoR', 28, 'combat');
-        this['magic concentrate'] = new Spell('MCt', 60, 'protective', 2);
         this['create spring'] = new Spell('CrS', 31, 'creation');
  */    
     }
@@ -1616,6 +1627,7 @@ var buffPatterns = [
 	['armor', '^.* окружает магическая броня, улучшающая защитные навыки.$', true, true],
 	//['armor', '^.* уже защищен(а)? заклинанием брони.$', true, true],
 	['armor', '^.* уже под воздействием этого заклинания брони.$', true, true],
+	['armor', '^Ты уже под воздействием заклинания брони.$', true, true],
     ['shield', '^Щит, окружавший тебя, исчезает.$', false, false],
 	['shield', '^Божественная энергия окружает .* щитом.$', true, true],
 	//['shield', '^Волшебный щит окружает .*.$', true, true],
@@ -1676,29 +1688,44 @@ var buffPatterns = [
 	['giant strength', '^Ты становишься слабее.$', false, false],
 	['giant strength', '^Слабость проходит... но лишь на мгновение.$', false, true],
 	['giant strength', '^Ты чувствуешь, как силы возвращаются к тебе.$', false, true],
-	['giant strength', ' станови[тшь]{1,2}ся намного сильнее.$', true, true],
-	['giant strength', '^.* не може[тшь]{1,2} быть еще сильнее.$', true, true],
+//	['giant strength', ' станови[тшь]{1,2}ся намного сильнее.$', true, true],
+	['giant strength', '^Ты становишься намного сильнее!$', true, true],
+	['giant strength', '^.* напрягает мускулы, становясь намного сильнее!$', true, true],
+//	['giant strength', '^.* не може[тшь]{1,2} быть еще сильнее.$', true, true],
+	['giant strength', '^(Ты||.*) уже обладае(шь||ет) гигантской силой.$', true, true],
 	['protection heat', '^Твоя защищенность от воздействия высоких температур понижается.$', false, false],
 	['protection heat', '^Твоя защищенность от воздействия высоких температур повышается.$', true, true],
 	['protection heat', '^Ты уже защищен от огня.$', true, true],
-	['protection cold', '^Твоя защищенность от воздействия низких температур понижается.$', false, false],
-	['protection cold', '^Твоя защищенность от воздействия низких температур повышается.$', true, true],
+//	['protection cold', '^Твоя защищенность от воздействия низких температур повышается.$', true, true],
+	['protection cold', '^Ты теперь лучше защищен от воздействия низких температур.$', true, true],
 	['protection cold', '^Ты уже защищен от холода.$', true, true],
+//	['protection cold', '^Твоя защищенность от воздействия низких температур понижается.$', false, false],
+	['protection cold', '^Ты теряешь защиту от воздействия низких температур.$', false, false],
 	['inspire', '^Твое воодушевление проходит.$', false, false],
 	['inspire', '^Ты чувствуешь воодушевление!$', true, true],
 	['inspire', '^Ты уже воодушевлен.$', true, true],
-	['detect invis', '^Ты более не чувствуешь присутствие невидимых сил.$', false, false],
-	['detect invis', '^Теперь ты чувствуешь присутствие невидимых сил.$', true, true],
-	['detect invis', '^Ты уже чувствуешь присутствие невидимых сил.$', true, true],
-	['improved detect', '^Ты теперь не замечаешь очень невидимые силы.$', false, false],
-	['improved detect', '^Теперь ты чувствуешь присутствие очень невидимых сил.$', true, true],
-	['improved detect', '^Ты уже чувствуешь присутствие очень невидимых сил.$', true, true],
+	//['detect invis', '^Ты более не чувствуешь присутствие невидимых сил.$', false, false],
+	['detect invis', '^Ты больше не видишь невидимое.$', false, false],
+//	['detect invis', '^Теперь ты чувствуешь присутствие невидимых сил.$', true, true],
+	['detect invis', '^Теперь ты можешь увидеть невидимое.$', true, true],
+//	['detect invis', '^Ты уже чувствуешь присутствие невидимых сил.$', true, true],
+	['detect invis', '^Ты уже видишь невидимое.$', true, true],
+	['detect invis', '^Глаза .* сужаются, получая способность видеть невидимое.$', true, true],
+//	['improved detect', '^Ты теперь не замечаешь очень невидимые силы.$', false, false],
+	['improved detect', '^Твои глаза расслабляются, теряя способность видеть очень невидимое.$', false, false],
+//	['improved detect', '^Теперь ты чувствуешь присутствие очень невидимых сил.$', true, true],
+	['improved detect', '^Теперь ты можешь увидеть очень невидимое.$', true, true],
+//	['improved detect', '^Ты уже чувствуешь присутствие очень невидимых сил.$', true, true],
+	['improved detect', '^Ты уже видишь очень невидимое.$', true, true],
 	['invisibility', '^Ты появляешься из ниоткуда.$', false, false],
 	['invisibility', '^Теперь окружающие видят тебя.$', false, false],
 	['invisibility', '^Ты становишься невидимым.$', true, true],
 	['invisibility', '^Тебя уже и так не видно.$', true, true],
 	['improved invis', '^Ты становишься видимым для окружающих.$', false, false],
 	['improved invis', '^Ты становишься совсем невидимым.$', true, true],
+	['infravision', '^Ты более не видишь в темноте.$', false, false],
+	['infravision', '^Твои глаза загораются красным светом.$', true, true],
+	['infravision', '^Ты уже видишь в темноте.$', true, true],
 	['detect good', '^Ты больше не видишь Золотой ауры.$', false, false],
 	['detect good', '^Теперь ты чувствуешь присутствие добра.$', true, true],
 	['detect good', '^Ты уже чувствуешь присутствие добрых сил.$', true, true],
@@ -1716,18 +1743,24 @@ var buffPatterns = [
     //['haste', '^Ты не можешь двигаться быстрее, чем сейчас!$', true, true],
     ['haste', 'Ты уже мечешься вокруг как ежик Соник.$', true, true],
 	['haste', ' не может двигаться еще быстрее.$', true, true],
-	['mental block', '^Теперь ты будешь блокировать все попытки ментального контакта с тобой.$', true, true],
+	//['mental block', '^Теперь ты будешь блокировать все попытки ментального контакта с тобой.$', true, true],
+	['mental block', '^Вокруг твоей головы возникает кокон, защищая от транспортных заклятий.$', true, true],
+	['mental block', '^Вокруг головы .* возникает кокон, защищая от транспортных заклятий.$', true, true],
+	['mental block', '^Ты уже блокируешь все попытки ментального контакта.$', true, true],
+	['mental block', '^.* уже блокирует все попытки ментального контакта.$', true, true],
 	['mental block', '^Ты теряешь способность блокировать ментальный контакт.$', false, false],
-	['identify', '^кинжал чаморро, откликается на имена \'чаморрийский кинжал chamorro dagger\'$', true, true],
 	['transform', '^Здоровье, приданное тебе магией, исчезает прочь.$', false, false],
 	['transform', '^Прилив жизненной силы затмевает твой разум.$', true, true],
 	['transform', '^Ты уже переполнен жизненной энергией.$', true, true],
-	['magic concentrate', '^Ты чувствуешь, как сверхмощная способность к разрушению заполняет все твое тело.', true, true],
-	['magic concentrate', '^Ты уже достаточно сконцентрирован.', true, true],
-	['magic concentrate', '^Ты теряешь невидимую нить, связывающую тебя с источником магической силы.', false, false],
+	//['magic concentrate', '^Ты чувствуешь, как сверхмощная способность к разрушению заполняет все твое тело.', true, true],
+	['magic concentrate', '^Меж твоих ладоней вспыхивает яркая искра, даруя способность фокусировать магию.', true, true],
+//	['magic concentrate', '^Ты уже достаточно сконцентрирован.', true, true],
+	['magic concentrate', '^Ты уже готов фокусировать магию.', true, true],
+//	['magic concentrate', '^Ты теряешь невидимую нить, связывающую тебя с источником магической силы.', false, false],
+	['magic concentrate', '^Искра между твоих ладоней исчезает, и ты теряешь способность фокусировать магию.', false, false],
 	['spell resistance', '^Теперь заклинания причиняют тебе меньший вред.', true, true],
 	//['spell resistance', '^Ты уже имеешь эту защиту.', true, true],
-    ['spell resistance', 'Ты уже устойчива к заклинаниям.$', true, true],
+    ['spell resistance', 'Ты уже устойчив(а)? к заклинаниям.$', true, true],
 	['spell resistance', '^Заклинания вновь имеют полную силу против тебя.', false, false],
 	['blindness', '^Тебя ослепили!$', true, true],
 	['blindness', '^Не получилось.$', false, true],
@@ -1742,9 +1775,12 @@ var buffPatterns = [
 	['dark shroud', '^.* уже под защитой святилища.', true, true],
 	['dark shroud', '^.* уже под защитой темных богов.', true, true],
     ['dark shroud', '^Темная аура защитит только злых персонажей.$', true, true],
-	['protection negative', '^Ты беззащитен перед своими атаками.$', false, false],
-	['protection negative', '^Ты приобретаешь иммунитет к негативным атакам.$', true, true],
-	['protection negative', '^У тебя уже есть иммунитет к негативным атакам.', true, true],
+//	['protection negative', '^Ты беззащитен перед своими атаками.$', false, false],
+	['protection negative', '^Багровый щит, защищающий тебя от темной энергии, исчезает.$', false, false],
+//	['protection negative', '^Ты приобретаешь иммунитет к негативным атакам.$', true, true],
+	['protection negative', '^Ты окутываешься багровым щитом, получая сопротивляемость к темной энергии.$', true, true],
+//	['protection negative', '^У тебя уже есть иммунитет к негативным атакам.', true, true],
+	['protection negative', '^Ты уже защищен от темной энергии.', true, true],
 	['shadow cloak', '^Призрачная мантия, окутывавшая тебя, тает.$', false, false],
 	['shadow cloak', '^Жажда чужих душ стихает внутри тебя.$', false, false],
 	//['shadow cloak', '^Призрачная мантия окутывает тебя.$', true, true],
@@ -1800,6 +1836,15 @@ var buffs = {
     'stone skin': new Spell('k', 'pro', 'protective', 2),
     'protection good': new Spell('g', 'pro', 'protective', 2),
     'spell resistance': new Spell('m', 'pro', 'protective', 2, 0, false,[],['rainbow shield']),
+    'mental block': new Spell('m', 'tvr', 'protective', 2, 2),
+    'magic concentrate': new Spell('m', 'enh', 'protective', 2, 0),
+    'protection negative': new Spell('n', 'pro', 'protective', 2, 0),
+    'protection cold': new Spell('c', 'pro', 'protective', 2, 0),
+    'giant strength': new Spell('g', 'enh', 'protective', 2, 2),
+    'detect invis': new Spell('i', 'det', 'detection', 1, 0),
+    'improved detect': new Spell('w', 'det', 'detection', 2, 0),
+    'infravision': new Spell('r', 'det', 'detection', 2, 0),
+
     //pets:
     'stardust': new Spell('z', 'pro', 'protective', 2, 2,false,[],['dark shroud','sanctuary']),
     'sanctuary': new Spell('s', 'pro', 'protective', 2, 2,false,[],['dark shroud','stardust']),
