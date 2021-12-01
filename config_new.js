@@ -80,27 +80,12 @@ $('.trigger').on('text', function (e, text) {
     }
 
     buffPatterns.forEach(function (elem) {
-        if (buffs[elem[0]] !== undefined) {
+        if (buffs_list[elem[0]] !== undefined) {
             if (text.match(elem[1])) {
                 if(test) echo("[buffPattert trigger]:"+elem[0]);
                 
                 my_char.affChanged = true;
                 buffQueue.push(new BuffQueue(elem[0], elem[2], elem[3], new Action(my_char.action.act, my_char.action.command, my_char.action.target)));
-                if (my_char.action.command !== undefined
-                    && my_char.action.command === 'cancellation')
-                    clearAction();
-            }
-        }
-    });
-
-    buffPatterns.forEach(function (elem) {
-        if (my_char.spells[elem[0]] !== undefined) {
-            if (text.match(elem[1])) {
-                if(test) {
-                    echo("[buffPattert trigger]:"+elem[0]);
-                }
-                my_char.affChanged = true;
-                buffQueue.push(new BuffQueue(elem[0], elem[2], elem[3], my_char.action));
                 if (my_char.action.command !== undefined
                     && my_char.action.command === 'cancellation')
                     clearAction();
@@ -763,7 +748,7 @@ function setGroupMembersFrom(list) {
         //выборка кастуемых спелов в checkBuff()
         if(pets[name]!=undefined && pets[name].spells.length>0){
             for(let pet_spell of pets[name].spells){
-                if(buffs[pet_spell]===undefined) 
+                if(buffs_list[pet_spell]===undefined) 
                     continue;
 
                 my_char.group.spells.push([new_name,pet_spell,level]);
@@ -802,10 +787,10 @@ function checkBuff() {
     }
     for(let aSpell of my_char.group.spells) {
         //пропускаем если прокачка спелов, а спел не обязательный (buff==1)
-        if(my_char.pract && buffs[aSpell[1]].buff!=1) continue;
+        if(my_char.pract && buffs_list[aSpell[1]].buff!=1) continue;
 
         //пропускаем если при фулбафе не кастуется
-        if(buffs[aSpell[1]].buff==0) continue;
+        if(buffs_list[aSpell[1]].buff==0) continue;
 
         
         if(oSpells[aSpell[1]]!=undefined) {
@@ -813,7 +798,7 @@ function checkBuff() {
             if(oSpells[aSpell[1]].level>=aSpell[2]) continue;
 
             //пропускаем если уже зареган, и бафается только на себя
-            if(buffs[aSpell[1]].group==0) continue;
+            if(buffs_list[aSpell[1]].group==0) continue;
         }            
 
         oSpells[aSpell[1]]=new MemberSpell(aSpell[0], aSpell[2]);
@@ -825,29 +810,29 @@ console.log("checkBuff():");
         targ = undefined; 
 
         //lSkippSpell = false;
-    	if (test) test_msg = '-->('+caster+':"' + spell_name + '" '+"["+buffs[spell_name].class+"]"+'"->' + my_char.fullbuff.target + ')';
+    	if (test) test_msg = '-->('+caster+':"' + spell_name + '" '+"["+buffs_list[spell_name].class+"]"+'"->' + my_char.fullbuff.target + ')';
 
-        if (['combat', 'creation', 'maladictions'].indexOf(buffs[spell_name].class) >= 0 //не бафф
-        	|| buffs[spell_name].progress === 1) { // если еще не практился
+        if (['combat', 'creation', 'maladictions'].indexOf(buffs_list[spell_name].class) >= 0 //не бафф
+        	|| buffs_list[spell_name].progress === 1) { // если еще не практился
         	if (test) 
-                echo(test_msg+'->(skip class:' + buffs[spell_name].class 
-                + '|' + buffs[spell_name].progress + '%'
-                + '|' + buffs[spell_name].level + ')');
+                echo(test_msg+'->(skip class:' + buffs_list[spell_name].class 
+                + '|' + buffs_list[spell_name].progress + '%'
+                + '|' + buffs_list[spell_name].level + ')');
         	continue;
     	}
 
         if(test) {
-            test_msg += '[key:'+buffs[spell_name].mgroup+"-"+buffs[spell_name].mbrief+']';
+            test_msg += '[key:'+buffs_list[spell_name].mgroup+"-"+buffs_list[spell_name].mbrief+']';
         }
 
         //проверки если не фулбаф
         if(my_char.fullbuff.target===undefined) {
             //баф не обязательный - пропускаем
-            if(buffs[spell_name].buff!=1) {
+            if(buffs_list[spell_name].buff!=1) {
                 echo(test_msg+'->(skip noFullBuff, unnecessary spell)');
                 continue;
             }
-            if(buffs[spell_name].group==0) {
+            if(buffs_list[spell_name].group==0) {
                 //бафф вешается только на себя
                 if(test) echo("---->chk 4 single...");
                     
@@ -858,17 +843,17 @@ console.log("checkBuff():");
                     continue;
                 } */
 
-                if(buffs[spell_name].group==0) {
+                if(buffs_list[spell_name].group==0) {
                     if(test) echo("---->chk 4 single...");
                     for_group_single:
                     for(let aGMspell of my_char.group.spells){
                         if(aGMspell[1]==spell_name) {
-                            if(my_char.group.members[aGMspell[0]].buffs[spell_name]) {
+                            if(my_char.group.members[aGMspell[0]].buffs_list[spell_name]) {
                                 if(test) echo("---->skipped for "+aGMspell[0]+"(have one)");
                                 continue;
-                            } else if(buffs[spell_name].ally!=undefined) {
-                                for(let ally of buffs[spell_name].ally) {
-                                    if(my_char.group.members[aGMspell[0]].buffs[ally]) {
+                            } else if(buffs_list[spell_name].ally!=undefined) {
+                                for(let ally of buffs_list[spell_name].ally) {
+                                    if(my_char.group.members[aGMspell[0]].buffs_list[ally]) {
                                         if(test) echo("---->skipped for "+aGMspell[0]+"(have ally:"+ally+")");
                                         continue for_group_single;
                                     }
@@ -885,12 +870,12 @@ console.log("checkBuff():");
                 } else {
                     for_group:
                     for(let member_name in my_char.group.members) {
-                        if(my_char.group.members[member_name].buffs[spell_name]) continue;
+                        if(my_char.group.members[member_name].buffs_list[spell_name]) continue;
 
-                        if (buffs[spell_name].ally !== undefined) { 
+                        if (buffs_list[spell_name].ally !== undefined) { 
                             //если уже активен баф навешиваемый при применени текущего
-                            for(let ally of buffs[spell_name].ally) {
-                                if(my_char.group.members[member_name].buffs[ally]) {
+                            for(let ally of buffs_list[spell_name].ally) {
+                                if(my_char.group.members[member_name].buffs_list[ally]) {
                                     if(test) echo("---->skipped for "+member_name+"(have ally:"+ally+")");
                                     continue for_group;
                                 }
@@ -898,19 +883,19 @@ console.log("checkBuff():");
                         }
                         //не подходит по алигну - пропускаем
                         if(my_char.group.members[member_name].align!==undefined
-                            && buffs[spell_name].aligns.indexOf(my_char.group.members[member_name].align)==-1) {
+                            && buffs_list[spell_name].aligns.indexOf(my_char.group.members[member_name].align)==-1) {
                             //ищем аналоги:
-                            if(buffs[spell_name].ally!=undefined) {
-                                for(let ally of buffs[spell_name].ally) {
+                            if(buffs_list[spell_name].ally!=undefined) {
+                                for(let ally of buffs_list[spell_name].ally) {
                                     if(my_char.group.members[member_name].align!==undefined
-                                        && buffs[ally].aligns.indexOf(my_char.group.members[member_name].align)==-1){
+                                        && buffs_list[ally].aligns.indexOf(my_char.group.members[member_name].align)==-1){
                                         continue;
                                     }
                                     spell_to_cast = ally;
                                 }
                             }
                             if(spell_to_cast==spell_name) {
-                                if(test) echo("---->skipped for "+member_name+"(align:"+buffs[spell_name].align+":"+my_char.group.members[member_name].align+")");
+                                if(test) echo("---->skipped for "+member_name+"(align:"+buffs_list[spell_name].align+":"+my_char.group.members[member_name].align+")");
                             
                                 continue;
                             }
@@ -933,7 +918,7 @@ console.log("checkBuff():");
                             continue;
                         }
                     } else {
-                        if(my_char.group.members[caster].buffs[spell_name]) continue;
+                        if(my_char.group.members[caster].buffs_list[spell_name]) continue;
                     }
                     //у кастера кончилась мана
                     if(my_char.group.members[caster] 
@@ -953,12 +938,12 @@ console.log("checkBuff():");
                 for_group:
                 for(let member_name in my_char.group.members) {
                     //уже висит
-                    if(my_char.group.members[member_name].buffs[spell_name]) continue;
+                    if(my_char.group.members[member_name].buffs_list[spell_name]) continue;
 
-                    if (buffs[spell_name].ally !== undefined) { 
+                    if (buffs_list[spell_name].ally !== undefined) { 
                         //если уже активен баф навешиваемый при применени текущего
-                        for(let ally of buffs[spell_name].ally) {
-                            if(my_char.group.members[member_name].buffs[ally]) {
+                        for(let ally of buffs_list[spell_name].ally) {
+                            if(my_char.group.members[member_name].buffs_list[ally]) {
                                 if(test) echo("---->skipped for "+member_name+"(have ally:"+ally+")");
                                 continue for_group;
                             }
@@ -966,19 +951,19 @@ console.log("checkBuff():");
                     }
                     //не подходит по алигну - пропускаем
                     if(my_char.group.members[member_name].align!==undefined
-                        && buffs[spell_name].aligns.indexOf(my_char.group.members[member_name].align)==-1) {
+                        && buffs_list[spell_name].aligns.indexOf(my_char.group.members[member_name].align)==-1) {
                         //ищем аналоги:
-                        if(buffs[spell_name].ally!=undefined) {
-                            for(let ally of buffs[spell_name].ally) {
+                        if(buffs_list[spell_name].ally!=undefined) {
+                            for(let ally of buffs_list[spell_name].ally) {
                                 if(my_char.group.members[member_name].align!==undefined
-                                    && buffs[ally].aligns.indexOf(my_char.group.members[member_name].align)==-1){
+                                    && buffs_list[ally].aligns.indexOf(my_char.group.members[member_name].align)==-1){
                                     continue;
                                 }
                                 spell_to_cast = ally;
                             }
                         }
                         if(spell_to_cast==spell_name) {
-                            if(test) echo("---->skipped for "+member_name+"(align:"+buffs[spell_name].align+":"+my_char.group.members[member_name].align+")");
+                            if(test) echo("---->skipped for "+member_name+"(align:"+buffs_list[spell_name].align+":"+my_char.group.members[member_name].align+")");
                         
                             continue;
                         }
@@ -1001,7 +986,7 @@ console.log("checkBuff():");
         if(my_char.fullbuff.target!==undefined) {
             //не тот класс заклинания - пропускаем
             if(my_char.fullbuff.class!==undefined 
-                && my_char.fullbuff.class!== buffs[spell_name].class) continue;
+                && my_char.fullbuff.class!== buffs_list[spell_name].class) continue;
 
             if(test) echo(test_msg +'(class:ok)');
             if(my_char.fullbuff.target!='self') {
@@ -1014,7 +999,7 @@ console.log("checkBuff():");
                 }
     
                 //не кастуется на цель - пропускаем
-                if(buffs[spell_name].group==0) {
+                if(buffs_list[spell_name].group==0) {
                     if(test) echo("---->skipped (not for target)");
                     continue;
                 }
@@ -1026,7 +1011,7 @@ console.log("checkBuff():");
                 if(my_char.fullbuff.all) {
                     if(test) echo("---->chk 4 fullbuff.all...");
     
-                    if(buffs[spell_name].group==0) {
+                    if(buffs_list[spell_name].group==0) {
                         if(test) echo("---->chk not4group spell("+spell_name+")...");
                         for_group_single:
                         for(let aGMspell of my_char.group.spells){
@@ -1034,9 +1019,9 @@ console.log("checkBuff():");
                                 if(my_char.group.members[aGMspell[0]].buffs[spell_name]) {
                                     if(test) echo("---->skipped for "+aGMspell[0]+"(have one)");
                                     continue;
-                                } else if(buffs[spell_name].ally!=undefined) {
-                                    for(let ally of buffs[spell_name].ally) {
-                                        if(my_char.group.members[aGMspell[0]].buffs[ally]) {
+                                } else if(buffs_list[spell_name].ally!=undefined) {
+                                    for(let ally of buffs_list[spell_name].ally) {
+                                        if(my_char.group.members[aGMspell[0]].buffs_list[ally]) {
                                             if(test) echo("---->skipped for "+aGMspell[0]+"(have ally:"+ally+")");
                                             continue for_group_single;
                                         }
@@ -1074,9 +1059,9 @@ console.log("checkBuff():");
                         for(let member_name in my_char.group.members) {
                             if(my_char.group.members[member_name].buffs[spell_name]) continue;
     
-                            if (buffs[spell_name].ally !== undefined) { 
+                            if (buffs_list[spell_name].ally !== undefined) { 
                                 //если уже активен баф навешиваемый при применени текущего
-                                for(let ally of buffs[spell_name].ally) {
+                                for(let ally of buffs_list[spell_name].ally) {
                                     if(my_char.group.members[member_name].buffs[ally]) {
                                         if(test) echo("---->skipped for "+member_name+"(have ally:"+ally+")");
                                         continue for_group;
@@ -1085,13 +1070,13 @@ console.log("checkBuff():");
                             }
                             //не подходит по алигну - пропускаем
                             if(my_char.group.members[member_name].align!==undefined
-                                && buffs[spell_name].aligns.indexOf(my_char.group.members[member_name].align)==-1) {
+                                && buffs_list[spell_name].aligns.indexOf(my_char.group.members[member_name].align)==-1) {
                                 //ищем аналоги:
-                                if(buffs[spell_name].ally!=undefined) {
-                                    for(let ally of buffs[spell_name].ally) {
+                                if(buffs_list[spell_name].ally!=undefined) {
+                                    for(let ally of buffs_list[spell_name].ally) {
 
                                         if(my_char.group.members[member_name].align!==undefined
-                                            && buffs[ally].aligns.indexOf(my_char.group.members[member_name].align)==-1){
+                                            && buffs_list[ally].aligns.indexOf(my_char.group.members[member_name].align)==-1){
                                             continue;
                                         }
                                         if(oSpells[ally]==undefined) {
@@ -1106,7 +1091,7 @@ console.log("checkBuff():");
                                     }
                                 }
                                 if(spell_to_cast==spell_name) {
-                                    if(test) echo("---->skipped for "+member_name+"(align:"+buffs[spell_name].align+":"+my_char.group.members[member_name].align+")");
+                                    if(test) echo("---->skipped for "+member_name+"(align:"+buffs_list[spell_name].align+":"+my_char.group.members[member_name].align+")");
                                 
                                     continue;
                                 }
@@ -1125,7 +1110,7 @@ console.log("checkBuff():");
                             continue;
                         }
                         //на себя такое не вешаем
-                        if(buffs[spell_to_cast].buff==0) {
+                        if(buffs_list[spell_to_cast].buff==0) {
                             if(test) echo("---->not buff for self fb (buff==0)");
                             continue;
                         }
@@ -1135,7 +1120,7 @@ console.log("checkBuff():");
                     if(test) echo("---->chk 4 self fb...");
                     
                     //на себя такое не вешаем
-                    if(buffs[spell_name].buff==0) {
+                    if(buffs_list[spell_name].buff==0) {
                         if(test) echo("---->not buff for self fb (buff==0)");
                         continue;
                     }
@@ -1209,18 +1194,18 @@ function buffChange(sBuff, lStatus, lActionDone, action) {
 	var forTarg = false;
 
 	var lGroupAlly = false;
-	if (sBuff in buffs) {
-    	if (test) echo('---->("' + sBuff + '" имеется в buffs)');
+	if (sBuff in buffs_list) {
+    	if (test) echo('---->("' + sBuff + '" имеется в buffs_list)');
 
-    	if (buffs[sBuff].ally !== undefined) {
+    	if (buffs_list[sBuff].ally !== undefined) {
         	if (test) echo('---->(есть ally)');
-        	buffs[sBuff].ally.forEach(function (spell) {
-            	if (spell === action.command && buffs[spell].group)
+        	buffs_list[sBuff].ally.forEach(function (spell) {
+            	if (spell === action.command && buffs_list[spell].group)
                 	if (test) echo('---->(ally4group ' + spell + ')');
             	lGroupAlly = true;
         	});
     	}
-    	if (buffs[sBuff].group || lGroupAlly) {
+    	if (buffs_list[sBuff].group || lGroupAlly) {
         	if (test) echo('---->(ally4group&me)');
         	forGroup = true;
         	forSelf = true;
@@ -1247,13 +1232,13 @@ function buffChange(sBuff, lStatus, lActionDone, action) {
         	if (test) echo('---->(4self)'+"(+target_self:"+(action.target === 'self')+")");
         	forSelf = true;
     	}
-    	if (!lStatus && buffs[sBuff].party) {
+    	if (!lStatus && buffs_list[sBuff].party) {
         	if (test) echo('---->(remove from group)');
         	forGroup = true;
     	}
 
-    	if (sBuff !== action.command && buffs[sBuff].antogonist !== undefined) {
-        	buffs[sBuff].antogonist.forEach(function (spell) {
+    	if (sBuff !== action.command && buffs_list[sBuff].antogonist !== undefined) {
+        	buffs_list[sBuff].antogonist.forEach(function (spell) {
             	if (spell === action.command) {
                 	sBuff = action.command;
             	}
@@ -1264,7 +1249,17 @@ function buffChange(sBuff, lStatus, lActionDone, action) {
 	if (test) echo('---->(result_finale: 4Self:' + forSelf + ' 4Group:' + forGroup + ' 4Targ:' + forTarg + ' 4GroupMember:' + forGroupMember + ')');
 	if (forSelf) {
     	//вешаем на себя
-    	if (test) echo('---->(forSelf(check only):' + sBuff + ' self ' + lStatus + ')->result:'+my_char.hasBuff(sBuff));
+    	
+        if(my_char.hasBuff(sBuff)==undefined) {
+            if (test) echo('---->(forSelf:' + sBuff + ': ' + lStatus + ')->mudprompt result: undefined');
+            if(lStatus)
+                my_char.buffs.add(sBuff);
+            else
+                my_char.buffs.remove(sBuff);
+
+        } else {
+            if (test) echo('---->(forSelf:' + sBuff + ': ' + lStatus + ')->mudprompt result: ok');
+        }
     	//my_char.hasBuff(sBuff) = lStatus;
 	}
 	if (forGroup) {
@@ -1479,25 +1474,48 @@ function Pchar(name, char, level) {
 
     this.spells = getSpells(char, level);
     this.hasBuff = function(cast){
-        if((mudprompt[buffs[cast].mgroup]!==undefined && mudprompt[buffs[cast].mgroup]!=='none') && mudprompt[buffs[cast].mgroup].a.indexOf(buffs[cast].mbrief)!==-1){
-            if(test) echo("------>hasBuff("+cast+")->have one!")
+        if((mudprompt[buffs_list[cast].mgroup]!==undefined && mudprompt[buffs_list[cast].mgroup]!=='none') && mudprompt[buffs_list[cast].mgroup].a.indexOf(buffs_list[cast].mbrief)!==-1){
+            if(test) echo("------>hasBuff("+cast+")->have one in mudprompt!")
+            return true;
+        } else if(this.buffs.isSet(cast)) { 
+            if(test) echo("------>hasBuff("+cast+")->have one in my_char.buffs!")
             return true;
         }
         
-        if(buffs[cast].ally!=undefined) {
-            for(let ally of buffs[cast].ally) {
-                if((mudprompt[buffs[ally].mgroup]!==undefined && mudprompt[buffs[ally].mgroup]!=='none') && mudprompt[buffs[ally].mgroup].a.indexOf(buffs[ally].mbrief)!==-1){
+        if(buffs_list[cast].ally!=undefined) {
+            for(let ally of buffs_list[cast].ally) {
+                if((mudprompt[buffs_list[ally].mgroup]!==undefined && mudprompt[buffs_list[ally].mgroup]!=='none') && mudprompt[buffs_list[ally].mgroup].a.indexOf(buffs_list[ally].mbrief)!==-1){
                     if(test) echo("------>hasBuff("+cast+")->have ally("+ally+")!")
+                    return true;
+                } else if (this.buffs.isSet(ally)) { 
+                    if(test) echo("------>hasBuff("+cast+")->have ally("+ally+") in my_char.buffs!")
                     return true;
                 }
             }
         }
+
+        return false;
     };
     this.fullbuff = new Fullbuff();
 
 	this.order = new Order();
 
     this.group = new Group();
+    this.buffs = {
+        list: {},
+        set : function(spell) {
+            this.list[spell] = spell;
+        },
+        get : function(spell) {
+            return this.list[spell];
+        },
+        remove : function(spell) {
+            this.list[spell] = undefined;
+        },
+        isSet : function(spell) {
+            return this.get(spell) != undefined;
+        }
+    };
 }
 
 function Fullbuff(bclass, btarget, all) {
@@ -1562,7 +1580,7 @@ function getSpells(char, level) {
         
         if(test) echo("Spells: "+aSpell[0]+":"+aSpell[1]+"("+char.name+":"+level+")");
 
-        if(buffs[aSpell[0]]!==undefined && aSpell[1] <= level)
+        if(buffs_list[aSpell[0]]!==undefined && aSpell[1] <= level)
             result.push(aSpell[0]);
         
     }
@@ -1758,7 +1776,8 @@ var buffPatterns = [
 	['magic concentrate', '^Ты уже готов фокусировать магию.', true, true],
 //	['magic concentrate', '^Ты теряешь невидимую нить, связывающую тебя с источником магической силы.', false, false],
 	['magic concentrate', '^Искра между твоих ладоней исчезает, и ты теряешь способность фокусировать магию.', false, false],
-	['spell resistance', '^Теперь заклинания причиняют тебе меньший вред.', true, true],
+	//['spell resistance', '^Теперь заклинания причиняют тебе меньший вред.', true, true],
+	['spell resistance', '^Ты окутываешься энергетическим коконом, защищающим от заклинаний.', true, true],
 	//['spell resistance', '^Ты уже имеешь эту защиту.', true, true],
     ['spell resistance', 'Ты уже устойчив(а)? к заклинаниям.$', true, true],
 	['spell resistance', '^Заклинания вновь имеют полную силу против тебя.', false, false],
@@ -1785,6 +1804,7 @@ var buffPatterns = [
 	['shadow cloak', '^Жажда чужих душ стихает внутри тебя.$', false, false],
 	//['shadow cloak', '^Призрачная мантия окутывает тебя.$', true, true],
     ['shadow cloak', '^Призрачная мантия окутывает тебя. Ты погружаешься во тьму.$', true, true],
+    ['shadow cloak', '^Призрачная мантия уже защищает тебя.$', true, true],
     ['shadow cloak', '^В тебе загорается огонь, жаждущий душ ангелов.$', true, true],
 	['shadow cloak', '^Призрачная мантия уже защищает тебя.$', true, true],
 	['shadow cloak', '^Жажда душ уже горит в тебе.$', true, true],
@@ -1820,7 +1840,7 @@ var pets = {
     
 };
 
-var buffs = {
+var buffs_list = {
     //Spell(brief, mgroup, level, sclass, buff, group, party, aAntogonist, aAlly, alligns)
     'rainbow shield': new Spell('R', 'pro','protective'),
 
@@ -1836,12 +1856,12 @@ var buffs = {
     'stone skin': new Spell('k', 'pro', 'protective', 2),
     'protection good': new Spell('g', 'pro', 'protective', 2),
     'spell resistance': new Spell('m', 'pro', 'protective', 2, 0, false,[],['rainbow shield']),
-    'mental block': new Spell('m', 'tvr', 'protective', 2, 2),
+    'mental block': new Spell('m', 'trv', 'protective', 2, 2),
     'magic concentrate': new Spell('m', 'enh', 'protective', 2, 0),
     'protection negative': new Spell('n', 'pro', 'protective', 2, 0),
     'protection cold': new Spell('c', 'pro', 'protective', 2, 0),
     'giant strength': new Spell('g', 'enh', 'protective', 2, 2),
-    'detect invis': new Spell('i', 'det', 'detection', 1, 0),
+    'detect invis': new Spell('i', 'det', 'detection', 2, 0),
     'improved detect': new Spell('w', 'det', 'detection', 2, 0),
     'infravision': new Spell('r', 'det', 'detection', 2, 0),
 
