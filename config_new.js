@@ -1159,8 +1159,10 @@ function checkBuff() {
         }
     
     }
-    my_char.fullbuff = new Fullbuff();
-    echo('[fullbuff done]');
+    if(my_char.fullbuff.target) {
+        echo('[fullbuff done]');
+        my_char.fullbuff = new Fullbuff();
+    }
     //if(test) {my_char.fullbuff = new Fullbuff();echo('[fullbuff done]');}
 	/* if (test) 
         echo('\n(buffs:' + havebuff + ' activ:' + activebuff + ')\n'); */
