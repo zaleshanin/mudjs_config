@@ -301,7 +301,7 @@ $('.trigger').on('input', function (e, text) {
             echo('(total:' + args.length + ')\n');
         }
         if (args[0] === 'clear') {
-            my_char.order = null;
+            my_char.order = new Order();
             my_char.ordersChange = true;
         } else if (args[0] === 'all') {
             echo('>>> Начинаем всем приказывать \n');
@@ -581,37 +581,39 @@ function isEqualChar(ch) {
 function checkOrders() {
 	if (test) echo('->checkOrders()\n');
 	if (my_char.order.proced==mudprompt.group.npc.length) {
+        if(test) echo("->doOrder()[finished]");
     	my_char.ordersChange = false;
     	my_char.order = new Order();
-	}
+	} else {
+        doOrder();
+    }
 
-	doOrder();
 }
 function doOrder() {
     var vict_name;
-	if (test) echo('->doOrder()');
+    if(my_char.action.act != undefined) {
+        return;
+    }
+    if (test) echo('->doOrder('+(my_char.order.proced+1)+'/'+mudprompt.group.npc.length+')');
 
-    if(my_char.order.command!== undefined && mudprompt.group.npc!=undefined) {
+    if(my_char.order.command!== undefined && mudprompt.group.npc[my_char.order.proced]!=undefined) {
         vict_name = mudprompt.group.npc[my_char.order.proced].sees;
-        if(test) echo(' ->  (' + my_char.order.proced + ')' + vict_name +' -> ');
+        if(test) echo('-->proceed:' + my_char.order.proced + ' mudprompt.group.npc['+my_char.order.proced+']:' + vict_name);
 
         if(my_char.order.name_num[vict_name]==undefined) {
             my_char.order.name_num[vict_name] = 1;
         } else {
             my_char.order.name_num[vict_name]++;
-            vict_name = '' + my_char.order.name_num[vict_name] + '.' + vict_name;
         }
+        vict_name = '' + my_char.order.name_num[vict_name] + '.' + vict_name;
         vict_name="'"+vict_name+"'";
-        if(test) echo(vict_name+"");
+        if(test) echo("-->changed:"+vict_name);
 
         if(my_char.action.act === undefined) {
             my_char.order.proced++;
             doAct('order',my_char.order.command,vict_name);
         }
-        
-    }
-    if (test) echo('\n');
-
+    } 
 }
 function doAct(act, comm, tag) {
     if (test) echo('-->doAct(action:' + act + ', command:' + comm + ', target:' + tag + ')');
@@ -735,10 +737,11 @@ function setGroupMembersFrom(list) {
     if(test) echo("-->setGroupMembersFrom("+list.length+")");
 
     for(let member in list) {
-        let name = list[member].sees;
+        let name = pets[list[member].sees]
+            ? pets[list[member].sees].ename
+            : list[member].sees;
         let level = list[member].level;
         let i = 1;
-        //TODO переименование чармисов "каменный г" -> stone
         let new_name = i+"."+name;
         while(my_char.group.members[new_name]!=undefined) {
             new_name = ++i + "." + name;
@@ -804,7 +807,6 @@ function checkBuff() {
 
         oSpells[aSpell[1]]=new MemberSpell(aSpell[0], aSpell[2]);
     }
-console.log("checkBuff():");    
     for(let spell_name in oSpells) {
         caster = oSpells[spell_name].member;
         spell_to_cast = spell_name;
@@ -1824,19 +1826,43 @@ var pets = {
             'shield', 'spell resistance', 'stardust', 'stone skin'
         ],
         'align' : 'n',
+        'ename' : 'legend',
     },
     'коровища': {
         'spells' : ['aid', 'armor', 'bless', 'calm', 'continual light', 'control weather', 'create food', 'create spring', 'cure blindness', 'cure disease', 'cure poison', 'detect invis', 'dragon skin', 'enhanced armor', 'faerie fog', 'fly', 'frenzy', 'giant strength', 'group defense', 'group heal', 'heal', 'healing light', 'improved detect', 'infravision', 'inspire', 'learning', 'mind light', 'pass door', 'protection cold', 'protection heat', 'protective shield', 'refresh', 'remove curse', 'remove fear', 'restoring light', 'sanctify lands', 'sanctuary', 'shield', 'stone skin'
         ],
         'align' : 'n',
+        'ename' : 'cow',
     },
     'ночная тен' :{
         'spells' : ['armor', 'assist', 'create food', 'create spring', 'dark shroud', 'detect invis', 'fly', 'giant strength', 'improved detect', 'infravision', 'invisibility', 'knock', 'learning', 'link', 'pass door', 'protection cold', 'protection good', 'protection negative', 'protective shield', 'refresh', 'shield', 'spell resistance', 'stone skin'],
         'align' : 'e',
+        'ename' : 'night'
     },
     'призванная' :{
         'spells' : ['armor', 'assist', 'create food', 'create spring', 'detect invis', 'fly', 'giant strength', 'improved detect', 'infravision', 'invisibility', 'knock', 'learning', 'link', 'pass door', 'protection cold', 'protection negative', 'protective shield', 'refresh', 'shield', 'spell resistance', 'stone skin'],
         'align' : 'n',
+        'ename' : 'shadow',
+    },
+    "каменный г" : {
+        'spells' : [],
+        'align' : 'n',
+        'ename' : 'stone',
+    },
+    "малый голе" : {
+        'spells' : [],
+        'align' : 'n',
+        'ename' : 'lesser',
+    },
+    "железный г" : {
+        'spells' : [],
+        'align' : 'n',
+        'ename' : 'iron',
+    },
+    "адамантито" : {
+        'spells' : [],
+        'align' : 'n',
+        'ename' : 'adamantite',
     },
     
 };
