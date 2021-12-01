@@ -738,6 +738,7 @@ function setGroupMembersFrom(list) {
         let name = list[member].sees;
         let level = list[member].level;
         let i = 1;
+        //TODO переименование чармисов "каменный г" -> stone
         let new_name = i+"."+name;
         while(my_char.group.members[new_name]!=undefined) {
             new_name = ++i + "." + name;
