@@ -1255,15 +1255,13 @@ function buffChange(sBuff, lStatus, lActionDone, action) {
 	if (forSelf) {
     	//вешаем на себя
     	
-        if(my_char.hasBuff(sBuff)==undefined) {
-            if (test) echo('---->(forSelf:' + sBuff + ': ' + lStatus + ')->mudprompt result: undefined');
-            if(lStatus)
-                my_char.buffs.add(sBuff);
-            else
-                my_char.buffs.remove(sBuff);
+        if(lStatus && !my_char.hasBuff(sBuff)) {
+            if (test) echo('---->(forSelf:' + sBuff + ': ' + lStatus + ')->add to buffs[missing in mudprompt] ');
 
-        } else {
-            if (test) echo('---->(forSelf:' + sBuff + ': ' + lStatus + ')->mudprompt result: ok');
+            my_char.buffs.set(sBuff);
+        } else if (!lStatus && my_char.hasBuff(sBuff)) {
+            if (test) echo('---->(forSelf:' + sBuff + ': ' + lStatus + ')->removing from buffs');
+            my_char.buffs.remove(sBuff);
         }
     	//my_char.hasBuff(sBuff) = lStatus;
 	}
