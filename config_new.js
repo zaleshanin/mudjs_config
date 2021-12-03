@@ -656,7 +656,7 @@ function promptRecived(afk) {
     }
     my_char.afk = afk;
 
-    if (my_char.was_afk !== undefined && my_char.afk) {
+    if (my_char.was_afk !== undefined && my_char.afk && my_char.action.act!="afk") {
         my_char.was_afk = undefined;
     }
 
@@ -763,7 +763,7 @@ function setGroupMembersFrom(list) {
 /*проверка скастованных бафов, выбор следующего бафа для каста */
 function checkBuff() {
 	if (test) echo('\n->chkBff()');
-    var test_msg;
+    var test_msg = '';
     
     //чар чем-то занят - прерываем
     if (my_char.action.act === undefined) {
@@ -832,7 +832,7 @@ function checkBuff() {
         if(my_char.fullbuff.target===undefined) {
             //баф не обязательный - пропускаем
             if(buffs_list[spell_name].buff!=1) {
-                echo(test_msg+'->(skip noFullBuff, unnecessary spell)');
+                if(test) echo(test_msg+'->(skip noFullBuff, unnecessary spell)');
                 continue;
             }
             if(buffs_list[spell_name].group==0) {
