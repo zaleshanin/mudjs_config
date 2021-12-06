@@ -581,7 +581,7 @@ function isEqualChar(ch) {
 function checkOrders() {
 	if (test) echo('->checkOrders()\n');
 	if (my_char.order.proced==mudprompt.group.npc.length) {
-        if(test) echo("->doOrder()[finished]");
+        echo("->doOrder()[finished]");
     	my_char.ordersChange = false;
     	my_char.order = new Order();
 	} else {
@@ -750,12 +750,12 @@ function setGroupMembersFrom(list) {
         my_char.group.members[new_name] = new GroupMember(name, new_name);
         //пишем спелы доступные чармису в my_char.group.spells
         //выборка кастуемых спелов в checkBuff()
-        if(pets[name]!=undefined && pets[name].spells.length>0){
-            for(let pet_spell of pets[name].spells){
+        if(pets[list[member].sees]!=undefined && pets[list[member].sees].spells.length>0){
+            for(let pet_spell of pets[list[member].sees].spells){
                 if(buffs_list[pet_spell]===undefined) 
                     continue;
 
-                my_char.group.spells.push([new_name,pet_spell,level]);
+                my_char.group.spells.push([name,pet_spell,level]);
             }
         }
     }
