@@ -8,7 +8,11 @@
 В твоей голове звучат торжественные слова на тайном наречии Азазеля:
     litol achrayut, litol chelek, netilat lulav
     netilat lulav, lulshafan anigeron, lulshafan yadaim
+    netilat yadaim, litol achrayut, netilat lulav
+    anigeron chelek, netilat lulav, litol achrayut
+    netilat yadaim, litol achrayut, sefer yetsirah
 
+    heal, curse, 
     Чтобы воззвать к Азазелю, произнеси его имя и добавь тайные слова -- 
 например, сказать azazel sefer yetsirah. Используй их вовремя и с умом,
 ибо безжалостный Азазель не прощает ошибок.
@@ -119,6 +123,7 @@ $('.trigger').on('text', function (e, text) {
     }
 
     if (text.match('^Ты не можешь сконцентрироваться.$')
+        || text.match('^Ты пытаешься сотворить заклинание, но теряешь концентрацию и терпишь неудачу.$')
         || text.match('^Твоя попытка закончилась неудачей.$')
         || text.match('На кого именно ты хочешь произнести заклинание')) {
             if(test) echo('[spell fail trigger]')
@@ -1522,7 +1527,7 @@ function Pchar(name, char, level) {
 }
 
 function Fullbuff(bclass, btarget, all) {
-	echo('->Fullbuff('+bclass+','+btarget+','+all+')');
+    if(test) echo('->Fullbuff('+bclass+','+btarget+','+all+')');
 	this.class = bclass === undefined ? undefined : bclass;
 	this.target = btarget === undefined ? undefined : btarget;
 	this.all = all === undefined ? false : all;
@@ -1693,6 +1698,7 @@ var buffPatterns = [
 	['frenzy', '^Сейчас ничто не может разозлить ', true, true],
 	['frenzy', '^.* уже в ярости!$', true, true],
 	['stone skin', '^Твоя кожа становится мягче.$', false, false],
+    ['stone skin', '^Каменная корка на твоей коже трескается под ударами и исчезает.$', false, false],
 	//['stone skin', '^Твоя кожа становится тверже камня.$', true, true],
     ['stone skin', '^Твоя кожа становится серой, превращаясь в камень.$', true, true],
     ['stone skin', '^Кожа .* становится серой, превращаясь в камень.$', true, true],
