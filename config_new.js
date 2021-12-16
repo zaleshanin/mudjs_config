@@ -2,6 +2,8 @@
 - вынести список говорунов в переменную/массив [#говоруны]
 - вынести #prompt и #battleprompt в chars, на случай если у чаров разный prompt
 
+Тебя останавливают несколько добродушных старушек.
+------------------------
 
 Нечто загорается загорается багровым пламенем!
 
@@ -30,7 +32,8 @@ var melt_counter = 0; //противодействие автовыкидыва�
 var chars = {
     'Miyamoto': {
         name: 'Miyamoto',
-        weapon: 'tempered',
+        align: 'e',
+        weapon: 'pletka',
         class: 'necromancer',
         clan: 'invader',
         water: 'spring',//'flask',
@@ -38,6 +41,7 @@ var chars = {
     },
     'Zaleshanin': {
         name: 'Zaleshanin',
+        align: 'n',
         weapon: 'long',
         class: 'thief',
         water: 'flask',
@@ -851,8 +855,8 @@ function checkBuff() {
                     continue;
                 } */
 
-                if(buffs_list[spell_name].group==0) {
-                    if(test) echo("---->chk 4 single...");
+                /* if(buffs_list[spell_name].group==0) {
+                    if(test) echo("---->chk 4 single..."); */
                     for_group_single:
                     for(let aGMspell of my_char.group.spells){
                         if(aGMspell[1]==spell_name) {
@@ -875,7 +879,8 @@ function checkBuff() {
                             if(test) echo("-->caster & target changed: "+aGMspell[0]);
                         }                                 
                     }
-                } else {
+                /* 
+                    } else {
                     for_group:
                     for(let member_name in my_char.group.members) {
                         if(my_char.group.members[member_name].buffs_list[spell_name]) continue;
@@ -917,7 +922,8 @@ function checkBuff() {
                         caster = member_name;
                         if(test) echo("---->target&caster changed: "+member_name);
                     }
-                }
+                } 
+                */
                 if(targ==undefined) {
                     //висит на мне - пропускаем
                     if(caster==my_char.name){
@@ -989,9 +995,7 @@ function checkBuff() {
                 }
             }
    
-        } else
-        //проверки фуллбафа:
-        if(my_char.fullbuff.target!==undefined) {
+        } else if(my_char.fullbuff.target!==undefined) { //проверки фуллбафа:
             //не тот класс заклинания - пропускаем
             if(my_char.fullbuff.class!==undefined 
                 && my_char.fullbuff.class!== buffs_list[spell_name].class) continue;
@@ -999,7 +1003,7 @@ function checkBuff() {
             if(test) echo(test_msg +'(class:ok)');
             if(my_char.fullbuff.target!='self') {
                 if(test) echo("---->chk 4 target...");
-    
+
                 //уже скастовано - пропускаем
                 if(my_char.fullbuff.buffs[spell_name]) {
                     if(test) echo("-->skipped (target have one)");
@@ -1125,21 +1129,38 @@ function checkBuff() {
                         targ = my_char.name;
                     }
                 } else {
-                    if(test) echo("---->chk 4 self fb...");
+                    if(test) echo("---->chk 4 self fb...!!!");
                     
                     //на себя такое не вешаем
                     if(buffs_list[spell_name].buff==0) {
                         if(test) echo("---->not buff for self fb (buff==0)");
                         continue;
                     }
-
+                    if(buffs_list[spell_name].aligns.indexOf(my_char.align)==-1) {
+                        if(test) echo("---->not buff for self align ("+my_char.align+"=>"+buffs_list[spell_name].aligns+")");
+                        continue;
+                    }
                     //висит на мне - пропускаем
                     if(my_char.hasBuff(spell_name)) {
                         if(test) echo("---->skipped (have one)");
                         continue;
                     }
+                    if(caster!=my_char.name && buffs_list[spell_name].group==0) {
+                        if(test) echo("---->skipped not for group member (caster:"+caster+")");
+                        continue;
+                    }
 
-                    targ = my_char.name;
+                    //есть спел который вешает сразу на всю группу - меняем спелл TODO
+
+                    if(buffs_list[spell_name].grSpell!==undefined && oSpells[buffs_list[spell_name].grSpell]!=undefined) {
+                        spell_to_cast = buffs_list[spell_name].grSpell;
+                        caster = oSpells[spell_to_cast].member;
+                        targ = caster;
+                        if(test) echo("---->spell changed to grSpell:"+spell_to_cast+" (caster:"+caster+")");
+                    } else {
+                        targ = my_char.name;
+                    }
+
                 }
             }
         }
@@ -1463,6 +1484,7 @@ function Pchar(name, char, level) {
     this.level = level===undefined ? undefined : level;
 
     this.weapon = char===undefined ? undefined : char.weapon;
+    this.align = char===undefined ? undefined : char.align;
     //[#armed] 0 - без оружия(оружие на земле), 1 - оружие в мешке, 2 - вооружен
     this.armed = false;
 
@@ -1548,10 +1570,10 @@ function getSpells(char, level) {
         spells.push(['shadow cloak',10]);
     }
     if (char!==undefined && char.class === 'necromancer') {
+        spells.push(['dark shroud',21]);
         spells.push(['shield',12]);
         spells.push(['protective shield',18]);
         spells.push(['armor',20]);
-        spells.push(['dark shroud',21]);
         spells.push(['stone skin',30]);
         spells.push(['protection good',17]);
         spells.push(['spell resistance',69]);
@@ -1563,6 +1585,7 @@ function getSpells(char, level) {
         spells.push(['detect invis',6]);
         spells.push(['improved detect',40]);
         spells.push(['infravision',21]);
+        spells.push(['fly',23]);
 /*
         this['learning'] = new Spell('LRN', 33, 'protective', 1);
         this['magic missile'] = new Spell('mm', 2, 'combat');
@@ -1571,15 +1594,12 @@ function getSpells(char, level) {
         this['create food'] = new Spell('CrF', 12, 'creation');
         this['detect good'] = new Spell('DtG', 13, 'detection', 3);
         this['detect undead'] = new Spell('DtU', 13, 'detection', 3);
-        this['detect invis'] = new Spell('DtI', 13, 'detection', 1);
         this['burning hands'] = new Spell('BnH', 14, 'combat');
         this['protection negative'] = new Spell('PrN', 13, 'protective', 2);
         this['poison'] = new Spell('PSN', 23, 'maladictions');
         this['lightning bolt'] = new Spell('LiB', 23, 'combat');
-        this['fly'] = new Spell('FLY', 23, 'protective', 1);
         this['dispel affects'] = new Spell('DAf', 24, 'maladictions');
         this['cancellation'] = new Spell('CNL', 28, 'maladictions');
-        this['giant strength'] = new Spell('GSt', 28, 'protective', 2, 2);
         this['sonic resonance'] = new Spell('SoR', 28, 'combat');
         this['create spring'] = new Spell('CrS', 31, 'creation');
  */    
@@ -1594,7 +1614,7 @@ function getSpells(char, level) {
     }
     return result;
 }
-function Spell(brief, mgroup, sclass, buff, group, party, aAntogonist, aAlly, aligns) {
+function Spell(brief, mgroup, sclass, buff, group, party, aAntogonist, aAlly, grSpell, aligns) {
     //buff: 0 - никогда, 1 - всегда, 2 - fullbuff, 3 - только при прокачке
     //group (кастовать на членов группы): 0-no, 1-yes, 2-full, 3-target
     //party (кастуется на всю группу)
@@ -1608,6 +1628,7 @@ function Spell(brief, mgroup, sclass, buff, group, party, aAntogonist, aAlly, al
     this.ally = aAlly;
     this.aligns = aligns === undefined ? 'eng' : aligns;
     this.progress = 0;
+    this.grSpell = grSpell;
 }
 
 function getBuffClass(text) {
@@ -1876,16 +1897,18 @@ var pets = {
 var buffs_list = {
     //Spell(brief, mgroup, level, sclass, buff, group, party, aAntogonist, aAlly, alligns)
     'rainbow shield': new Spell('R', 'pro','protective'),
+    'group defense': new Spell('gd', 'pro', 'protective', 2, 3, true,[],["shield","armor","sanctuary"]),
+    'inspire': new Spell('i','enh','protective', 2, 2, true),
 
     //invader:
     'shadow cloak': new Spell('S', 'cln', 'protective', 2),
 
     //protect:
     //necr
-    'shield':  new Spell('S', 'pro', 'protective', 2, 3),
+    'dark shroud': new Spell('d', 'pro', 'protective', 2, 2,false,[],['stardust','sanctuary'],undefined,'e'),
+    'shield':  new Spell('S', 'pro', 'protective', 2, 3, false,[],[],'group defense'),
     'protective shield': new Spell('p', 'pro', 'protective', 2),
-    'armor': new Spell('a', 'pro', 'protective', 2, 3),
-    'dark shroud': new Spell('d', 'pro', 'protective', 2, 2,false,[],['stardust','sanctuary'],'e'),
+    'armor': new Spell('a', 'pro', 'protective', 2, 3, false,[],[],'group defense'),
     'stone skin': new Spell('k', 'pro', 'protective', 2),
     'protection good': new Spell('g', 'pro', 'protective', 2),
     'spell resistance': new Spell('m', 'pro', 'protective', 2, 0, false,[],['rainbow shield']),
@@ -1900,7 +1923,10 @@ var buffs_list = {
 
     //pets:
     'stardust': new Spell('z', 'pro', 'protective', 2, 2,false,[],['dark shroud','sanctuary']),
-    'sanctuary': new Spell('s', 'pro', 'protective', 2, 2,false,[],['dark shroud','stardust']),
+    'sanctuary': new Spell('s', 'pro', 'protective', 2, 2,false,[],['dark shroud','stardust'],'group defense'),
     'enhanced armor': new Spell('A', 'pro', 'protective', 2, 2),
     'haste': new Spell('h', 'enh', 'protective', 0, 2),
+    'bless': new Spell('b', 'enh', 'protective', 2, 2),
+    'dragon skin': new Spell('D', 'pro', 'protective', 2, 0),
+    'frenzy': new Spell('f', 'enh', 'protective', 2, 2, false, [],[],undefined,'ng'),
 };
