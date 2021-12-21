@@ -28,12 +28,40 @@
 
 var test = true; //true - для вывода всякой отладочной информации
 var melt_counter = 0; //противодействие автовыкидыванию
+var lAzazel = false;
+
+function Azazel(heal_words, curse_words, attack_words) {
+    if(heal_words!=undefined && curse_words!=undefined && heal_words!=undefined) {
+        this.start=new Date();
+        this.is_set = true;
+    } else {
+        this.start=-1;
+        this.is_set = false;
+    }
+    this.heal_words = heal_words;
+    this.curse_words = curse_words;
+    this.attack_words = attack_words;
+    this.heal_used = -1;
+    this.curse_used = -1;
+    this.attack_used = -1;
+    this.heal = function() {this.sent_words("HEAL",this.heal_words);this.heal_used=new Date();}
+    this.curse = function() {this.sent_words("CURSE",this.curse_words);this.curse_used=new Date();}
+    this.attack = function() {this.sent_words("FIRE",this.attack_words);this.attack_used=new Date();}
+
+    this.sent_words = function(str,words) {
+        send("say azazel "+words);
+        echo('-->[Azazel '+str+']');
+    };
+    this.stat = function() {
+        //TODO STOP
+    };
+};
 
 var chars = {
     'Miyamoto': {
         name: 'Miyamoto',
         align: 'e',
-        weapon: 'pletka',
+        weapon: 'арапник',
         class: 'necromancer',
         clan: 'invader',
         water: 'spring',//'flask',
@@ -77,6 +105,13 @@ $('.trigger').on('text', function (e, text) {
             clearAction();
         }
     }
+    if (text.match('^Ты прячешься в тенях.$')) {
+        if (test) echo("[Fade trigger]");
+        my_char.was_fade = undefined;
+        if (my_char.action.act === 'fade') {
+            clearAction();
+        }
+    }
 
     if (text.match('^Ты растворяешься в воздухе.$')) {
         if (++melt_counter % 10 === 0)
@@ -85,6 +120,24 @@ $('.trigger').on('text', function (e, text) {
             send('where');
         echo('[melt:' + melt_counter + ']');
 
+    }
+
+    if (text.match('^В твоей голове звучат торжественные слова на тайном наречии Азазеля:$')) {
+        if(test) echo("[wait for Azazel words]");
+        lAzazel = true;
+        return;
+    }
+    
+    if(lAzazel) {
+        match = (/^[\s]*([\w\s]*), ([\w\s]*), ([\w\s]*)$/).exec(text);
+        if(match) {
+            if(test) echo('[new Azazel words]');
+            azazel = new Azazel(match[1],match[2],match[3]);
+            setTimeout(() => azazel=new Azazel(), 35*60*1000);
+        } else {
+            if(test) echo('[no any Azazel words]');
+        }
+        lAzazel = false;
     }
 
     buffPatterns.forEach(function (elem) {
@@ -208,7 +261,8 @@ $('.trigger').on('text', function (e, text) {
     }
     if (text.match('^Ты щелкаешь пальцами, и из земли пробивается магический родник.$') //text.match(' родник пробивается сквозь землю.$')
         || text.match('^Жестяная фляга наполнена.$')
-        || text.match('^Ты хочешь сделать тут озеро?')) {
+        || text.match('^Ты хочешь сделать тут озеро?')
+        || text.match('^В этой местности и так есть чем напиться.')) {
         if (test) echo("[water creation trigger]");
         my_char.lwater = 1;
         if (my_char.action.command == 'create spring' || my_char.action.command == 'create water')
@@ -376,8 +430,21 @@ $('.trigger').on('input', function (e, text) {
         	checkBuff();
         }
     });
-
-
+/*Чтобы воззвать к Азазелю, произнеси его имя и добавь тайные слова -- 
+например, сказать azazel sefer yetsirah. Используй их вовремя и с умом,
+ибо безжалостный Азазель не прощает ошибок.*/
+    command(e, 'ah', text, function (args) {
+        send("say azazel "+azazel_heal);
+        echo('-->[Azazel HEAL]');
+    });
+    command(e, 'ac', text, function (args) {
+        send("say azazel "+azazel_heal);
+        echo('-->[Azazel CURSE]');
+    });
+    command(e, 'aa', text, function (args) {
+        send("say azazel "+azazel_heal);
+        echo('-->[Azazel CURSE]');
+    });
 
     // Установить жертву для выстрелов, например: /victim hassan
     command(e, '/victim', text, function (args) {
@@ -668,6 +735,9 @@ function promptRecived(afk) {
     if (my_char.was_afk !== undefined && my_char.afk && my_char.action.act!="afk") {
         my_char.was_afk = undefined;
     }
+    if (my_char.was_fade !== undefined &&  ((mudprompt['enh']!==undefined && mudprompt['enh']!=='none') && mudprompt['enh'].a.indexOf('F')!==-1)) {
+        my_char.was_fade = undefined;
+    }
 
     if (my_char.last_pose !== undefined) {
         if (my_char.last_pose == mudprompt.p2.pos) {
@@ -688,6 +758,7 @@ function checking() {
         + (my_char.afk ? '[afk]' : '')
         + (my_char.last_pose != undefined ? '[last:' + my_char.last_pose + ']' : '')
         + (my_char.was_afk != undefined ? '[was_afk]' : '')
+        + (my_char.was_fade != undefined ? '[was_fade]' : '')
         + (my_char.action.act != undefined ? '[act:' + my_char.action.act + ']' : '')
         + ' pos:' + mudprompt.p2.pos
         + (mudprompt.p2.posf != '' ? '; posf:' + mudprompt.p2.posf : '')
@@ -1432,8 +1503,13 @@ function restoreStatus() {
     if (test) echo('->restoreStatus()');
     if (test && my_char.last_pose != undefined) echo('[last:' + my_char.last_pose + ']');
     if (test && my_char.was_afk) echo('[was_afk]');
+    if (test && my_char.was_fade) echo('[was_fade]');
     if (my_char.action.act !== undefined) {
         if (test) echo('[' + my_char.action.act + '->EXIT]');
+        return;
+    }
+    if (my_char.was_fade !== undefined && !((mudprompt['enh']!==undefined && mudprompt['enh']!=='none') && mudprompt['enh'].a.indexOf('F')!==-1)) {
+        doAct('fade');
         return;
     }
     if (my_char.last_pose !== undefined && my_char.last_pose != mudprompt.p2.pos) {
@@ -1479,6 +1555,7 @@ function Pchar(name, char, level) {
     this.pract = false; //признак состояния прокачки скилов
     this.last_pose = undefined;
     this.was_afk = undefined;
+    this.was_fade = undefined;
 
     this.name = name===undefined ? undefined : name;
     this.level = level===undefined ? undefined : level;
@@ -1912,14 +1989,15 @@ var buffs_list = {
     'stone skin': new Spell('k', 'pro', 'protective', 2),
     'protection good': new Spell('g', 'pro', 'protective', 2),
     'spell resistance': new Spell('m', 'pro', 'protective', 2, 0, false,[],['rainbow shield']),
-    'mental block': new Spell('m', 'trv', 'protective', 2, 2),
+    'mental block': new Spell('m', 'trv', 'protective', 1, 2),
     'magic concentrate': new Spell('m', 'enh', 'protective', 2, 0),
     'protection negative': new Spell('n', 'pro', 'protective', 2, 0),
     'protection cold': new Spell('c', 'pro', 'protective', 2, 0),
     'giant strength': new Spell('g', 'enh', 'protective', 2, 2),
     'detect invis': new Spell('i', 'det', 'detection', 2, 0),
-    'improved detect': new Spell('w', 'det', 'detection', 2, 0),
-    'infravision': new Spell('r', 'det', 'detection', 2, 0),
+    'improved detect': new Spell('w', 'det', 'detection', 0, 0),
+    'infravision': new Spell('r', 'det', 'detection', 0, 0),
+    'detect magic':new Spell('m', 'det', 'detection', 2, 0),
 
     //pets:
     'stardust': new Spell('z', 'pro', 'protective', 2, 2,false,[],['dark shroud','sanctuary']),
