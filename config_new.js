@@ -32,7 +32,7 @@ var lAzazel = false;
 
 function Azazel(heal_words, curse_words, attack_words) {
     if(heal_words!=undefined && curse_words!=undefined && heal_words!=undefined) {
-        this.start=new Date();
+        this.start=Date.now();
         this.is_set = true;
     } else {
         this.start=-1;
@@ -44,16 +44,32 @@ function Azazel(heal_words, curse_words, attack_words) {
     this.heal_used = -1;
     this.curse_used = -1;
     this.attack_used = -1;
-    this.heal = function() {this.sent_words("HEAL",this.heal_words);this.heal_used=new Date();}
-    this.curse = function() {this.sent_words("CURSE",this.curse_words);this.curse_used=new Date();}
-    this.attack = function() {this.sent_words("FIRE",this.attack_words);this.attack_used=new Date();}
+    this.heal = function() {this.sent_words("HEAL",this.heal_words);this.heal_used=Date.now();}
+    this.curse = function() {this.sent_words("CURSE",this.curse_words);this.curse_used=Date.now();}
+    this.attack = function() {this.sent_words("FIRE",this.attack_words);this.attack_used=Date.now();}
 
     this.sent_words = function(str,words) {
         send("say azazel "+words);
         echo('-->[Azazel '+str+']');
     };
     this.stat = function() {
+        if(!this.is_set) return '';
+        
+        let result = '';
+
+        if(this.heal_used!==-1) {
+            let timer = 15*60 - Math.floor((Date.now()-this.heal_used)/1000);
+            if(timer<=0)
+                this.heal_used!==-1
+        } 
+
+        if(this.heal_used==-1){
+            result += '[ah]';
+        } else {
+            result += '['+(15-Math.floor((Date.now()-this.heal_used)/60))+']';
+        }
         //TODO STOP
+
     };
 };
 
