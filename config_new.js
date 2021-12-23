@@ -13,6 +13,7 @@
     netilat yadaim, litol achrayut, netilat lulav
     anigeron chelek, netilat lulav, litol achrayut
     netilat yadaim, litol achrayut, sefer yetsirah
+    netilat lulav, litol chelek, lulshafan anigeron
 
     heal, curse, 
     Чтобы воззвать к Азазелю, произнеси его имя и добавь тайные слова -- 
@@ -29,50 +30,58 @@
 var test = true; //true - для вывода всякой отладочной информации
 var melt_counter = 0; //противодействие автовыкидыванию
 var lAzazel = false;
+var azazel = new Azazel();
+var AZAZEL_TIMER = 50;
+var AZAZEL_WORDS_TIMER = 25;
 
 function Azazel(heal_words, curse_words, attack_words) {
-    if(heal_words!=undefined && curse_words!=undefined && heal_words!=undefined) {
+    if(heal_words!=undefined && curse_words!=undefined && attack_words!=undefined) {
         this.start=Date.now();
         this.is_set = true;
     } else {
         this.start=-1;
         this.is_set = false;
     }
-    this.heal_words = heal_words;
-    this.curse_words = curse_words;
-    this.attack_words = attack_words;
-    this.heal_used = -1;
-    this.curse_used = -1;
-    this.attack_used = -1;
-    this.heal = function() {this.sent_words("HEAL",this.heal_words);this.heal_used=Date.now();}
-    this.curse = function() {this.sent_words("CURSE",this.curse_words);this.curse_used=Date.now();}
-    this.attack = function() {this.sent_words("FIRE",this.attack_words);this.attack_used=Date.now();}
+    this.heal = new Words('heal',heal_words);
+    this.curse = new Words('curse',curse_words);
+    this.attack = new Words('attack',attack_words);
 
-    this.sent_words = function(str,words) {
-        send("say azazel "+words);
-        echo('-->[Azazel '+str+']');
-    };
     this.stat = function() {
         if(!this.is_set) return '';
-        
-        let result = '';
 
-        if(this.heal_used!==-1) {
-            let timer = 15*60 - Math.floor((Date.now()-this.heal_used)/1000);
-            if(timer<=0)
-                this.heal_used!==-1
-        } 
-
-        if(this.heal_used==-1){
-            result += '[ah]';
-        } else {
-            result += '['+(15-Math.floor((Date.now()-this.heal_used)/60))+']';
-        }
-        //TODO STOP
-
+        return this.heal.get()+this.curse.get()+this.attack.get();
     };
 };
+function Words(name, str) {
+    this.name = name ? name : undefined;
+	this.words = str ? str : undefined;
+    //когда использован:
+	this.used = -1;
+    this.use = function(){
+        if(this.words==undefined) {
+            echo('[AZAZEL ERROR: no words]');
+            return;
+        }
+        send("say azazel "+this.words);
+        echo('-->[Azazel '+this.name.toUpperCase+']');
+        this.used=Date.now();
+    };
+    this.get = function(){
+        let sec_timer = 0;
+        
+        if(this.used != -1)
+            sec_timer = AZAZEL_WORDS_TIMER*60 - Math.floor((Date.now()-this.used)/1000);
+        
+        if(sec_timer <= 0)
+            this.used = -1;
 
+        if(this.used > 0) {
+            return '['+Math.floor((sec_timer)/60)+']';
+        } else {
+            return '[a'+this.name.substring(0,1)+']';
+        }
+    };
+};
 var chars = {
     'Miyamoto': {
         name: 'Miyamoto',
@@ -450,16 +459,24 @@ $('.trigger').on('input', function (e, text) {
 например, сказать azazel sefer yetsirah. Используй их вовремя и с умом,
 ибо безжалостный Азазель не прощает ошибок.*/
     command(e, 'ah', text, function (args) {
-        send("say azazel "+azazel_heal);
-        echo('-->[Azazel HEAL]');
+        azazel.heal.use();
     });
     command(e, 'ac', text, function (args) {
-        send("say azazel "+azazel_heal);
-        echo('-->[Azazel CURSE]');
+        azazel.curse.use();
     });
     command(e, 'aa', text, function (args) {
-        send("say azazel "+azazel_heal);
-        echo('-->[Azazel CURSE]');
+        azazel.attack.use();
+    });
+    //ввод азазелевых слов вручную
+    command(e,'azazel',text,function(args){
+        match = (/^[\s]?([\w\s]*), ([\w\s]*), ([\w\s]*)$/).exec(args[1]);
+        if(match) {
+            if(test) echo('[new Azazel words]');
+            azazel = new Azazel(match[1],match[2],match[3]);
+            setTimeout(() => azazel=new Azazel(), AZAZEL_TIMER*60*1000);
+        } else {
+            if(test) echo('[no any Azazel words]');
+        }
     });
 
     // Установить жертву для выстрелов, например: /victim hassan
@@ -779,7 +796,10 @@ function checking() {
         + ' pos:' + mudprompt.p2.pos
         + (mudprompt.p2.posf != '' ? '; posf:' + mudprompt.p2.posf : '')
         + '\n');
-
+    let azazelStr = '';
+    azazelStr = azazel.stat();
+    if(test) azazelStr = 'AZAZEL:['+azazelStr+']'
+    
     let needsStatus = '';
     if (my_char.needsChanged)
         needsStatus = ''
@@ -795,6 +815,9 @@ function checking() {
 
     if (Object.keys(my_char.group.members).length != group_length) 
         checkGroup();
+
+    if(azazelStr!='')
+        echo(azazelStr);
 
     if (my_char.hunger + my_char.thirst > 0)
         echo(needsStatus);
@@ -907,7 +930,6 @@ function checkBuff() {
         caster = oSpells[spell_name].member;
         spell_to_cast = spell_name;
         targ = undefined; 
-
         //lSkippSpell = false;
     	if (test) test_msg = '-->('+caster+':"' + spell_name + '" '+"["+buffs_list[spell_name].class+"]"+'"->' + my_char.fullbuff.target + ')';
 
@@ -947,12 +969,12 @@ function checkBuff() {
                     for_group_single:
                     for(let aGMspell of my_char.group.spells){
                         if(aGMspell[1]==spell_name) {
-                            if(my_char.group.members[aGMspell[0]].buffs_list[spell_name]) {
+                            if(my_char.group.members[aGMspell[0]].buffs[spell_name]) {
                                 if(test) echo("---->skipped for "+aGMspell[0]+"(have one)");
                                 continue;
                             } else if(buffs_list[spell_name].ally!=undefined) {
                                 for(let ally of buffs_list[spell_name].ally) {
-                                    if(my_char.group.members[aGMspell[0]].buffs_list[ally]) {
+                                    if(my_char.group.members[aGMspell[0]].buffs[ally]) {
                                         if(test) echo("---->skipped for "+aGMspell[0]+"(have ally:"+ally+")");
                                         continue for_group_single;
                                     }
@@ -970,12 +992,12 @@ function checkBuff() {
                     } else {
                     for_group:
                     for(let member_name in my_char.group.members) {
-                        if(my_char.group.members[member_name].buffs_list[spell_name]) continue;
+                        if(my_char.group.members[member_name].buffs[spell_name]) continue;
 
                         if (buffs_list[spell_name].ally !== undefined) { 
                             //если уже активен баф навешиваемый при применени текущего
                             for(let ally of buffs_list[spell_name].ally) {
-                                if(my_char.group.members[member_name].buffs_list[ally]) {
+                                if(my_char.group.members[member_name].buffs[ally]) {
                                     if(test) echo("---->skipped for "+member_name+"(have ally:"+ally+")");
                                     continue for_group;
                                 }
@@ -1019,7 +1041,7 @@ function checkBuff() {
                             continue;
                         }
                     } else {
-                        if(my_char.group.members[caster].buffs_list[spell_name]) continue;
+                        if(my_char.group.members[caster].buffs[spell_name]) continue;
                     }
                     //у кастера кончилась мана
                     if(my_char.group.members[caster] 
@@ -1039,12 +1061,12 @@ function checkBuff() {
                 for_group:
                 for(let member_name in my_char.group.members) {
                     //уже висит
-                    if(my_char.group.members[member_name].buffs_list[spell_name]) continue;
+                    if(my_char.group.members[member_name].buffs[spell_name]) continue;
 
                     if (buffs_list[spell_name].ally !== undefined) { 
                         //если уже активен баф навешиваемый при применени текущего
                         for(let ally of buffs_list[spell_name].ally) {
-                            if(my_char.group.members[member_name].buffs_list[ally]) {
+                            if(my_char.group.members[member_name].buffs[ally]) {
                                 if(test) echo("---->skipped for "+member_name+"(have ally:"+ally+")");
                                 continue for_group;
                             }
@@ -1120,7 +1142,7 @@ function checkBuff() {
                                     continue;
                                 } else if(buffs_list[spell_name].ally!=undefined) {
                                     for(let ally of buffs_list[spell_name].ally) {
-                                        if(my_char.group.members[aGMspell[0]].buffs_list[ally]) {
+                                        if(my_char.group.members[aGMspell[0]].buffs[ally]) {
                                             if(test) echo("---->skipped for "+aGMspell[0]+"(have ally:"+ally+")");
                                             continue for_group_single;
                                         }
@@ -2005,7 +2027,7 @@ var buffs_list = {
     'stone skin': new Spell('k', 'pro', 'protective', 2),
     'protection good': new Spell('g', 'pro', 'protective', 2),
     'spell resistance': new Spell('m', 'pro', 'protective', 2, 0, false,[],['rainbow shield']),
-    'mental block': new Spell('m', 'trv', 'protective', 1, 2),
+    'mental block': new Spell('m', 'trv', 'protective', 2, 2),
     'magic concentrate': new Spell('m', 'enh', 'protective', 2, 0),
     'protection negative': new Spell('n', 'pro', 'protective', 2, 0),
     'protection cold': new Spell('c', 'pro', 'protective', 2, 0),
