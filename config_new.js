@@ -2,23 +2,8 @@
 - вынести список говорунов в переменную/массив [#говоруны]
 - вынести #prompt и #battleprompt в chars, на случай если у чаров разный prompt
 
-Тебя останавливают несколько добродушных старушек.
+- Тебя останавливают несколько добродушных старушек.
 ------------------------
-
-Нечто загорается загорается багровым пламенем!
-
-В твоей голове звучат торжественные слова на тайном наречии Азазеля:
-    litol achrayut, litol chelek, netilat lulav
-    netilat lulav, lulshafan anigeron, lulshafan yadaim
-    netilat yadaim, litol achrayut, netilat lulav
-    anigeron chelek, netilat lulav, litol achrayut
-    netilat yadaim, litol achrayut, sefer yetsirah
-    netilat lulav, litol chelek, lulshafan anigeron
-
-    heal, curse, 
-    Чтобы воззвать к Азазелю, произнеси его имя и добавь тайные слова -- 
-например, сказать azazel sefer yetsirah. Используй их вовремя и с умом,
-ибо безжалостный Азазель не прощает ошибок.
 */
 
 /* Этот файл будет сохранен в браузере (в LocalStorage.settings).
@@ -29,59 +14,7 @@
 
 var test = true; //true - для вывода всякой отладочной информации
 var melt_counter = 0; //противодействие автовыкидыванию
-var lAzazel = false;
-var azazel = new Azazel();
-var AZAZEL_TIMER = 50;
-var AZAZEL_WORDS_TIMER = 25;
 
-function Azazel(heal_words, curse_words, attack_words) {
-    if(heal_words!=undefined && curse_words!=undefined && attack_words!=undefined) {
-        this.start=Date.now();
-        this.is_set = true;
-    } else {
-        this.start=-1;
-        this.is_set = false;
-    }
-    this.heal = new Words('heal',heal_words);
-    this.curse = new Words('curse',curse_words);
-    this.attack = new Words('attack',attack_words);
-
-    this.stat = function() {
-        if(!this.is_set) return '';
-
-        return this.heal.get()+this.curse.get()+this.attack.get();
-    };
-};
-function Words(name, str) {
-    this.name = name ? name : undefined;
-	this.words = str ? str : undefined;
-    //когда использован:
-	this.used = -1;
-    this.use = function(){
-        if(this.words==undefined) {
-            echo('[AZAZEL ERROR: no words]');
-            return;
-        }
-        send("say azazel "+this.words);
-        echo('-->[Azazel '+this.name.toUpperCase+']');
-        this.used=Date.now();
-    };
-    this.get = function(){
-        let sec_timer = 0;
-        
-        if(this.used != -1)
-            sec_timer = AZAZEL_WORDS_TIMER*60 - Math.floor((Date.now()-this.used)/1000);
-        
-        if(sec_timer <= 0)
-            this.used = -1;
-
-        if(this.used > 0) {
-            return '['+Math.floor((sec_timer)/60)+']';
-        } else {
-            return '[a'+this.name.substring(0,1)+']';
-        }
-    };
-};
 var chars = {
     'Miyamoto': {
         name: 'Miyamoto',
@@ -91,6 +24,36 @@ var chars = {
         clan: 'invader',
         water: 'spring',//'flask',
         food: 'mushroom',
+        buffs_needs: {
+            'group defense': new Buff_need(false, false, true, true),
+            'inspire': new Buff_need(false, false, true, true),
+            'shadow cloak': new Buff_need(true, true, false, false),
+            'dark shroud': new Buff_need(true, true, false, true),
+            'shield': new Buff_need(false, true, false, true),
+            'protective shield': new Buff_need(false, true, false, true), 
+            'armor': new Buff_need(false, true, false, true),
+            'stone skin': new Buff_need(false, true, false, true),
+            'protection good': new Buff_need(false, true, false, false),
+            'spell resistance': new Buff_need(false, true, false, true),
+            'mental block': new Buff_need(true, true, false, false),
+            'magic concentrate': new Buff_need(true, true, false, false),
+            'protection negative': new Buff_need(false, true, false, false),
+            'protection cold': new Buff_need(false, true, false, false),
+            'giant strength': new Buff_need(false, false, false, true),
+            'detect invis': new Buff_need(false, true, false, false),
+            'improved detect': new Buff_need(false, false, false, false),
+            'infravision': new Buff_need(false, false, false, false),
+            'detect magic': new Buff_need(true, false, false, false),
+        
+            //pets:
+            'stardust': new Buff_need(false, true, false, true),
+            'sanctuary': new Buff_need(false, true, false, true),
+            'enhanced armor': new Buff_need(false, true, false, true),
+            'haste': new Buff_need(false, false, false, true),
+            'bless': new Buff_need(false, true, false, true),
+            'dragon skin': new Buff_need(false, true, false, true),
+            'frenzy': new Buff_need(false, false, false, true),
+        }
     },
     'Zaleshanin': {
         name: 'Zaleshanin',
@@ -905,23 +868,33 @@ function checkBuff() {
         в случае прокачки спелов - только спелы чара
         в остальных случаях спелы чаров могут быть заменены спелами чармиса с уровнем выше уровня чара */
     var oSpells = {}; 
+    //мои бафы
     for(let spell of my_char.spells) {
+        //х.з. что с этим спелом дальше делать!
+        if(my_char.buffs_needs[spell]==undefined) continue;
+
         oSpells[spell]=new MemberSpell(my_char.name, my_char.level);
     }
+    //бафы чармисов
     for(let aSpell of my_char.group.spells) {
-        //пропускаем если прокачка спелов, а спел не обязательный (buff==1)
-        if(my_char.pract && buffs_list[aSpell[1]].buff!=1) continue;
+        //х.з. что с этим спелом дальше делать!
+        if(my_char.buffs_needs[aSpell[1]]==undefined) continue;
+
+        //во время прокачки, с чармисов оставляем только обязательные (buff==1) 
+        if(my_char.pract && my_char.buffs_needs[aSpell[1]].always==false && my_char.buffs_needs[aSpell[1]].gm_always==false) continue; 
 
         //пропускаем если при фулбафе не кастуется
-        if(buffs_list[aSpell[1]].buff==0) continue;
-
+        if(my_char.buffs_needs[aSpell[1]].always==false
+            && my_char.buffs_needs[aSpell[1]].gm_always==false
+            && my_char.buffs_needs[aSpell[1]].fullbuff==false
+            && my_char.buffs_needs[aSpell[1]].gm_fullbuff==false) continue;
         
         if(oSpells[aSpell[1]]!=undefined) {
             //пропускаем если уже зареган спел большего уровня
             if(oSpells[aSpell[1]].level>=aSpell[2]) continue;
 
             //пропускаем если уже зареган, и бафается только на себя
-            if(buffs_list[aSpell[1]].group==0) continue;
+            if(buffs_list[aSpell[1]].target==false) continue;
         }            
 
         oSpells[aSpell[1]]=new MemberSpell(aSpell[0], aSpell[2]);
@@ -946,14 +919,14 @@ function checkBuff() {
             test_msg += '[key:'+buffs_list[spell_name].mgroup+"-"+buffs_list[spell_name].mbrief+']';
         }
 
-        //проверки если не фулбаф
+        //проверки если не фулбаф (перевешиваются обязательные баффы)
         if(my_char.fullbuff.target===undefined) {
             //баф не обязательный - пропускаем
-            if(buffs_list[spell_name].buff!=1) {
+            if(my_char.buffs_needs[spell_name].always==false && my_char.buffs_needs[spell_name].gm_always==false ) {
                 if(test) echo(test_msg+'->(skip noFullBuff, unnecessary spell)');
                 continue;
             }
-            if(buffs_list[spell_name].group==0) {
+            if(buffs_list[spell_name].target==false) {
                 //бафф вешается только на себя
                 if(test) echo("---->chk 4 single...");
                     
@@ -1120,7 +1093,7 @@ function checkBuff() {
                 }
     
                 //не кастуется на цель - пропускаем
-                if(buffs_list[spell_name].group==0) {
+                if(buffs_list[spell_name].target==false) {
                     if(test) echo("---->skipped (not for target)");
                     continue;
                 }
@@ -1132,7 +1105,7 @@ function checkBuff() {
                 if(my_char.fullbuff.all) {
                     if(test) echo("---->chk 4 fullbuff.all...");
     
-                    if(buffs_list[spell_name].group==0) {
+                    if(buffs_list[spell_name].target==false) {
                         if(test) echo("---->chk not4group spell("+spell_name+")...");
                         for_group_single:
                         for(let aGMspell of my_char.group.spells){
@@ -1231,8 +1204,9 @@ function checkBuff() {
                             continue;
                         }
                         //на себя такое не вешаем
-                        if(buffs_list[spell_to_cast].buff==0) {
-                            if(test) echo("---->not buff for self fb (buff==0)");
+                        
+                        if(my_char.buffs_needs[spell_to_cast].always==false && my_char.buffs_needs[spell_to_cast].fullbuff==false) {
+                            if(test) echo("---->not buff for self");
                             continue;
                         }
                         targ = my_char.name;
@@ -1241,8 +1215,8 @@ function checkBuff() {
                     if(test) echo("---->chk 4 self fb...!!!");
                     
                     //на себя такое не вешаем
-                    if(buffs_list[spell_name].buff==0) {
-                        if(test) echo("---->not buff for self fb (buff==0)");
+                    if(my_char.buffs_needs[spell_to_cast].always==false && my_char.buffs_needs[spell_to_cast].fullbuff==false) {
+                        if(test) echo("---->not buff for self in fullbuff");
                         continue;
                     }
                     if(buffs_list[spell_name].aligns.indexOf(my_char.align)==-1) {
@@ -1254,13 +1228,16 @@ function checkBuff() {
                         if(test) echo("---->skipped (have one)");
                         continue;
                     }
-                    if(caster!=my_char.name && buffs_list[spell_name].group==0) {
-                        if(test) echo("---->skipped not for group member (caster:"+caster+")");
-                        continue;
+                    if(caster!=my_char.name && buffs_list[spell_name].target==false) {
+                        if(my_char.hasSpell(spell_name)) //меняем кастера на себя
+                            caster = my_char.name;
+                        else {
+                            if(test) echo("---->skipped not for group member (caster:"+caster+")");
+                            continue;
+                        }
                     }
 
-                    //есть спел который вешает сразу на всю группу - меняем спелл TODO
-
+                    //есть спел который вешает сразу на всю группу - меняем спелл 
                     if(buffs_list[spell_name].grSpell!==undefined && oSpells[buffs_list[spell_name].grSpell]!=undefined) {
                         spell_to_cast = buffs_list[spell_name].grSpell;
                         caster = oSpells[spell_to_cast].member;
@@ -1340,12 +1317,12 @@ function buffChange(sBuff, lStatus, lActionDone, action) {
     	if (buffs_list[sBuff].ally !== undefined) {
         	if (test) echo('---->(есть ally)');
         	buffs_list[sBuff].ally.forEach(function (spell) {
-            	if (spell === action.command && buffs_list[spell].group)
+            	if (spell === action.command && buffs_list[spell].target)
                 	if (test) echo('---->(ally4group ' + spell + ')');
             	lGroupAlly = true;
         	});
     	}
-    	if (buffs_list[sBuff].group || lGroupAlly) {
+    	if (buffs_list[sBuff].target || lGroupAlly) {
         	if (test) echo('---->(ally4group&me)');
         	forGroup = true;
         	forSelf = true;
@@ -1600,6 +1577,7 @@ function Pchar(name, char, level) {
 
     this.weapon = char===undefined ? undefined : char.weapon;
     this.align = char===undefined ? undefined : char.align;
+    this.buffs_needs = char==undefined ? {} : char.buffs_needs;
     //[#armed] 0 - без оружия(оружие на земле), 1 - оружие в мешке, 2 - вооружен
     this.armed = false;
 
@@ -1641,6 +1619,8 @@ function Pchar(name, char, level) {
 
         return false;
     };
+    this.hasSpell = (spell) => this.spells.indexOf(spell) >= 0 ? true : false;
+
     this.fullbuff = new Fullbuff();
 
 	this.order = new Order();
@@ -1728,22 +1708,6 @@ function getSpells(char, level) {
         
     }
     return result;
-}
-function Spell(brief, mgroup, sclass, buff, group, party, aAntogonist, aAlly, grSpell, aligns) {
-    //buff: 0 - никогда, 1 - всегда, 2 - fullbuff, 3 - только при прокачке
-    //group (кастовать на членов группы): 0-no, 1-yes, 2-full, 3-target
-    //party (кастуется на всю группу)
-    this.mbrief = brief;
-    this.mgroup = mgroup;
-    this.class = sclass;
-    this.buff = buff === undefined ? 0 : buff;
-    this.group = group === undefined ? 0 : group;
-    this.party = party === undefined ? false : party;
-    this.antogonist = aAntogonist;
-    this.ally = aAlly;
-    this.aligns = aligns === undefined ? 'eng' : aligns;
-    this.progress = 0;
-    this.grSpell = grSpell;
 }
 
 function getBuffClass(text) {
@@ -2010,39 +1974,117 @@ var pets = {
 };
 
 var buffs_list = {
-    //Spell(brief, mgroup, level, sclass, buff, group, party, aAntogonist, aAlly, alligns)
-    'rainbow shield': new Spell('R', 'pro','protective'),
-    'group defense': new Spell('gd', 'pro', 'protective', 2, 3, true,[],["shield","armor","sanctuary"]),
-    'inspire': new Spell('i','enh','protective', 2, 2, true),
+    'rainbow shield': new Spell('rainbow shield', 'R', 'pro','protective'),
+    'group defense': new Spell('group defense', 'gd', 'pro', 'protective', false, true,[],["shield","armor","sanctuary"]),
+    'inspire': new Spell('inspire', 'i','enh','protective', false, true),
 
     //invader:
-    'shadow cloak': new Spell('S', 'cln', 'protective', 2),
+    'shadow cloak': new Spell('shadow cloak', 'S', 'cln', 'protective'),
 
     //protect:
     //necr
-    'dark shroud': new Spell('d', 'pro', 'protective', 2, 2,false,[],['stardust','sanctuary'],undefined,'e'),
-    'shield':  new Spell('S', 'pro', 'protective', 2, 3, false,[],[],'group defense'),
-    'protective shield': new Spell('p', 'pro', 'protective', 2),
-    'armor': new Spell('a', 'pro', 'protective', 2, 3, false,[],[],'group defense'),
-    'stone skin': new Spell('k', 'pro', 'protective', 2),
-    'protection good': new Spell('g', 'pro', 'protective', 2),
-    'spell resistance': new Spell('m', 'pro', 'protective', 2, 0, false,[],['rainbow shield']),
-    'mental block': new Spell('m', 'trv', 'protective', 2, 2),
-    'magic concentrate': new Spell('m', 'enh', 'protective', 2, 0),
-    'protection negative': new Spell('n', 'pro', 'protective', 2, 0),
-    'protection cold': new Spell('c', 'pro', 'protective', 2, 0),
-    'giant strength': new Spell('g', 'enh', 'protective', 2, 2),
-    'detect invis': new Spell('i', 'det', 'detection', 2, 0),
-    'improved detect': new Spell('w', 'det', 'detection', 0, 0),
-    'infravision': new Spell('r', 'det', 'detection', 0, 0),
-    'detect magic':new Spell('m', 'det', 'detection', 2, 0),
+    'dark shroud': new Spell('dark shroud', 'd', 'pro', 'protective', true, false,[],['stardust','sanctuary'],undefined,'e'),
+    'shield':  new Spell('shield', 'S', 'pro', 'protective',true , false,[],[],'group defense'),
+    'protective shield': new Spell('protective shield','p', 'pro', 'protective'),
+    'armor': new Spell('armor', 'a', 'pro', 'protective', true, false,[],[],'group defense'),
+    'stone skin': new Spell('stone skin', 'k', 'pro', 'protective'),
+    'protection good': new Spell('protection good', 'g', 'pro', 'protective'),
+    'spell resistance': new Spell('spell resistance', 'm', 'pro', 'protective', false, false,[],['rainbow shield']),
+    'mental block': new Spell('mental block', 'm', 'trv', 'protective', true),
+    'magic concentrate': new Spell('magic concentrate', 'm', 'enh', 'protective'),
+    'protection negative': new Spell('protection negative', 'n', 'pro', 'protective'),
+    'protection cold': new Spell('protection cold', 'c', 'pro', 'protective'),
+    'giant strength': new Spell('giant strength', 'g', 'enh', 'protective', true),
+    'detect invis': new Spell('detect invis', 'i', 'det', 'detection'),
+    'improved detect': new Spell('improved detect', 'w', 'det', 'detection'),
+    'infravision': new Spell('infravision', 'r', 'det', 'detection'),
+    'detect magic': new Spell('detect magic', 'm', 'det', 'detection'),
 
     //pets:
-    'stardust': new Spell('z', 'pro', 'protective', 2, 2,false,[],['dark shroud','sanctuary']),
-    'sanctuary': new Spell('s', 'pro', 'protective', 2, 2,false,[],['dark shroud','stardust'],'group defense'),
-    'enhanced armor': new Spell('A', 'pro', 'protective', 2, 2),
-    'haste': new Spell('h', 'enh', 'protective', 0, 2),
-    'bless': new Spell('b', 'enh', 'protective', 2, 2),
-    'dragon skin': new Spell('D', 'pro', 'protective', 2, 0),
-    'frenzy': new Spell('f', 'enh', 'protective', 2, 2, false, [],[],undefined,'ng'),
+    'stardust': new Spell('stardust', 'z', 'pro', 'protective', true, false,[],['dark shroud','sanctuary']),
+    'sanctuary': new Spell('sanctuary', 's', 'pro', 'protective', true, false,[],['dark shroud','stardust'],'group defense'),
+    'enhanced armor': new Spell('enhanced armor', 'A', 'pro', 'protective', true),
+    'haste': new Spell('haste', 'h', 'enh', 'protective', true),
+    'bless': new Spell('bless', 'b', 'enh', 'protective', true),
+    'dragon skin': new Spell('dragon skin', 'D', 'pro', 'protective'),
+    'frenzy': new Spell('frenzy', 'f', 'enh', 'protective', true, false, [],[],undefined,'ng'),
+};
+function Buff_need(always, fullbuff, gm_always, gm_fullbuff){
+    this.always = always ? true : false;
+    this.gm_always = gm_always ? true : false;
+    this.fullbuff = fullbuff ? true : false;
+    this.gm_fullbuff = gm_fullbuff ? true : false;
+};
+function Spell(name, brief, mgroup, sclass, target, party, aAntogonist, aAlly, grSpell, aligns) { //brief, mgroup, sclass, buff, group, party, aAntogonist, aAlly, grSpell, aligns
+    //buff: 0 - никогда, 1 - всегда, 2 - fullbuff, 3 - только при прокачке
+    //group (кастовать на членов группы): 0-no, 1-yes, 2-full, 3-target
+    //party (кастуется на всю группу)
+    this.name = name;
+    this.mbrief = brief;
+    this.mgroup = mgroup;
+    this.class = sclass;
+    this.target = target === undefined ? false : target;
+    //this.buff = buff === undefined ? 0 : buff;
+    //this.group = group === undefined ? 0 : group;
+    this.party = party === undefined ? false : party;
+    this.antogonist = aAntogonist;
+    this.ally = aAlly;
+    this.aligns = aligns === undefined ? 'eng' : aligns;
+    this.progress = 0;
+    this.grSpell = grSpell;
+}
+
+/************* Azazel Religion **************/
+var lAzazel = false;
+var azazel = new Azazel();
+var AZAZEL_TIMER = 50;
+var AZAZEL_WORDS_TIMER = 25;
+
+function Azazel(heal_words, curse_words, attack_words) {
+    if(heal_words!=undefined && curse_words!=undefined && attack_words!=undefined) {
+        this.start=Date.now();
+        this.is_set = true;
+    } else {
+        this.start=-1;
+        this.is_set = false;
+    }
+    this.heal = new Words('heal',heal_words);
+    this.curse = new Words('curse',curse_words);
+    this.attack = new Words('attack',attack_words);
+
+    this.stat = function() {
+        if(!this.is_set) return '';
+
+        return this.heal.get()+this.curse.get()+this.attack.get();
+    };
+};
+function Words(name, str) {
+    this.name = name ? name : undefined;
+	this.words = str ? str : undefined;
+    //когда использован:
+	this.used = -1;
+    this.use = function(){
+        if(this.words==undefined) {
+            echo('[AZAZEL ERROR: no words]');
+            return;
+        }
+        send("say azazel "+this.words);
+        echo('-->[Azazel '+this.name.toUpperCase+']');
+        this.used=Date.now();
+    };
+    this.get = function(){
+        let sec_timer = 0;
+        
+        if(this.used != -1)
+            sec_timer = AZAZEL_WORDS_TIMER*60 - Math.floor((Date.now()-this.used)/1000);
+        
+        if(sec_timer <= 0)
+            this.used = -1;
+
+        if(this.used > 0) {
+            return '['+Math.floor((sec_timer)/60)+']';
+        } else {
+            return '[a'+this.name.substring(0,1)+']';
+        }
+    };
 };
