@@ -19,7 +19,7 @@ var chars = {
     'Miyamoto': {
         name: 'Miyamoto',
         align: 'e',
-        weapon: 'арапник',
+        weapon: 'scalpel', //'арапник',
         class: 'necromancer',
         clan: 'invader',
         water: 'spring',//'flask',
@@ -27,8 +27,8 @@ var chars = {
         buffs_needs: {
             'group defense': new Buff_need(false, false, false, true),
             'inspire': new Buff_need(false, true, false, true),
-            'shadow cloak': new Buff_need(true, true, false, false),
-            'dark shroud': new Buff_need(true, true, false, true),
+            'shadow cloak': new Buff_need(false, true, false, false),
+            'dark shroud': new Buff_need(false, true, false, true),
             'shield': new Buff_need(false, true, false, true),
             'protective shield': new Buff_need(false, true, false, true), 
             'armor': new Buff_need(false, true, false, true),
@@ -36,14 +36,14 @@ var chars = {
             'protection good': new Buff_need(false, true, false, false),
             'spell resistance': new Buff_need(false, true, false, true),
             'mental block': new Buff_need(true, true, false, false),
-            'magic concentrate': new Buff_need(true, true, false, false),
+            'magic concentrate': new Buff_need(false, true, false, false),
             'protection negative': new Buff_need(false, true, false, false),
             'protection cold': new Buff_need(false, true, false, false),
             'giant strength': new Buff_need(false, false, false, true),
             'detect invis': new Buff_need(false, true, false, false),
             'improved detect': new Buff_need(false, false, false, false),
             'infravision': new Buff_need(false, false, false, false),
-            'detect magic': new Buff_need(true, false, false, false),
+            'detect magic': new Buff_need(false, false, false, false),
         
             //pets:
             'stardust': new Buff_need(false, true, false, true),
@@ -170,8 +170,10 @@ $('.trigger').on('text', function (e, text) {
     if (text.match('^Ты не можешь сконцентрироваться.$')
         || text.match('^Ты пытаешься сотворить заклинание, но теряешь концентрацию и терпишь неудачу.$')
         || text.match('^Твоя попытка закончилась неудачей.$')
-        || text.match('На кого именно ты хочешь произнести заклинание')) {
-            if(test) echo('[spell fail trigger]')
+        || text.match('На кого именно ты хочешь произнести заклинание') 
+        || text.match('Это заклинание нельзя использовать во время сражения.') ) {
+        
+        if(test) echo('[spell fail trigger]')
         clearAction();
         if (my_char.fullbuff.target && text.match('На кого именно ты хочешь произнести заклинание')) {
         	my_char.fullbuff = new Fullbuff();
@@ -730,13 +732,14 @@ function promptRecived(afk) {
         charInit();
         if (test) echo('\n');
     }
+    if (my_char.was_fade !== undefined &&  (mudprompt['trv']!==undefined && mudprompt['trv']!=='none' && mudprompt['trv'].a.indexOf('F')!==-1)) {
+        my_char.was_fade = undefined;
+    }
+
     my_char.afk = afk;
 
     if (my_char.was_afk !== undefined && my_char.afk && my_char.action.act!="afk") {
         my_char.was_afk = undefined;
-    }
-    if (my_char.was_fade !== undefined &&  ((mudprompt['enh']!==undefined && mudprompt['enh']!=='none') && mudprompt['enh'].a.indexOf('F')!==-1)) {
-        my_char.was_fade = undefined;
     }
 
     if (my_char.last_pose !== undefined) {
@@ -756,6 +759,7 @@ function checking() {
     if (test) echo(' -->checking()');
     if (test) echo(' --> status:'
         + (my_char.afk ? '[afk]' : '')
+        + ((mudprompt['trv']!==undefined && mudprompt['trv']!=='none' && mudprompt['trv'].a.indexOf('F')!==-1) ? '[fade]' : '')
         + (my_char.last_pose != undefined ? '[last:' + my_char.last_pose + ']' : '')
         + (my_char.was_afk != undefined ? '[was_afk]' : '')
         + (my_char.was_fade != undefined ? '[was_fade]' : '')
@@ -763,6 +767,7 @@ function checking() {
         + ' pos:' + mudprompt.p2.pos
         + (mudprompt.p2.posf != '' ? '; posf:' + mudprompt.p2.posf : '')
         + '\n');
+    if(my_char.action.act != undefined) echo('[act:' + my_char.action.act + ' command:'+my_char.action.command+' target:'+my_char.action.target+']');
     let azazelStr = '';
     azazelStr = azazel.stat();
     if(test) azazelStr = 'AZAZEL:['+azazelStr+']'
@@ -855,7 +860,7 @@ function checkBuffv2() {
     }
     
     //чар чем-то занят - прерываем
-    if (my_char.action.act === undefined) {
+    if (my_char.action.act === undefined && ["stand", "sit", "rest", "sleep"].indexOf(mudprompt.p2.pos)!=-1) {
         my_char.affChanged = false;
     } else {
         return;
@@ -946,8 +951,8 @@ function checkBuffv2() {
         oSpells[aSpell[1]]=new MemberSpell(aSpell[0], aSpell[2]);
     }
     if(test) {
-        console.log('checkBuffv2::oSpells:');console.log(oSpells);
-        console.log('checkBuffv2::targets:');console.log(targets);
+        console.log('chkBuffv2::oSpells:');console.log(oSpells);
+        console.log('chkBuffv2::targets:');console.log(targets);
     }
     let spell_to_cast, victim, caster, victim_align, group_member;
     for(let spell_name in oSpells) {
@@ -1107,7 +1112,15 @@ function checkBuffv2() {
         }       
         
         if(test) echo("---->spell:'"+spell_to_cast+"' caster:"+caster+" target:"+victim);
-        
+
+        if (my_char.afk) {
+            changeAFK();
+            my_char.affChanged = true;
+            return;
+        }    
+        if(mudprompt['trv']!==undefined && mudprompt['trv']!=='none' && mudprompt['trv'].a.indexOf('F')!==-1) {
+            my_char.was_fade = true;
+        }
         if(caster==my_char.name) {
             if (mudprompt.p2.pos === "stand") {
                 my_char.affChanged = true;
@@ -1286,7 +1299,9 @@ function checkNeeds() {
         my_char.needsChanged = true;
         return;
     }
-
+    if(mudprompt['trv']!==undefined && mudprompt['trv']!=='none' && mudprompt['trv'].a.indexOf('F')!==-1) {
+        my_char.was_fade = true;
+    }
     //[#food]
     if (my_char.hunger) {
         if (!my_char.lfood) {
@@ -1371,7 +1386,7 @@ function restoreStatus() {
         if (test) echo('[' + my_char.action.act + '->EXIT]');
         return;
     }
-    if (my_char.was_fade !== undefined && !((mudprompt['enh']!==undefined && mudprompt['enh']!=='none') && mudprompt['enh'].a.indexOf('F')!==-1)) {
+    if (my_char.was_fade !== undefined && !((mudprompt['trv']!==undefined && mudprompt['trv']!=='none') && mudprompt['trv'].a.indexOf('F')!==-1)) {
         doAct('fade');
         return;
     }
@@ -1994,7 +2009,7 @@ function Words(name, str) {
             return;
         }
         send("say azazel "+this.words);
-        echo('-->[Azazel '+this.name.toUpperCase+']');
+        echo('-->[Azazel '+this.name.toUpperCase()+']');
         this.used=Date.now();
     };
     this.get = function(){
