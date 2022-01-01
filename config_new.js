@@ -1596,6 +1596,8 @@ function getSpells(char, level) {
     let spells = [], result = [];
     if (char!==undefined && char.clan === 'invader') {
         spells.push(['shadow cloak',10]);
+        spells.push(['shadowlife',30]);
+        spells.push(['evil spirit',33]);
     }
     if (char!==undefined && char.class === 'necromancer') {
         spells.push(['dark shroud',21]);
@@ -1614,22 +1616,33 @@ function getSpells(char, level) {
         spells.push(['improved detect',40]);
         spells.push(['infravision',21]);
         spells.push(['fly',23]);
-/*
-        this['learning'] = new Spell('LRN', 33, 'protective', 1);
-        this['magic missile'] = new Spell('mm', 2, 'combat');
-        this['chill touch'] = new Spell('ChT', 7, 'combat');
-        this['create water'] = new Spell('CrW', 11, 'creation');
-        this['create food'] = new Spell('CrF', 12, 'creation');
-        this['detect good'] = new Spell('DtG', 13, 'detection', 3);
-        this['detect undead'] = new Spell('DtU', 13, 'detection', 3);
-        this['burning hands'] = new Spell('BnH', 14, 'combat');
-        this['poison'] = new Spell('PSN', 23, 'maladictions');
-        this['lightning bolt'] = new Spell('LiB', 23, 'combat');
-        this['dispel affects'] = new Spell('DAf', 24, 'maladictions');
-        this['cancellation'] = new Spell('CNL', 28, 'maladictions');
-        this['sonic resonance'] = new Spell('SoR', 28, 'combat');
-        this['create spring'] = new Spell('CrS', 31, 'creation');
- */    
+        //spells.push(['learning',33]);
+        //spells.push(['create water',11]);
+        //spells.push(['create food',12]);
+        //spell.push(['create spring',31]);
+        spells.push(['magic missile',1]);
+        spells.push(['acid blast',63]);
+        spells.push(['acid arrow',48]);
+        spells.push(['burning hands',10]);
+        spells.push(['chill touch',5]);
+        spells.push(['sonic resonance',28]);
+        spells.push(['lightning ward ',41]);
+        spells.push(['lightning bolt',23]);
+        spells.push(['disruption',40]);
+        spells.push(['chain lightning',33]);
+        spells.push(['spectral furor',35]);
+        spells.push(['hurricane',65]);
+        spells.push(['cursed lands',64]);
+        spells.push(['mysterious dream',27]);
+        spells.push(['hand of undead',44]);
+        spells.push(['shielding',53]);
+        spells.push(['energy drain',45]);
+        spells.push(['insanity',59]);
+        spells.push(['curse',34]);
+        spells.push(['plague',36]);
+        spells.push(['corruption',63]);
+        spells.push(['magic jar',68]);
+        spells.push(['power word kill',78]);
     }
     for(let aSpell of spells) {
         
@@ -1949,6 +1962,33 @@ var buffs_list = {
     'dragon skin': new Spell('dragon skin', 'D', 'pro', 'protective'),
     'frenzy': new Spell('frenzy', 'f', 'enh', 'protective', true, false, [],[],undefined,'ng'),
 };
+var attack_spells_list = {
+    //AttackSpell(sName,sClass,lTarget,lRange,lArea,lFight,sDamage)
+    'shadowlife': new AttackSpell('shadowlife','maladictions',true,true,false,false),
+    'magic missile': new AttackSpell('magic missile','attack',true,true,false,true,'energy'),
+    'acid blast': new AttackSpell('acid blast','attack',true,true,false,true,'acid'),
+    'acid arrow': new AttackSpell('acid arrow','attack',true,true,false,true,'acid'),
+    'burning hands': new AttackSpell('burning hands','attack',true,false,false,true,'fire'),
+    'chill touch': new AttackSpell('chill touch','attack',true,false,false,true,'cold'),
+    'sonic resonance': new AttackSpell('sonic resonance','attack',true,true,false,true,'energy'),
+    'lightning ward ': new AttackSpell('lightning ward','room',false,false,true,false,'lightning'),
+    'lightning bolt': new AttackSpell('lightning bolt','attack',true,true,false,true,'lightning'),
+    'disruption': new AttackSpell('disruption','attack',true,true,false,true,'energy'),
+    'chain lightning': new AttackSpell('chain lightning','attack',true,false,true,true,'lightining'),
+    'spectral furor': new AttackSpell('spectral furor','attack',true,true,false,true,'energy'),
+    'hurricane': new AttackSpell('hurricane','attack',false,false,true,true,'other'),
+    'cursed lands': new AttackSpell('cursed lands','room',false,false,true,false),
+    'mysterious dream': new AttackSpell('mysterious dream','room',false,false,true,false),
+    'hand of undead': new AttackSpell('hand of undead','attack',true,true,false,true,'energy'),
+    'shielding': new AttackSpell('shielding','maladiction',true,false,false,false),
+    'energy drain': new AttackSpell('energy drain','attack',true,false,false,true,'energy'),
+    'insanity': new AttackSpell('insanity','maladiction',true,false,false,true),
+    'curse': new AttackSpell('curse','maladiction',true,false,false,true),
+    'plague': new AttackSpell('plague','maladiction',true,false,false,true),
+    'corruption': new AttackSpell('corruption','maladiction',true,false,false,true),
+    'magic jar': new AttackSpell('magic jar','maladiction',true,false,false,false),
+    'power word kill': new AttackSpell('power word kill','attack',true,false,false,false,'energy'),
+}
 function Buff_need(always, fullbuff, gm_always, gm_fullbuff){
     this.always = always ? true : false;
     this.gm_always = gm_always ? true : false;
@@ -1960,18 +2000,27 @@ function Spell(name, brief, mgroup, sclass, target, party, aAntogonist, aAlly, g
     //group (кастовать на членов группы): 0-no, 1-yes, 2-full, 3-target
     //party (кастуется на всю группу)
     this.name = name;
-    this.mbrief = brief;
-    this.mgroup = mgroup;
-    this.class = sclass;
-    this.target = target === undefined ? false : target;
+    this.mbrief = brief; //буква из mudprompt
+    this.mgroup = mgroup; //группа из mudprompt
+    this.class = sclass; //внутреннее поголялово для класса заклинания
+    this.target = target === undefined ? false : target; //кастуется ли на цель
     //this.buff = buff === undefined ? 0 : buff;
     //this.group = group === undefined ? 0 : group;
-    this.party = party === undefined ? false : party;
-    this.antogonist = aAntogonist==undefined ? [] : aAntogonist;
-    this.ally = aAlly==undefined ? [] : aAlly;
-    this.aligns = aligns === undefined ? 'eng' : aligns;
-    this.progress = 0;
-    this.grSpell = grSpell;
+    this.party = party === undefined ? false : party; //кастуется на свою группу
+    this.antogonist = aAntogonist==undefined ? [] : aAntogonist; //противоположности
+    this.ally = aAlly==undefined ? [] : aAlly; //альтернативные
+    this.aligns = aligns === undefined ? 'eng' : aligns; //ограничение по алигну
+    this.progress = 0; // прокачка
+    this.grSpell = grSpell; //спел, которым вешается несколько баффов в т.ч. и текущий
+}
+function AttackSpell(sName,sClass,lTarget,lRange,lArea,lFight,sDamage) {
+    this.name = sName;
+    this.class = sClass;
+    this.target = lTarget ? true : false;
+    this.range = lRange ? true : false;
+    this.area = lArea ? true : false;
+    this.fight = lFight ? true : false;
+    this.damtype = sDamage; 
 }
 
 /************* Azazel Religion **************/
