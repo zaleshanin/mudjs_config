@@ -520,7 +520,15 @@ var KP_0 = 96,
     KP_PLUS = 107,
     KP_MINUS = 109,
     KP_DOT = 110,
-    KP_DIV = 111;
+    KP_DIV = 111,
+    N_1 = 49,
+    N_2 = 50,
+    N_3 = 51,
+    N_4 = 52,
+    N_5 = 53,
+    N_6 = 54,
+    N_7 = 55,
+    N_8 = 56;
 
 // Просто клавиша - идти по направлению, ctrl+клавиша - стрелять, alt+клавиша - всмотреться.
 function dir(d, e) {
@@ -615,7 +623,25 @@ keydown = function (e) {
                     
                // Для кодов остальных клавиш смотри https://keycode.info 
         */
-
+        /* case N_1:
+            //if (change_spell('close',e))
+                break;
+        case N_2:
+            //if (change_spell('range',e))
+                break;
+        case N_3:
+            //if (change_spell('maladiction',e))
+                break;
+        case N_4:
+            //if (change_spell('room',e))
+                break;
+        case N_5:
+            //if (change_spell('area',e))
+                break;
+        case N_6:
+            //if (change_spell('area',e))
+                break; */
+                                                        
         default:
             return; // по умолчанию просто посылаем клавишу на сервер
     }
@@ -770,7 +796,9 @@ function checking() {
     if(my_char.action.act != undefined) echo('[act:' + my_char.action.act + ' command:'+my_char.action.command+' target:'+my_char.action.target+']');
     let azazelStr = '';
     azazelStr = azazel.stat();
-    if(test) azazelStr = 'AZAZEL:['+azazelStr+']'
+    if(test) azazelStr = 'AZAZEL:['+azazelStr+']';
+
+    if(my_char.init) echo(my_char.attack_spells.get_prompt());
     
     let needsStatus = '';
     if (my_char.needsChanged)
@@ -905,7 +933,7 @@ function checkBuffv2() {
     
 
         //вообще не баффы - пропускем
-        if (['combat', 'creation', 'maladictions'].indexOf(buffs_list[spell].class) >= 0) {
+        if (['combat', 'creation', 'maladiction'].indexOf(buffs_list[spell].class) >= 0) {
             continue;
         }
         //не тот класс заклинания - пропускаем
@@ -923,7 +951,7 @@ function checkBuffv2() {
             || my_char.buffs_needs[aSpell[1]].fullbuff
             || my_char.buffs_needs[aSpell[1]].gm_fullbuff)==false) continue;
         //вообще не бафф - пропусем
-        if (['combat', 'creation', 'maladictions'].indexOf(buffs_list[aSpell[1]].class) >= 0) continue;
+        if (['combat', 'creation', 'maladiction'].indexOf(buffs_list[aSpell[1]].class) >= 0) continue;
         //не тот класс заклинания - пропускаем
         if(fb_class!==undefined && fb_class !== buffs_list[aSpell[1]].class) continue;
 
@@ -1458,7 +1486,7 @@ function Pchar(name, char, level) {
 
     this.ordersChange = false;
 
-    this.spells = getSpells(char, level);
+    this.spells = getSpells(char, level, 'buffs');
     this.hasBuff = function(cast){
         if((mudprompt[buffs_list[cast].mgroup]!==undefined && mudprompt[buffs_list[cast].mgroup]!=='none') && mudprompt[buffs_list[cast].mgroup].a.indexOf(buffs_list[cast].mbrief)!==-1){
             if(test) echo("------>Pchar->hasBuff("+cast+")->have one in mudprompt!");
@@ -1503,6 +1531,97 @@ function Pchar(name, char, level) {
         isSet : function(spell) {
             return this.get(spell) != undefined;
         }
+    };
+    this.attack_spells = {
+        list:{
+            close:{
+                fight:[],
+                peace:[],
+            },
+            range:{
+                fight:[],
+                peace:[],
+            },
+            curse:{
+                fight:[],
+                peace:[],
+            },
+            room:{
+                fight:[],
+                peace:[],
+            },
+        },
+        set: undefined,
+        get_prompt: function() {
+            let close = "",
+                range = "",
+                curse = "",
+                room = "";
+            if(this.set==undefined) {
+                this.set_attack_spells();
+            }
+            if(this.set.close.peace!=undefined){
+                close += "p:"+attack_spells_list[this.set.close.peace].short;
+            } 
+            if(this.set.close.fight!=undefined) {
+                close += (close==""?"":"/")+"f:"+attack_spells_list[this.set.close.fight].short;
+            }
+            if(this.set.range.peace!=undefined){
+                range += "p:"+attack_spells_list[this.set.range.peace].short;
+            } 
+            if(this.set.range.fight!=undefined) {
+                range += (range==""?"":"/")+"f:"+attack_spells_list[this.set.range.fight].short;
+            }
+            if(this.set.curse.peace!=undefined){
+                curse += "p:"+attack_spells_list[this.set.curse.peace].short;
+            } 
+            if(this.set.curse.fight!=undefined) {
+                curse += (curse==""?"":"/")+"f:"+attack_spells_list[this.set.curse.fight].short;
+            }
+            if(this.set.room.peace!=undefined){
+                room += "p:"+attack_spells_list[this.set.room.peace].short;
+            } 
+            if(this.set.room.fight!=undefined) {
+                room += (room==""?"":"/")+"f:"+attack_spells_list[this.set.room.fight].short;
+            }
+            return (close==""?"":"["+close+"]")
+                + (range==""?"":"["+range+"]")
+                + (curse==""?"":"["+curse+"]")
+                + (room==""?"":"["+room+"]");
+
+        },
+        set_attack_spells: function() {
+            this.set = {};
+            for(let spell of my_char.spells) {
+                if(attack_spells_list[spell]==undefined) continue;
+
+                if(attack_spells_list[spell].class=="room" || attack_spells_list[spell].area) 
+                    this.addSpell(spell,'room');
+
+                if(attack_spells_list[spell].range) 
+                    this.addSpell(spell,'range');
+
+                if(attack_spells_list[spell].target && attack_spells_list[spell].class=="attack") 
+                    this.addSpell(spell,'close');
+
+                if(attack_spells_list[spell].class=="maladiction") 
+                    this.addSpell(spell,'curse');
+            }   
+            if(test) console.log(this);
+        },
+        addSpell:function(spell,group) {
+            this.list[group].peace.push(spell);
+            if(this.set[group]==undefined)
+                this.set[group]={};
+            if(this.set[group].peace==undefined)
+                this.set[group].peace = spell;
+
+            if(attack_spells_list[spell].fight){ 
+                this.list[group].fight.push(spell);
+                if(this.set[group].fight==undefined)
+                    this.set[group].fight = spell;
+            }
+        },
     };
 }
 
@@ -1592,7 +1711,7 @@ function Order(comm) {
     this.name_num = [];
 }
 
-function getSpells(char, level) {
+function getSpells(char, level, type) {
     let spells = [], result = [];
     if (char!==undefined && char.clan === 'invader') {
         spells.push(['shadow cloak',10]);
@@ -1645,12 +1764,13 @@ function getSpells(char, level) {
         spells.push(['power word kill',78]);
     }
     for(let aSpell of spells) {
-        
-        if(test) echo("Spells: "+aSpell[0]+":"+aSpell[1]+"("+char.name+":"+level+")");
-
-        if(buffs_list[aSpell[0]]!==undefined && aSpell[1] <= level)
+        if(aSpell[1] <= level && (buffs_list[aSpell[0]]!==undefined || attack_spells_list[aSpell[0]]!==undefined))
             result.push(aSpell[0]);
         
+    }
+    if(test) {
+        console.log("getSpells() --> result:");
+        console.log(result);
     }
     return result;
 }
@@ -1964,30 +2084,30 @@ var buffs_list = {
 };
 var attack_spells_list = {
     //AttackSpell(sName,sClass,lTarget,lRange,lArea,lFight,sDamage)
-    'shadowlife': new AttackSpell('shadowlife','maladictions',true,true,false,false),
-    'magic missile': new AttackSpell('magic missile','attack',true,true,false,true,'energy'),
-    'acid blast': new AttackSpell('acid blast','attack',true,true,false,true,'acid'),
-    'acid arrow': new AttackSpell('acid arrow','attack',true,true,false,true,'acid'),
-    'burning hands': new AttackSpell('burning hands','attack',true,false,false,true,'fire'),
-    'chill touch': new AttackSpell('chill touch','attack',true,false,false,true,'cold'),
-    'sonic resonance': new AttackSpell('sonic resonance','attack',true,true,false,true,'energy'),
-    'lightning ward ': new AttackSpell('lightning ward','room',false,false,true,false,'lightning'),
-    'lightning bolt': new AttackSpell('lightning bolt','attack',true,true,false,true,'lightning'),
-    'disruption': new AttackSpell('disruption','attack',true,true,false,true,'energy'),
-    'chain lightning': new AttackSpell('chain lightning','attack',true,false,true,true,'lightining'),
-    'spectral furor': new AttackSpell('spectral furor','attack',true,true,false,true,'energy'),
-    'hurricane': new AttackSpell('hurricane','attack',false,false,true,true,'other'),
-    'cursed lands': new AttackSpell('cursed lands','room',false,false,true,false),
-    'mysterious dream': new AttackSpell('mysterious dream','room',false,false,true,false),
-    'hand of undead': new AttackSpell('hand of undead','attack',true,true,false,true,'energy'),
-    'shielding': new AttackSpell('shielding','maladiction',true,false,false,false),
-    'energy drain': new AttackSpell('energy drain','attack',true,false,false,true,'energy'),
-    'insanity': new AttackSpell('insanity','maladiction',true,false,false,true),
-    'curse': new AttackSpell('curse','maladiction',true,false,false,true),
-    'plague': new AttackSpell('plague','maladiction',true,false,false,true),
-    'corruption': new AttackSpell('corruption','maladiction',true,false,false,true),
-    'magic jar': new AttackSpell('magic jar','maladiction',true,false,false,false),
-    'power word kill': new AttackSpell('power word kill','attack',true,false,false,false,'energy'),
+    'shadowlife': new AttackSpell('shadowlife','shLf','maladiction',true,false,false,false),
+    'magic missile': new AttackSpell('magic missile','mm','attack',true,true,false,true,'energy'),
+    'acid blast': new AttackSpell('acid blast','aBst','attack',true,true,false,true,'acid'),
+    'acid arrow': new AttackSpell('acid arrow','aArr','attack',true,true,false,true,'acid'),
+    'burning hands': new AttackSpell('burning hands','brgHd','attack',true,false,false,true,'fire'),
+    'chill touch': new AttackSpell('chill touch','chTch','attack',true,false,false,true,'cold'),
+    'sonic resonance': new AttackSpell('sonic resonance','scRs','attack',true,true,false,true,'energy'),
+    'lightning ward': new AttackSpell('lightning ward','lngW','room',false,false,true,false,'lightning'),
+    'lightning bolt': new AttackSpell('lightning bolt','lngB','attack',true,true,false,true,'lightning'),
+    'disruption': new AttackSpell('disruption','disr','attack',true,true,false,true,'energy'),
+    'chain lightning': new AttackSpell('chain lightning','chLng','attack',true,false,true,true,'lightining'),
+    'spectral furor': new AttackSpell('spectral furor','spect','attack',true,true,false,true,'energy'),
+    'hurricane': new AttackSpell('hurricane','hur','attack',false,false,true,true,'other'),
+    'cursed lands': new AttackSpell('cursed lands','curLd','room',false,false,true,false),
+    'mysterious dream': new AttackSpell('mysterious dream','myst','room',false,false,true,false),
+    'hand of undead': new AttackSpell('hand of undead','HofU','attack',true,true,false,true,'energy'),
+    'shielding': new AttackSpell('shielding','shng','maladiction',true,false,false,false),
+    'energy drain': new AttackSpell('energy drain','engDr','attack',true,false,false,true,'energy'),
+    'insanity': new AttackSpell('insanity','ins','maladiction',true,false,false,true),
+    'curse': new AttackSpell('curse','crs','maladiction',true,false,false,true),
+    'plague': new AttackSpell('plague','plg','maladiction',true,false,false,true),
+    'corruption': new AttackSpell('corruption','corr','maladiction',true,false,false,true),
+    'magic jar': new AttackSpell('magic jar','jar','maladiction',true,false,false,false),
+    'power word kill': new AttackSpell('power word kill','pwk','attack',true,false,false,false,'energy'),
 }
 function Buff_need(always, fullbuff, gm_always, gm_fullbuff){
     this.always = always ? true : false;
@@ -2013,8 +2133,9 @@ function Spell(name, brief, mgroup, sclass, target, party, aAntogonist, aAlly, g
     this.progress = 0; // прокачка
     this.grSpell = grSpell; //спел, которым вешается несколько баффов в т.ч. и текущий
 }
-function AttackSpell(sName,sClass,lTarget,lRange,lArea,lFight,sDamage) {
+function AttackSpell(sName,sShort,sClass,lTarget,lRange,lArea,lFight,sDamage) {
     this.name = sName;
+    this.short = sShort;
     this.class = sClass;
     this.target = lTarget ? true : false;
     this.range = lRange ? true : false;
