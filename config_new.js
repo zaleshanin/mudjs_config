@@ -500,6 +500,13 @@ function scan(where) {
 // Рейнджеры могут стрелять по жертве victim из лука, а маги и клеры - 
 // бить заклинаниями в соседнюю комнату.
 function shoot(where) {
+    let pose = 'peace';
+    if(mudprompt.p2.pos=='fight') {
+        pose = 'fight';
+    }
+    let spell = my_char.attack_spells.get_spell('range',pose);
+    echo("-->[cast '"+spell+"' "+where+"."+victim+"]");
+    send("cast '"+spell+"' "+where+"."+victim);
     //    send('стрелять ' + where + ' ' + victim); 
     //    send("к 'стен лезв' " + where + '.' + victim);
     //    send("к 'струя кисл' " + where + '.' + victim);
@@ -539,6 +546,19 @@ function dir(d, e) {
     } else {
         go(d);
     }
+}
+
+function setSpell(g,e) {
+    let pose;
+    if(e.ctrlKey) {
+        pose='fight';
+    } else if(e.altKey) {
+        pose='peace';
+    } else {
+        return false;
+    }
+    my_char.attack_spells.changeSpell(g,pose);
+    return true;
 }
 
 // Назначаем горячие клавиши и их действия.
@@ -623,24 +643,30 @@ keydown = function (e) {
                     
                // Для кодов остальных клавиш смотри https://keycode.info 
         */
-        /* case N_1:
-            //if (change_spell('close',e))
+        case N_1:
+            if (setSpell('close',e))
                 break;
+            else
+                return;
         case N_2:
-            //if (change_spell('range',e))
+            if (setSpell('range',e))
                 break;
+            else
+                return;
         case N_3:
-            //if (change_spell('maladiction',e))
+            if (setSpell('curse',e))
                 break;
+            else
+                return;
         case N_4:
-            //if (change_spell('room',e))
+            if (setSpell('room',e))
                 break;
+            else
+                return;
         case N_5:
-            //if (change_spell('area',e))
-                break;
+            return;
         case N_6:
-            //if (change_spell('area',e))
-                break; */
+            return;
                                                         
         default:
             return; // по умолчанию просто посылаем клавишу на сервер
@@ -1622,6 +1648,18 @@ function Pchar(name, char, level) {
                     this.set[group].fight = spell;
             }
         },
+        changeSpell:function(group,pose){
+            let curr_spell = my_char.attack_spells.set[group][pose];
+            let new_index = my_char.attack_spells.list[group][pose].indexOf(curr_spell)+1;
+            if(new_index>=my_char.attack_spells.list[group][pose].length) new_index = 0;
+
+            my_char.attack_spells.set[group][pose] = my_char.attack_spells.list[group][pose][new_index];
+
+            echo(this.get_prompt());
+        },
+        get_spell: function(group,pose){
+            return my_char.attack_spells.set[group][pose];
+        },
     };
 }
 
@@ -1717,6 +1755,7 @@ function getSpells(char, level, type) {
         spells.push(['shadow cloak',10]);
         spells.push(['shadowlife',30]);
         spells.push(['evil spirit',33]);
+        spells.push(['nightfall',16]);
     }
     if (char!==undefined && char.class === 'necromancer') {
         spells.push(['dark shroud',21]);
@@ -1735,6 +1774,7 @@ function getSpells(char, level, type) {
         spells.push(['improved detect',40]);
         spells.push(['infravision',21]);
         spells.push(['fly',23]);
+        spells.push(['pass door',27]);
         //spells.push(['learning',33]);
         //spells.push(['create water',11]);
         //spells.push(['create food',12]);
@@ -1756,12 +1796,20 @@ function getSpells(char, level, type) {
         spells.push(['hand of undead',44]);
         spells.push(['shielding',53]);
         spells.push(['energy drain',45]);
+        spells.push(['magic jar',68]);
+        spells.push(['power word kill',78]);
         spells.push(['insanity',59]);
         spells.push(['curse',34]);
         spells.push(['plague',36]);
         spells.push(['corruption',63]);
-        spells.push(['magic jar',68]);
-        spells.push(['power word kill',78]);
+        spells.push(['web',58]);
+        spells.push(['blindness',22]);
+        spells.push(['poison',23]);
+        spells.push(['slow',29]);
+        spells.push(['weaken',100]);
+        spells.push(['fear',51]);
+        spells.push(['dispel affects',24]);
+        spells.push(['evil spirit',33]);
     }
     for(let aSpell of spells) {
         if(aSpell[1] <= level && (buffs_list[aSpell[0]]!==undefined || attack_spells_list[aSpell[0]]!==undefined))
@@ -2088,9 +2136,9 @@ var attack_spells_list = {
     'magic missile': new AttackSpell('magic missile','mm','attack',true,true,false,true,'energy'),
     'acid blast': new AttackSpell('acid blast','aBst','attack',true,true,false,true,'acid'),
     'acid arrow': new AttackSpell('acid arrow','aArr','attack',true,true,false,true,'acid'),
-    'burning hands': new AttackSpell('burning hands','brgHd','attack',true,false,false,true,'fire'),
+    'burning hands': new AttackSpell('burning hands','burHnd','attack',true,false,false,true,'fire'),
     'chill touch': new AttackSpell('chill touch','chTch','attack',true,false,false,true,'cold'),
-    'sonic resonance': new AttackSpell('sonic resonance','scRs','attack',true,true,false,true,'energy'),
+    'sonic resonance': new AttackSpell('sonic resonance','sonic','attack',true,true,false,true,'energy'),
     'lightning ward': new AttackSpell('lightning ward','lngW','room',false,false,true,false,'lightning'),
     'lightning bolt': new AttackSpell('lightning bolt','lngB','attack',true,true,false,true,'lightning'),
     'disruption': new AttackSpell('disruption','disr','attack',true,true,false,true,'energy'),
@@ -2099,7 +2147,7 @@ var attack_spells_list = {
     'hurricane': new AttackSpell('hurricane','hur','attack',false,false,true,true,'other'),
     'cursed lands': new AttackSpell('cursed lands','curLd','room',false,false,true,false),
     'mysterious dream': new AttackSpell('mysterious dream','myst','room',false,false,true,false),
-    'hand of undead': new AttackSpell('hand of undead','HofU','attack',true,true,false,true,'energy'),
+    'hand of undead': new AttackSpell('hand of undead','HoU','attack',true,true,false,true,'energy'),
     'shielding': new AttackSpell('shielding','shng','maladiction',true,false,false,false),
     'energy drain': new AttackSpell('energy drain','engDr','attack',true,false,false,true,'energy'),
     'insanity': new AttackSpell('insanity','ins','maladiction',true,false,false,true),
@@ -2108,6 +2156,14 @@ var attack_spells_list = {
     'corruption': new AttackSpell('corruption','corr','maladiction',true,false,false,true),
     'magic jar': new AttackSpell('magic jar','jar','maladiction',true,false,false,false),
     'power word kill': new AttackSpell('power word kill','pwk','attack',true,false,false,false,'energy'),
+    'web': new AttackSpell('web','web','curse',false,false,false,false),
+    'blindness': new AttackSpell('blindness','blindness','curse',false,false,false,false),
+    'poison': new AttackSpell('poison','poison','curse',true,false,false,true),
+    'slow': new AttackSpell('slow','slow','curse',true,false,false,true),
+    'weaken': new AttackSpell('weaken','weaken','curse',true,false,false,true),
+    'fear': new AttackSpell('fear','fear','curse',true,false,false,true),
+    'dispel affects': new AttackSpell('dispel affects','dispel affects','curse',true,false,false,true),
+    'evil spirit': new AttackSpell('evil spirit','evil spirit','room',false,false,true,false),
 }
 function Buff_need(always, fullbuff, gm_always, gm_fullbuff){
     this.always = always ? true : false;
