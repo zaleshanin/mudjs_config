@@ -69,6 +69,8 @@ var match;
 
 var my_char = new Pchar();
 
+var attack_spell_wait = undefined;
+
 var buffQueue = [];
 
 /*--------------------------------------------------------------------------
@@ -346,6 +348,22 @@ function command(e, cmd, text, handler) {
 
 // Примеры алиасов.
 $('.trigger').on('input', function (e, text) {
+    //цифра - номер заклинания для установки в my_char.attack_spells.set
+    if(attack_spell_wait!=undefined){
+        match = (/^([0-9]{1,2}) ?/).exec(text);
+        if(match) {
+            let new_spell = my_char.attack_spells.list[attack_spell_wait.group][match[0]];
+            if(new_spell!=undefined) {
+                my_char.attack_spells.set[attack_spell_wait.group][attack_spell_wait.key]= new_spell;
+
+                echo(my_char.attack_spells.get_prompt());
+ 
+                if(test) console.log('new attack spell ['+attack_spell_wait.group+']['+attack_spell_wait.key+']->'+new_spell);
+            }
+            attack_spell_wait=undefined;
+            e.stopPropagation();
+        }
+    }
     //приказать всем
     command(e, 'ord(?:er)?', text, function (args) {
         args = args[1].toLowerCase().split(' ');
@@ -494,17 +512,14 @@ function go(where) {
 }
 
 function scan(where) {
+    echo('-->[scan ' + where+']')
     send('scan ' + where);
 }
 
 // Рейнджеры могут стрелять по жертве victim из лука, а маги и клеры - 
 // бить заклинаниями в соседнюю комнату.
-function shoot(where) {
-    let pose = 'peace';
-    if(mudprompt.p2.pos=='fight') {
-        pose = 'fight';
-    }
-    let spell = my_char.attack_spells.get_spell('range',pose);
+function shoot(where,key) {
+    let spell = my_char.attack_spells.get_spell('range',key);
     echo("-->[cast '"+spell+"' "+where+"."+victim+"]");
     send("cast '"+spell+"' "+where+"."+victim);
     //    send('стрелять ' + where + ' ' + victim); 
@@ -535,12 +550,25 @@ var KP_0 = 96,
     N_5 = 53,
     N_6 = 54,
     N_7 = 55,
-    N_8 = 56;
+    N_8 = 56,
+    N_9 = 57,
+    N_0 = 58,
+    N_DASH = 189,
+    N_EQUAL = 187;
 
 // Просто клавиша - идти по направлению, ctrl+клавиша - стрелять, alt+клавиша - всмотреться.
 function dir(d, e) {
-    if (e.ctrlKey) {
-        shoot(d);
+    if(test) console.log("dir("+d+")"
+        +(e.ctrlKey?" ctrl":"")
+        +(e.altKey?" alt":"")
+        +(e.shiftKey?" shift":""));
+    /* if (e.ctrlKey && e.shiftKey) {
+        shoot(d,1);
+    } else  */
+    if (e.ctrlKey && e.altKey) {
+        shoot(d,1);
+    } else if (e.ctrlKey) {
+        shoot(d,0);
     } else if (e.altKey) {
         scan(d);
     } else {
@@ -548,17 +576,26 @@ function dir(d, e) {
     }
 }
 
-function setSpell(g,e) {
-    let pose;
+function setSpell(g,key,e) {
+    
     if(e.ctrlKey) {
-        pose='fight';
-    } else if(e.altKey) {
-        pose='peace';
-    } else {
-        return false;
-    }
-    my_char.attack_spells.changeSpell(g,pose);
-    return true;
+        if(e.shiftKey) {
+            attack_spell_wait = {
+                'group':g,
+                'key':key
+            };
+            my_char.attack_spells.showSpells(g,key);
+            return true;
+        } else if (e.altKey) {
+            my_char.attack_spells.changeSpell(g,key);
+            return true;
+        } else {
+            //TODO shoot spell by Ctrl+1-0 key
+            return false;
+        }
+    } 
+    
+    return false;
 }
 
 // Назначаем горячие клавиши и их действия.
@@ -594,24 +631,6 @@ keydown = function (e) {
             }
             break;
 
-        /*
-                case 192: // tilde.
-                    // Пример автобаффа: проверяем какие аффекты отсутствуют и вешаем их.
-                    if (mudprompt.enh === 'none' || mudprompt.enh.a.indexOf("l") == -1)
-                        send("c learning");                    
-                    if (mudprompt.enh === 'none' || mudprompt.enh.a.indexOf("g") == -1)
-                        send("c giant");
-                    if (mudprompt.enh === 'none' || mudprompt.enh.a.indexOf("f") == -1)
-                        send("c frenzy");
-                    if (mudprompt.enh === 'none' || mudprompt.enh.a.indexOf("h") == -1)
-                        send("order rat c haste fiorine");  // Тут подставьте ваше имя.
-                    if (mudprompt.pro === 'none' || mudprompt.pro.a.indexOf("p") == -1)
-                        send("c 'prot shield'");
-                    if (mudprompt.pro === 'none' || mudprompt.pro.a.indexOf("s") == -1)
-                        send("c sanctuary");
-                    // ... и так далее 
-                    break;
-        */
 
         /*
                 case KP_0:
@@ -644,30 +663,65 @@ keydown = function (e) {
                // Для кодов остальных клавиш смотри https://keycode.info 
         */
         case N_1:
-            if (setSpell('close',e))
+            if (setSpell('close','0',e))
                 break;
             else
                 return;
         case N_2:
-            if (setSpell('range',e))
+            if (setSpell('close','1',e))
                 break;
             else
                 return;
         case N_3:
-            if (setSpell('curse',e))
+            if (setSpell('range','0',e))
                 break;
             else
                 return;
         case N_4:
-            if (setSpell('room',e))
+            if (setSpell('range','1',e))
                 break;
             else
                 return;
         case N_5:
-            return;
+            if (setSpell('curse','0',e))
+                break;
+            else
+                return;
         case N_6:
+            if (setSpell('curse','1',e))
+                break;
+            else
+                return;
+        case N_7:
+            if (setSpell('room','0',e))
+                break;
+            else
+                return;                        
+        case N_8:
+            if (setSpell('room','1',e))
+                break;
+            else
+                return; 
+        case N_9:
+            /* if (setSpell('curse','2',e))
+                break;
+            else */
             return;
-                                                        
+        case N_0:/* 
+            if (setSpell('room','0',e))
+                break;
+            else */
+                return;
+        case N_DASH:
+            /* if (setSpell('room','1',e))
+                break;
+            else */
+                return;
+        case N_EQUAL:
+            /* if (setSpell('room','2',e))
+                break;
+            else */
+                return;
         default:
             return; // по умолчанию просто посылаем клавишу на сервер
     }
@@ -903,6 +957,11 @@ function setGroupMembersFrom(list) {
                 my_char.group.spells.push([name,pet_spell,level]);
             }
         }
+    }
+
+    if(test) {
+        console.log("setGroupMembersFrom()");
+        console.log(my_char.group.members);
     }
 }
 function checkBuffv2() {
@@ -1462,7 +1521,7 @@ function Action(act, command, target) {
 }
 
 function GroupMember(name, index_name) {
-    if(test) echo(' -->GroupMember('+index_name+')');
+    //if(test) echo(' -->GroupMember('+index_name+')');
     this.name = name;
     this.index_name = index_name;
     this.align = pets[name] != undefined ? pets[name].align : 'n';
@@ -1512,7 +1571,7 @@ function Pchar(name, char, level) {
 
     this.ordersChange = false;
 
-    this.spells = getSpells(char, level, 'buffs');
+    this.spells = getSpells(char, level);
     this.hasBuff = function(cast){
         if((mudprompt[buffs_list[cast].mgroup]!==undefined && mudprompt[buffs_list[cast].mgroup]!=='none') && mudprompt[buffs_list[cast].mgroup].a.indexOf(buffs_list[cast].mbrief)!==-1){
             if(test) echo("------>Pchar->hasBuff("+cast+")->have one in mudprompt!");
@@ -1560,60 +1619,29 @@ function Pchar(name, char, level) {
     };
     this.attack_spells = {
         list:{
-            close:{
-                fight:[],
-                peace:[],
-            },
-            range:{
-                fight:[],
-                peace:[],
-            },
-            curse:{
-                fight:[],
-                peace:[],
-            },
-            room:{
-                fight:[],
-                peace:[],
-            },
+            close:[],
+            range:[],
+            curse:[],
+            room:[],
         },
         set: undefined,
         get_prompt: function() {
-            let close = "",
-                range = "",
-                curse = "",
-                room = "";
+            let result = "";
             if(this.set==undefined) {
                 this.set_attack_spells();
             }
-            if(this.set.close.peace!=undefined){
-                close += "p:"+attack_spells_list[this.set.close.peace].short;
-            } 
-            if(this.set.close.fight!=undefined) {
-                close += (close==""?"":"/")+"f:"+attack_spells_list[this.set.close.fight].short;
+            for(let group of ["close","range","curse","room"]) {
+                if(this.set[group].length==0) continue;
+
+                result += group+":[";
+                for(let key in this.set[group]) {
+                    if(key>0) result += "/";
+                    result += attack_spells_list[this.set[group][key]].short;
+                }
+
+                result += "] ";
             }
-            if(this.set.range.peace!=undefined){
-                range += "p:"+attack_spells_list[this.set.range.peace].short;
-            } 
-            if(this.set.range.fight!=undefined) {
-                range += (range==""?"":"/")+"f:"+attack_spells_list[this.set.range.fight].short;
-            }
-            if(this.set.curse.peace!=undefined){
-                curse += "p:"+attack_spells_list[this.set.curse.peace].short;
-            } 
-            if(this.set.curse.fight!=undefined) {
-                curse += (curse==""?"":"/")+"f:"+attack_spells_list[this.set.curse.fight].short;
-            }
-            if(this.set.room.peace!=undefined){
-                room += "p:"+attack_spells_list[this.set.room.peace].short;
-            } 
-            if(this.set.room.fight!=undefined) {
-                room += (room==""?"":"/")+"f:"+attack_spells_list[this.set.room.fight].short;
-            }
-            return (close==""?"":"["+close+"]")
-                + (range==""?"":"["+range+"]")
-                + (curse==""?"":"["+curse+"]")
-                + (room==""?"":"["+room+"]");
+            return result;
 
         },
         set_attack_spells: function() {
@@ -1633,10 +1661,24 @@ function Pchar(name, char, level) {
                 if(attack_spells_list[spell].class=="maladiction") 
                     this.addSpell(spell,'curse');
             }   
-            if(test) console.log(this);
+            console.log(this);
         },
         addSpell:function(spell,group) {
-            this.list[group].peace.push(spell);
+            let max_key = 2;
+            this.list[group].push(spell);
+            if(this.set[group]==undefined) 
+                this.set[group] = [];
+            
+            if(this.set[group].length >= max_key)
+                return;
+
+            for(let key = 0; key<max_key; key++)
+                if(this.set[group][key]==undefined){
+                    this.set[group][key]=spell;
+                    break;
+                }
+
+            /* this.list[group].peace.push(spell);
             if(this.set[group]==undefined)
                 this.set[group]={};
             if(this.set[group].peace==undefined)
@@ -1646,19 +1688,26 @@ function Pchar(name, char, level) {
                 this.list[group].fight.push(spell);
                 if(this.set[group].fight==undefined)
                     this.set[group].fight = spell;
-            }
+            } */
         },
-        changeSpell:function(group,pose){
-            let curr_spell = my_char.attack_spells.set[group][pose];
-            let new_index = my_char.attack_spells.list[group][pose].indexOf(curr_spell)+1;
-            if(new_index>=my_char.attack_spells.list[group][pose].length) new_index = 0;
+        changeSpell:function(group,key){
+            let curr_spell = my_char.attack_spells.set[group][key];
+            let new_index = my_char.attack_spells.list[group].indexOf(curr_spell)+1;
+            if(new_index>=my_char.attack_spells.list[group].length) new_index = 0;
 
-            my_char.attack_spells.set[group][pose] = my_char.attack_spells.list[group][pose][new_index];
+            my_char.attack_spells.set[group][key] = my_char.attack_spells.list[group][new_index];
 
             echo(this.get_prompt());
         },
-        get_spell: function(group,pose){
-            return my_char.attack_spells.set[group][pose];
+        showSpells:function(group,key) {
+            let result = '';
+            for(let i in my_char.attack_spells.list[group]){
+                result += "["+i+"."+my_char.attack_spells.list[group][i]+"]";
+            }
+            echo(result);
+        },
+        get_spell: function(group,key){
+            return my_char.attack_spells.set[group][key];
         },
     };
 }
@@ -1749,9 +1798,10 @@ function Order(comm) {
     this.name_num = [];
 }
 
-function getSpells(char, level, type) {
+function getSpells(char, level) {
     let spells = [], result = [];
     if (char!==undefined && char.clan === 'invader') {
+        console.log("2.");
         spells.push(['shadow cloak',10]);
         spells.push(['shadowlife',30]);
         spells.push(['evil spirit',33]);
@@ -1779,21 +1829,21 @@ function getSpells(char, level, type) {
         //spells.push(['create water',11]);
         //spells.push(['create food',12]);
         //spell.push(['create spring',31]);
-        spells.push(['magic missile',1]);
+        spells.push(['disruption',40]);
         spells.push(['acid blast',63]);
-        spells.push(['acid arrow',48]);
+        spells.push(['hand of undead',44]);
+        spells.push(['magic missile',1]);
+        //spells.push(['acid arrow',48]);
         spells.push(['burning hands',10]);
         spells.push(['chill touch',5]);
         spells.push(['sonic resonance',28]);
         spells.push(['lightning ward ',41]);
         spells.push(['lightning bolt',23]);
-        spells.push(['disruption',40]);
         spells.push(['chain lightning',33]);
         spells.push(['spectral furor',35]);
         spells.push(['hurricane',65]);
         spells.push(['cursed lands',64]);
         spells.push(['mysterious dream',27]);
-        spells.push(['hand of undead',44]);
         spells.push(['shielding',53]);
         spells.push(['energy drain',45]);
         spells.push(['magic jar',68]);
@@ -1814,7 +1864,6 @@ function getSpells(char, level, type) {
     for(let aSpell of spells) {
         if(aSpell[1] <= level && (buffs_list[aSpell[0]]!==undefined || attack_spells_list[aSpell[0]]!==undefined))
             result.push(aSpell[0]);
-        
     }
     if(test) {
         console.log("getSpells() --> result:");
@@ -2156,14 +2205,14 @@ var attack_spells_list = {
     'corruption': new AttackSpell('corruption','corr','maladiction',true,false,false,true),
     'magic jar': new AttackSpell('magic jar','jar','maladiction',true,false,false,false),
     'power word kill': new AttackSpell('power word kill','pwk','attack',true,false,false,false,'energy'),
-    'web': new AttackSpell('web','web','curse',false,false,false,false),
-    'blindness': new AttackSpell('blindness','blindness','curse',false,false,false,false),
-    'poison': new AttackSpell('poison','poison','curse',true,false,false,true),
-    'slow': new AttackSpell('slow','slow','curse',true,false,false,true),
-    'weaken': new AttackSpell('weaken','weaken','curse',true,false,false,true),
-    'fear': new AttackSpell('fear','fear','curse',true,false,false,true),
-    'dispel affects': new AttackSpell('dispel affects','dispel affects','curse',true,false,false,true),
-    'evil spirit': new AttackSpell('evil spirit','evil spirit','room',false,false,true,false),
+    'web': new AttackSpell('web','web','maladiction',true,true,false,true),
+    'blindness': new AttackSpell('blindness','blind','curse',false,false,false,false),
+    'poison': new AttackSpell('poison','pois','maladiction',true,false,false,true),
+    'slow': new AttackSpell('slow','slow','maladiction',true,false,false,true),
+    'weaken': new AttackSpell('weaken','weak','maladiction',true,false,false,true),
+    'fear': new AttackSpell('fear','fear','maladiction',true,false,false,true),
+    'dispel affects': new AttackSpell('dispel affects','dispAff','maladiction',true,false,false,true),
+    'evil spirit': new AttackSpell('evil spirit','evilSp','room',false,false,true,false),
 }
 function Buff_need(always, fullbuff, gm_always, gm_fullbuff){
     this.always = always ? true : false;
