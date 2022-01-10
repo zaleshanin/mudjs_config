@@ -15,6 +15,10 @@
 var test = true; //true - для вывода всякой отладочной информации
 var melt_counter = 0; //противодействие автовыкидыванию
 
+//номер панели заклинаний
+var numpad_set = 0;
+var panel_set = 0;
+
 var chars = {
     'Miyamoto': {
         name: 'Miyamoto',
@@ -354,7 +358,7 @@ $('.trigger').on('input', function (e, text) {
         if(match) {
             let new_spell = my_char.attack_spells.list[attack_spell_wait.group][match[0]];
             if(new_spell!=undefined) {
-                my_char.attack_spells.set[attack_spell_wait.group][attack_spell_wait.key]= new_spell;
+                my_char.attack_spells.set[numpad_set][attack_spell_wait.group][attack_spell_wait.key]= new_spell;
 
                 echo(my_char.attack_spells.get_prompt());
  
@@ -1626,17 +1630,17 @@ function Pchar(name, char, level) {
         },
         set: undefined,
         get_prompt: function() {
-            let result = "";
+            let result = "("+numpad_set+")";
             if(this.set==undefined) {
                 this.set_attack_spells();
             }
-            for(let group of ["close","range","curse","room"]) {
-                if(this.set[group].length==0) continue;
+            for(let group of ["range","close","curse","room"]) {
+                if(this.set[numpad_set][group].length==0) continue;
 
                 result += group+":[";
-                for(let key in this.set[group]) {
+                for(let key in this.set[numpad_set][group]) {
                     if(key>0) result += "/";
-                    result += attack_spells_list[this.set[group][key]].short;
+                    result += attack_spells_list[this.set[numpad_set][group][key]].short;
                 }
 
                 result += "] ";
@@ -1645,7 +1649,8 @@ function Pchar(name, char, level) {
 
         },
         set_attack_spells: function() {
-            this.set = {};
+            this.set = []
+            this.set[numpad_set]={};
             for(let spell of my_char.spells) {
                 if(attack_spells_list[spell]==undefined) continue;
 
@@ -1666,15 +1671,15 @@ function Pchar(name, char, level) {
         addSpell:function(spell,group) {
             let max_key = 2;
             this.list[group].push(spell);
-            if(this.set[group]==undefined) 
-                this.set[group] = [];
+            if(this.set[numpad_set][group]==undefined) 
+                this.set[numpad_set][group] = [];
             
-            if(this.set[group].length >= max_key)
+            if(this.set[numpad_set][group].length >= max_key)
                 return;
 
             for(let key = 0; key<max_key; key++)
-                if(this.set[group][key]==undefined){
-                    this.set[group][key]=spell;
+                if(this.set[numpad_set][group][key]==undefined){
+                    this.set[numpad_set][group][key]=spell;
                     break;
                 }
 
@@ -1691,11 +1696,11 @@ function Pchar(name, char, level) {
             } */
         },
         changeSpell:function(group,key){
-            let curr_spell = my_char.attack_spells.set[group][key];
+            let curr_spell = my_char.attack_spells.set[numpad_set][group][key];
             let new_index = my_char.attack_spells.list[group].indexOf(curr_spell)+1;
             if(new_index>=my_char.attack_spells.list[group].length) new_index = 0;
 
-            my_char.attack_spells.set[group][key] = my_char.attack_spells.list[group][new_index];
+            my_char.attack_spells.set[numpad_set][group][key] = my_char.attack_spells.list[group][new_index];
 
             echo(this.get_prompt());
         },
@@ -1707,7 +1712,7 @@ function Pchar(name, char, level) {
             echo(result);
         },
         get_spell: function(group,key){
-            return my_char.attack_spells.set[group][key];
+            return my_char.attack_spells.set[numpad_set][group][key];
         },
     };
 }
@@ -1801,7 +1806,6 @@ function Order(comm) {
 function getSpells(char, level) {
     let spells = [], result = [];
     if (char!==undefined && char.clan === 'invader') {
-        console.log("2.");
         spells.push(['shadow cloak',10]);
         spells.push(['shadowlife',30]);
         spells.push(['evil spirit',33]);
