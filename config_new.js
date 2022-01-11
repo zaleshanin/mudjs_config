@@ -23,12 +23,13 @@ var chars = {
     'Miyamoto': {
         name: 'Miyamoto',
         align: 'e',
-        weapon: 'scalpel', //'арапник',
+        weapon: 'childhood', //'арапник',
         class: 'necromancer',
         clan: 'invader',
         water: 'spring',//'flask',
         food: 'mushroom',
         buffs_needs: {
+            //(всегда, при фулбафе, всегда на члена группы, при фулбафе на члена группы)
             'group defense': new Buff_need(false, false, false, true),
             'inspire': new Buff_need(false, true, false, true),
             'shadow cloak': new Buff_need(false, true, false, false),
@@ -82,7 +83,9 @@ var buffQueue = [];
  *-------------------------------------------------------------------------*/
 $('.trigger').on('text', function (e, text) {
     //[#prompt] + [#battleprompt] example: <1111/1111 2222/2222 333/333 [time][exits]>[0W0D]
-    match = (/^<([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) \[(.*)]\[.*]>\[.*](\([0-9]{1,3}%:[0-9]{1,3}%\))?$/).exec(text);
+    //промпт тестера  <3084/3084зд 4800/4800ман 756/756шг 3939оп Вых:СВЮЗ>
+    //                <3084/3084зд 4309/4800ман 756/756шг 3939оп Вых:СВЮЗ> [100%:90%]
+    match = (/^(<([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) \[(.*)]\[.*]>\[.*](\([0-9]{1,3}%:[0-9]{1,3}%\))?)|(<([0-9]{1,5})\/([0-9]{1,5})зд ([0-9]{1,5})\/([0-9]{1,5})ман ([0-9]{1,5})\/([0-9]{1,5})шг ([0-9]{1,5})оп Вых:.*>( \[[0-9]{1,3}%:[0-9]{1,3}%\])?)$/).exec(text);
     if (match) {
         promptRecived(false);
     }
@@ -526,9 +529,11 @@ function shoot(where,key) {
     let spell = my_char.attack_spells.get_spell('range',key);
     echo("-->[cast '"+spell+"' "+where+"."+victim+"]");
     send("cast '"+spell+"' "+where+"."+victim);
-    //    send('стрелять ' + where + ' ' + victim); 
-    //    send("к 'стен лезв' " + where + '.' + victim);
-    //    send("к 'струя кисл' " + where + '.' + victim);
+}
+function cast(group,key) {
+    let spell = my_char.attack_spells.get_spell(group,key);
+    echo("-->[cast '"+spell+"' "+victim+"]");
+    send("cast '"+spell+"' "+victim);
 }
 
 // Коды клавиш на кейпаде.
@@ -602,10 +607,20 @@ function setSpell(g,key,e) {
     return false;
 }
 
+function castSpell(group, e) {
+    if (e.shiftKey) {
+        cast(group,2);
+    } else if (e.ctrlKey) {
+        cast(group,1);
+    } else {
+        cast(group,0);
+    }
+}
+
 // Назначаем горячие клавиши и их действия.
 keydown = function (e) {
     switch (e.which) {
-        case KP_1:
+        case KP_3:
             dir('down', e);
             break;
         case KP_2:
@@ -626,6 +641,15 @@ keydown = function (e) {
         case KP_9:
             dir('up', e);
             break;
+        case KP_PLUS:
+            castSpell("close", e);
+            break;            
+        case KP_MINUS:
+            castSpell("curse", e);
+            break;
+        case KP_DOT:
+            castSpell("room", e);
+            break;
 
         case 27: // escape
             if (!e.shiftKey && !e.ctrlKey && !e.altKey) {
@@ -645,12 +669,7 @@ keydown = function (e) {
                     break;
                 case KP_MUL:
                     break;
-                case KP_PLUS:
-                    break;
-                case KP_MINUS:
-                    break;
-                case KP_DOT:
-                    break;
+                
                 case KP_DIV:
                     break;
                 case 112: // F1
@@ -667,59 +686,59 @@ keydown = function (e) {
                // Для кодов остальных клавиш смотри https://keycode.info 
         */
         case N_1:
-            if (setSpell('close','0',e))
-                break;
-            else
-                return;
-        case N_2:
-            if (setSpell('close','1',e))
-                break;
-            else
-                return;
-        case N_3:
             if (setSpell('range','0',e))
                 break;
             else
                 return;
-        case N_4:
+        case N_2:
             if (setSpell('range','1',e))
                 break;
             else
                 return;
+        case N_3:
+            if (setSpell('close','0',e))
+                break;
+            else
+                return;
+        case N_4:
+            if (setSpell('close','1',e))
+                break;
+            else
+                return;
         case N_5:
-            if (setSpell('curse','0',e))
+            if (setSpell('close','2',e))
                 break;
             else
                 return;
         case N_6:
-            if (setSpell('curse','1',e))
+            if (setSpell('curse','0',e))
                 break;
             else
                 return;
         case N_7:
-            if (setSpell('room','0',e))
+            if (setSpell('curse','1',e))
                 break;
             else
                 return;                        
         case N_8:
-            if (setSpell('room','1',e))
+            if (setSpell('curse','2',e))
                 break;
             else
                 return; 
         case N_9:
-            /* if (setSpell('curse','2',e))
-                break;
-            else */
-            return;
-        case N_0:/* 
             if (setSpell('room','0',e))
                 break;
-            else */
+            else 
+                return;
+        case N_0:
+            if (setSpell('room','1',e))
+                break;
+            else
                 return;
         case N_DASH:
-            /* if (setSpell('room','1',e))
+            if (setSpell('room','2',e))
                 break;
-            else */
+            else
                 return;
         case N_EQUAL:
             /* if (setSpell('room','2',e))
@@ -1630,20 +1649,43 @@ function Pchar(name, char, level) {
         },
         set: undefined,
         get_prompt: function() {
-            let result = "("+numpad_set+")";
+            let groups_hints = {
+                "range":{
+                    short: 'rng',
+                    key: '->',
+                    alts: ['ct','ct+al'],
+                },
+                "close":{
+                    short: 'cls',
+                    key: '+',
+                    alts: ['','ct','sh'],
+                },
+                "curse":{
+                    short: 'crs',
+                    key: '-',
+                    alts: ['','ct','sh'],
+                },
+                "room":{
+                    short: 'rm',
+                    key: '.',
+                    alts: ['','ct','sh'],
+                },
+            };
+            let result = "("+numpad_set+") ";
             if(this.set==undefined) {
                 this.set_attack_spells();
             }
-            for(let group of ["range","close","curse","room"]) {
+            for(let group in groups_hints) {
                 if(this.set[numpad_set][group].length==0) continue;
 
-                result += group+":[";
+                result += "<b>[</b>"+groups_hints[group].short+"["+groups_hints[group].key+"]:";
                 for(let key in this.set[numpad_set][group]) {
                     if(key>0) result += "/";
-                    result += attack_spells_list[this.set[numpad_set][group][key]].short;
+                    result += (groups_hints[group].alts[key]!='' ? '['+groups_hints[group].alts[key]+']' : '')
+                        + '<b>'+attack_spells_list[this.set[numpad_set][group][key]].short+'</b>';
                 }
 
-                result += "] ";
+                result += "<b>]</b> ";
             }
             return result;
 
@@ -1669,7 +1711,7 @@ function Pchar(name, char, level) {
             console.log(this);
         },
         addSpell:function(spell,group) {
-            let max_key = 2;
+            let max_key = group=='range' ? 2 : 3;
             this.list[group].push(spell);
             if(this.set[numpad_set][group]==undefined) 
                 this.set[numpad_set][group] = [];
@@ -1682,18 +1724,6 @@ function Pchar(name, char, level) {
                     this.set[numpad_set][group][key]=spell;
                     break;
                 }
-
-            /* this.list[group].peace.push(spell);
-            if(this.set[group]==undefined)
-                this.set[group]={};
-            if(this.set[group].peace==undefined)
-                this.set[group].peace = spell;
-
-            if(attack_spells_list[spell].fight){ 
-                this.list[group].fight.push(spell);
-                if(this.set[group].fight==undefined)
-                    this.set[group].fight = spell;
-            } */
         },
         changeSpell:function(group,key){
             let curr_spell = my_char.attack_spells.set[numpad_set][group][key];
