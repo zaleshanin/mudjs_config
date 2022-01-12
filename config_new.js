@@ -1671,7 +1671,7 @@ function Pchar(name, char, level) {
                     alts: ['','ct','sh'],
                 },
             };
-            let result = "("+numpad_set+") ";
+            let result = "";
             if(this.set==undefined) {
                 this.set_attack_spells();
             }
@@ -1687,7 +1687,7 @@ function Pchar(name, char, level) {
 
                 result += "<b>]</b> ";
             }
-            return result;
+            return result!="" ? ("("+numpad_set+") "+result) : result;
 
         },
         set_attack_spells: function() {
