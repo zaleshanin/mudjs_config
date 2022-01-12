@@ -1676,7 +1676,7 @@ function Pchar(name, char, level) {
                 this.set_attack_spells();
             }
             for(let group in groups_hints) {
-                if(this.set[numpad_set][group].length==0) continue;
+                if(this.set[numpad_set][group]==undefined || this.set[numpad_set][group].length==0) continue;
 
                 result += "<b>[</b>"+groups_hints[group].short+"["+groups_hints[group].key+"]:";
                 for(let key in this.set[numpad_set][group]) {
