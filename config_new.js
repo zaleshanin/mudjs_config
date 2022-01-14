@@ -857,7 +857,7 @@ function clearAction() {
 function promptRecived(afk) {
     if (test) echo('prompt(ok)');
 
-    if (!my_char.init) {
+    if (!my_char.init || my_char.name != getChar().sees) {
         charInit();
         if (test) echo('\n');
     }
