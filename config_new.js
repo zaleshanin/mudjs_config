@@ -3,6 +3,7 @@
 - вынести #prompt и #battleprompt в chars, на случай если у чаров разный prompt
 
 - Тебя останавливают несколько добродушных старушек.
+- Группа закованных в латы людей с суровыми лицами преграждает тебе путь.
 ------------------------
 */
 
@@ -2154,6 +2155,11 @@ var pets = {
         'align' : 'n',
         'ename' : 'shadow',
     },
+    'теневой дв':{
+        'spells' : ['armor', 'assist', 'create food', 'create spring', 'detect invis', 'fly', 'giant strength', 'improved detect', 'infravision', 'invisibility', 'knock', 'learning', 'link', 'pass door', 'protection cold', 'protection negative', 'protective shield', 'refresh', 'shield', 'spell resistance', 'stone skin'],
+        'align' : 'n',
+        'ename' : 'shadow',
+    },
     "каменный г" : {
         'spells' : [],
         'align' : 'n',
@@ -2240,7 +2246,7 @@ var attack_spells_list = {
     'magic jar': new AttackSpell('magic jar','jar','maladiction',true,false,false,false),
     'power word kill': new AttackSpell('power word kill','pwk','attack',true,false,false,false,'energy'),
     'web': new AttackSpell('web','web','maladiction',true,true,false,true),
-    'blindness': new AttackSpell('blindness','blind','curse',false,false,false,false),
+    'blindness': new AttackSpell('blindness','blind','curse',true,false,false,true),
     'poison': new AttackSpell('poison','pois','maladiction',true,false,false,true),
     'slow': new AttackSpell('slow','slow','maladiction',true,false,false,true),
     'weaken': new AttackSpell('weaken','weak','maladiction',true,false,false,true),
