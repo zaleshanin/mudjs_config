@@ -587,7 +587,11 @@ function dir(d, e) {
 }
 
 function setSpell(g,key,e) {
-    
+    if(test) console.log("setSpell("+d+")"
+        +(e.ctrlKey?" ctrl":"")
+        +(e.altKey?" alt":"")
+        +(e.shiftKey?" shift":""));
+        афву
     if(e.ctrlKey) {
         if(e.shiftKey) {
             attack_spell_wait = {
@@ -1653,23 +1657,23 @@ function Pchar(name, char, level) {
             let groups_hints = {
                 "range":{
                     short: 'rng',
-                    key: '->',
-                    alts: ['ct','ct+al'],
+                    key: '>',
+                    alts: ['c','c+a'],
                 },
                 "close":{
                     short: 'cls',
                     key: '+',
-                    alts: ['','ct','sh'],
+                    alts: ['','c','s'],
                 },
                 "curse":{
                     short: 'crs',
                     key: '-',
-                    alts: ['','ct','sh'],
+                    alts: ['','c','s'],
                 },
                 "room":{
                     short: 'rm',
                     key: '.',
-                    alts: ['','ct','sh'],
+                    alts: ['','c','s'],
                 },
             };
             let result = "";
@@ -1682,8 +1686,8 @@ function Pchar(name, char, level) {
                 result += "<b>[</b>"+groups_hints[group].short+"["+groups_hints[group].key+"]:";
                 for(let key in this.set[numpad_set][group]) {
                     if(key>0) result += "/";
-                    result += (groups_hints[group].alts[key]!='' ? '['+groups_hints[group].alts[key]+']' : '')
-                        + '<b>'+attack_spells_list[this.set[numpad_set][group][key]].short+'</b>';
+                    result += '<b>'+attack_spells_list[this.set[numpad_set][group][key]].short+'</b>'
+                        + (groups_hints[group].alts[key]!='' ? '['+groups_hints[group].alts[key]+']' : '');
                 }
 
                 result += "<b>]</b> ";
