@@ -24,11 +24,11 @@ var chars = {
     'Miyamoto': {
         name: 'Miyamoto',
         align: 'e',
-        weapon: 'childhood', //'арапник',
-        class: 'necromancer',
-        clan: 'invader',
-        water: 'spring',//'flask',
-        food: 'mushroom',
+        weapon: 'tickler', //'арапник',
+        class: 'cleric',
+        clan: 'ruler',
+        water: 'flask',//'flask',
+        food: 'manna',
         buffs_needs: {
             //(всегда, при фулбафе, всегда на члена группы, при фулбафе на члена группы)
             'group defense': new Buff_need(false, false, false, true),
@@ -229,6 +229,7 @@ $('.trigger').on('text', function (e, text) {
         my_char.needsChanged = true;
     }
     if (text.match('^Ты взмахиваешь руками, и с неба падает манна небесная.$')
+        || text.match('^Волею Дворкина тебе в руки падает манна небесная на пропитание.$')
         || text.match('^Ты берешь соленый сухарик из пакета сухарей.$')
         || text.match('^Ты прищуриваешься и выращиваешь у себя на ладони магический гриб.$')//Ты взмахиваешь руками и создаешь магический гриб.
     ) {
@@ -261,6 +262,8 @@ $('.trigger').on('text', function (e, text) {
     }
     if (text.match('^Ты щелкаешь пальцами, и из земли пробивается магический родник.$') //text.match(' родник пробивается сквозь землю.$')
         || text.match('^Жестяная фляга наполнена.$')
+        || text.match('^Милостью .* ты наполняешь жестяную флягу святой водой.$')
+        || text.match('^В жестяной фляге уже что-то плещется.$')
         || text.match('^Ты хочешь сделать тут озеро?')
         || text.match('^В этой местности и так есть чем напиться.')) {
         if (test) echo("[water creation trigger]");
@@ -591,7 +594,6 @@ function setSpell(g,key,e) {
         +(e.ctrlKey?" ctrl":"")
         +(e.altKey?" alt":"")
         +(e.shiftKey?" shift":""));
-        афву
     if(e.ctrlKey) {
         if(e.shiftKey) {
             attack_spell_wait = {
@@ -904,7 +906,7 @@ function checking() {
     if(my_char.action.act != undefined) echo('[act:' + my_char.action.act + ' command:'+my_char.action.command+' target:'+my_char.action.target+']');
     let azazelStr = '';
     azazelStr = azazel.stat();
-    if(test) azazelStr = 'AZAZEL:['+azazelStr+']';
+    //if(test) azazelStr = 'AZAZEL:['+azazelStr+']';
 
     if(my_char.init) echo(my_char.attack_spells.get_prompt());
     
@@ -1472,6 +1474,7 @@ function checkNeeds() {
     }
     //[#drink]
     if (my_char.thirst) {
+        if(test) echo("-->хочу пить!(lwater:"+my_char.lwater+")");
         if (!my_char.lwater) {
             if (my_char.water === 'spring') {
                 if (checkPose('stand')) {
@@ -1479,19 +1482,20 @@ function checkNeeds() {
                     doAct('cast', 'create spring');
                     return;
                 }
-                if (my_char.water === 'flask') {
-                    if (test) echo('->(water === flask)');
-                    if (test) echo('-->(create water=' + my_char.spells['create water'] + ')');
-                    if (my_char.spells['create water'] !== undefined) {
-                        if (test) echo('->(create water !== undefined)');
-                        if (checkPose('stand')) {
-                            my_char.needsChanged = true;
-                            doAct('cast', 'create water', my_char.water);
-                            return;
-                        }
+            }
+            if (my_char.water === 'flask') {
+                if (test) echo('->(water === flask)');
+                if (test) echo('-->(create water=' + my_char.spells.indexOf('create water') + ')');
+                if(test) console.log(my_char.spells);
+                if (my_char.spells.indexOf('create water') !== undefined) {
+                    if (test) echo('->(create water !== undefined)');
+                    if (checkPose('stand')) {
+                        my_char.needsChanged = true;
+                        doAct('cast', 'create water', my_char.water);
+                        return;
                     }
-
                 }
+
             }
         } else {
             if (checkPose('stand')) {
@@ -1713,7 +1717,7 @@ function Pchar(name, char, level) {
                 if(attack_spells_list[spell].class=="maladiction") 
                     this.addSpell(spell,'curse');
             }   
-            console.log(this);
+            //console.log(this);
         },
         addSpell:function(spell,group) {
             let max_key = group=='range' ? 2 : 3;
@@ -1846,6 +1850,9 @@ function getSpells(char, level) {
         spells.push(['evil spirit',33]);
         spells.push(['nightfall',16]);
     }
+    if (char!==undefined && char.class === 'cleric') {
+        spells.push(['heal',2]);spells.push(['harm',2]);spells.push(['create water',3]);spells.push(['refresh',7]);spells.push(['create food',8]);spells.push(['observation',10]);spells.push(['cure blindness',11]);spells.push(['detect evil',11]);spells.push(['detect good',11]);spells.push(['shield',12]);spells.push(['blindness',14]);spells.push(['faerie fire',15]);spells.push(['detect magic',15]);spells.push(['fireproof',16]);spells.push(['detect invis',17]);spells.push(['earthquake',19]);spells.push(['cure disease',19]);spells.push(['armor',20]);spells.push(['bless',20]);spells.push(['continual light',21]);spells.push(['poison',22]);spells.push(['summon',22]);spells.push(['cure poison',23]);spells.push(['weaken',24]);spells.push(['infravision',25]);spells.push(['calm',26]);spells.push(['heating',27]);spells.push(['dispel evil',27]);spells.push(['dispel good',27]);spells.push(['create spring',27]);spells.push(['control weather',28]);spells.push(['sanctuary',29]);spells.push(['fly',30]);spells.push(['locate object',30]);spells.push(['enchant armor',30]);spells.push(['awakening',31]);spells.push(['faerie fog',31]);spells.push(['teleport',32]);spells.push(['remove curse',32]);spells.push(['pass door',32]);spells.push(['word of recall',32]);spells.push(['cancellation',32]);spells.push(['curse',33]);spells.push(['plague',33]);spells.push(['enhanced armor',33]);spells.push(['remove fear',34]);spells.push(['frenzy',34]);spells.push(['portal',35]);spells.push(['learning',35]);spells.push(['mental block',35]);spells.push(['gate',35]);spells.push(['mind light',36]);spells.push(['identify',36]);spells.push(['stone skin',36]);spells.push(['ray of truth',37]);spells.push(['bluefire',37]);spells.push(['weapon morph',37]);spells.push(['superior heal',38]);spells.push(['slow',38]);spells.push(['protective shield',38]);spells.push(['protection heat',39]);spells.push(['giant strength',39]);spells.push(['dragon skin',40]);spells.push(['healing light',41]);spells.push(['cursed lands',41]);spells.push(['sanctify lands',41]);spells.push(['flamestrike',42]);spells.push(['energy drain',42]);spells.push(['dispel affects',43]);spells.push(['protection cold',44]);spells.push(['severity force',45]);spells.push(['group defense',45]);spells.push(['improved detect',45]);spells.push(['holy word',48]);spells.push(['inspire',49]);spells.push(['cure corruption',50]);spells.push(['aid',53]);spells.push(['nexus',55]);spells.push(['master healing',58]);spells.push(['desert fist',58]);spells.push(['blade barrier',60]);spells.push(['group heal',65]);spells.push(['restoring light',71]);spells.push(['benediction',80]);
+    }
     if (char!==undefined && char.class === 'necromancer') {
         spells.push(['dark shroud',21]);
         spells.push(['shield',12]);
@@ -1867,7 +1874,7 @@ function getSpells(char, level) {
         //spells.push(['learning',33]);
         //spells.push(['create water',11]);
         //spells.push(['create food',12]);
-        //spell.push(['create spring',31]);
+        //spells.push(['create spring',31]);
         spells.push(['disruption',40]);
         spells.push(['acid blast',63]);
         spells.push(['hand of undead',44]);
@@ -1901,7 +1908,7 @@ function getSpells(char, level) {
         spells.push(['evil spirit',33]);
     }
     for(let aSpell of spells) {
-        if(aSpell[1] <= level && (buffs_list[aSpell[0]]!==undefined || attack_spells_list[aSpell[0]]!==undefined))
+        if(aSpell[1] <= level) //&& (buffs_list[aSpell[0]]!==undefined || attack_spells_list[aSpell[0]]!==undefined)
             result.push(aSpell[0]);
     }
     if(test) {
@@ -1957,6 +1964,7 @@ var buffPatterns = [
 	['armor', '^Ты уже под воздействием заклинания брони.$', true, true],
     ['shield', '^Щит, окружавший тебя, исчезает.$', false, false],
 	['shield', '^Божественная энергия окружает .* щитом.$', true, true],
+	['shield', '^Тебя окружает священный щит, дарованный .*\.$', true, true],
 	//['shield', '^Волшебный щит окружает .*.$', true, true],
     ['shield', '^.* окружает магический щит, помогающий блокировать удары.$', true, true],
 	//['shield', '^.* уже защищен(а)? заклинанием щита.$', true, true],
@@ -2225,6 +2233,9 @@ var buffs_list = {
 };
 var attack_spells_list = {
     //AttackSpell(sName,sClass,lTarget,lRange,lArea,lFight,sDamage)
+    //cleric
+    'harm': new AttackSpell('harm','harm','attack',true,true,false,true),
+    //necromancer
     'shadowlife': new AttackSpell('shadowlife','shLf','maladiction',true,false,false,false),
     'magic missile': new AttackSpell('magic missile','mm','attack',true,true,false,true,'energy'),
     'acid blast': new AttackSpell('acid blast','aBst','attack',true,true,false,true,'acid'),
