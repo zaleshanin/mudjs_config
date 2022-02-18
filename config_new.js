@@ -19,7 +19,9 @@ var melt_counter = 0; //противодействие автовыкидыва�
 //номер панели заклинаний
 var numpad_set = 0;
 var panel_set = 0;
-
+var str, con, dex, wis, int, cha;
+var str_max, con_max, dex_max, wis_max, int_max, cha_max;
+var counter=0, bonus=0;
 var chars = {
     'Miyamoto': {
         name: 'Miyamoto',
@@ -83,6 +85,36 @@ var buffQueue = [];
  * Триггера - автоматические действия как реакция на какую-то строку в мире.
  *-------------------------------------------------------------------------*/
 $('.trigger').on('text', function (e, text) {
+    match = (/^ *сила *([0-9]{1,2}) \(из ([0-9]{1,2})\) *сложение *([0-9]{1,2}) \(из ([0-9]{1,2})\) *ловкость *([0-9]{1,2}) \(из ([0-9]{1,2})\)$/).exec(text);
+    if(match) {
+        str = Number(match[1]);
+        str_max = Number(match[2]); 
+        con = Number(match[3]);
+        con_max = Number(match[4]); 
+        dex = Number(match[5]);
+        dex_max = Number(match[6]); 
+        return;
+    }
+    match = (/^ *мудрость *([0-9]{1,2}) \(из ([0-9]{1,2})\) *интеллект *([0-9]{1,2}) \(из ([0-9]{1,2})\) *обаяние *([0-9]{1,2}) \(из ([0-9]{1,2})\)$/).exec(text);
+    if(match) {
+        wis = Number(match[1]);
+        wis_max = Number(match[2]); 
+        int = Number(match[3]);
+        int_max = Number(match[4]); 
+        cha = Number(match[5]);
+        cha_max = Number(match[6]);
+        bonus = (wis+int+dex) - (wis_max+dex_max+int_max-3);
+        if(str>=15 && cha >= 18 && (wis+int+dex) >= (wis_max+dex_max+int_max-3)) {
+            echo("YES: "+(wis+dex+int)+" >= "+(wis_max+dex_max+int_max-3));
+        }else{
+            counter++;
+            if(counter>20) {send("sca s");counter=0;}
+            echo("NO: "+(wis+dex+int)+" >= "+(wis_max+dex_max+int_max-3) + "("+str+"str)" + "("+cha+"cha)");
+            send("гов лекарь нет");
+        }
+        return;
+    }
+
     //[#prompt] + [#battleprompt] example: <1111/1111 2222/2222 333/333 [time][exits]>[0W0D]
     //промпт тестера  <3084/3084зд 4800/4800ман 756/756шг 3939оп Вых:СВЮЗ>
     //                <3084/3084зд 4309/4800ман 756/756шг 3939оп Вых:СВЮЗ> [100%:90%]
