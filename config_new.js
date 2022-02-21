@@ -13,7 +13,7 @@
  * Расшифровка аффектов: https://github.com/dreamland-mud/mudjs/blob/dreamland/src/prompt.js
  */
 
-var test = true; //true - для вывода всякой отладочной информации
+var test = false; //true - для вывода всякой отладочной информации
 var melt_counter = 0; //противодействие автовыкидыванию
 
 //номер панели заклинаний
@@ -26,13 +26,14 @@ var chars = {
     'Miyamoto': {
         name: 'Miyamoto',
         align: 'e',
-        weapon: 'tickler', //'арапник',
+        weapon: 'warhammer', //'арапник',
         class: 'cleric',
         clan: 'ruler',
         water: 'flask',//'flask',
         food: 'manna',
         buffs_needs: {
             //(всегда, при фулбафе, всегда на члена группы, при фулбафе на члена группы)
+            'ruler aura': new Buff_need(true, false, false, false),
             'group defense': new Buff_need(false, false, false, true),
             'inspire': new Buff_need(false, true, false, true),
             'shadow cloak': new Buff_need(false, true, false, false),
@@ -141,6 +142,12 @@ $('.trigger').on('text', function (e, text) {
         if (my_char.action.act === 'fade') {
             clearAction();
         }
+    }
+    if(text.match("Ты покупаешь свечу за ")){
+        send('sell candle');
+    }
+    if(text.match("Ты продаешь свечу за ")){
+        send('buy candle');
     }
 
     if (text.match('^Ты растворяешься в воздухе.$')) {
@@ -1882,6 +1889,9 @@ function getSpells(char, level) {
         spells.push(['evil spirit',33]);
         spells.push(['nightfall',16]);
     }
+    if (char!==undefined && char.clan === 'ruler') {
+        spells.push(['ruler aura',10]);
+    }
     if (char!==undefined && char.class === 'cleric') {
         spells.push(['heal',2]);spells.push(['harm',2]);spells.push(['create water',3]);spells.push(['refresh',7]);spells.push(['create food',8]);spells.push(['observation',10]);spells.push(['cure blindness',11]);spells.push(['detect evil',11]);spells.push(['detect good',11]);spells.push(['shield',12]);spells.push(['blindness',14]);spells.push(['faerie fire',15]);spells.push(['detect magic',15]);spells.push(['fireproof',16]);spells.push(['detect invis',17]);spells.push(['earthquake',19]);spells.push(['cure disease',19]);spells.push(['armor',20]);spells.push(['bless',20]);spells.push(['continual light',21]);spells.push(['poison',22]);spells.push(['summon',22]);spells.push(['cure poison',23]);spells.push(['weaken',24]);spells.push(['infravision',25]);spells.push(['calm',26]);spells.push(['heating',27]);spells.push(['dispel evil',27]);spells.push(['dispel good',27]);spells.push(['create spring',27]);spells.push(['control weather',28]);spells.push(['sanctuary',29]);spells.push(['fly',30]);spells.push(['locate object',30]);spells.push(['enchant armor',30]);spells.push(['awakening',31]);spells.push(['faerie fog',31]);spells.push(['teleport',32]);spells.push(['remove curse',32]);spells.push(['pass door',32]);spells.push(['word of recall',32]);spells.push(['cancellation',32]);spells.push(['curse',33]);spells.push(['plague',33]);spells.push(['enhanced armor',33]);spells.push(['remove fear',34]);spells.push(['frenzy',34]);spells.push(['portal',35]);spells.push(['learning',35]);spells.push(['mental block',35]);spells.push(['gate',35]);spells.push(['mind light',36]);spells.push(['identify',36]);spells.push(['stone skin',36]);spells.push(['ray of truth',37]);spells.push(['bluefire',37]);spells.push(['weapon morph',37]);spells.push(['superior heal',38]);spells.push(['slow',38]);spells.push(['protective shield',38]);spells.push(['protection heat',39]);spells.push(['giant strength',39]);spells.push(['dragon skin',40]);spells.push(['healing light',41]);spells.push(['cursed lands',41]);spells.push(['sanctify lands',41]);spells.push(['flamestrike',42]);spells.push(['energy drain',42]);spells.push(['dispel affects',43]);spells.push(['protection cold',44]);spells.push(['severity force',45]);spells.push(['group defense',45]);spells.push(['improved detect',45]);spells.push(['holy word',48]);spells.push(['inspire',49]);spells.push(['cure corruption',50]);spells.push(['aid',53]);spells.push(['nexus',55]);spells.push(['master healing',58]);spells.push(['desert fist',58]);spells.push(['blade barrier',60]);spells.push(['group heal',65]);spells.push(['restoring light',71]);spells.push(['benediction',80]);
     }
@@ -1975,6 +1985,8 @@ function BuffQueue(sBuff, lStatus, lActionDone, action) {
 }
 var buffPatterns = [
 	// pattern, status, active
+    ['ruler aura', '^Аура Правителя исчезает, и ты теряешь возможность видеть незримое иным.$', false, false],
+	['ruler aura', '^Жемчужно-серая аура Правителя окружает тебя, даруя способность видеть незримое иным.$', true, true],
 	['ruler aura', '^Аура Рулера исчезает.$', false, false],
 	['ruler aura', '^Теперь ты чувствуешь себя более информированным, правя Миром.$', true, true],
 	['ruler aura', '^Ты и так уже знаешь многое в этом мире, неподвластное другим.$', true, true],
@@ -2234,6 +2246,9 @@ var buffs_list = {
 
     //invader:
     'shadow cloak': new Spell('shadow cloak', 'S', 'cln', 'protective'),
+
+    //ruler:
+    'ruler aura': new Spell('ruler aura', 'A', 'cln', 'protective'),
 
     //protect:
     //necr
