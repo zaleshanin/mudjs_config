@@ -29,11 +29,11 @@ var chars = {
         weapon: 'warhammer', //'арапник',
         class: 'cleric',
         clan: 'ruler',
-        water: 'flask',//'flask',
+        water: 'spring',//'flask',
         food: 'manna',
         buffs_needs: {
             //(всегда, при фулбафе, всегда на члена группы, при фулбафе на члена группы)
-            'ruler aura': new Buff_need(true, false, false, false),
+            'ruler aura': new Buff_need(true, true, false, false),
             'group defense': new Buff_need(false, false, false, true),
             'inspire': new Buff_need(false, true, false, true),
             'shadow cloak': new Buff_need(false, true, false, false),
@@ -86,6 +86,30 @@ var buffQueue = [];
  * Триггера - автоматические действия как реакция на какую-то строку в мире.
  *-------------------------------------------------------------------------*/
 $('.trigger').on('text', function (e, text) {
+    //качаем haggle
+    if(text.match("Ты покупаешь свечу за ")){
+        send('sell candle');
+    }
+    if(text.match("Ты продаешь свечу за ")){
+        send('buy candle');
+    }
+    //качаем wand
+    if(text.match("Ты учишься на своих ошибках, и твое умение 'wands' совершенствуется.")
+    ||text.match("Теперь ты гораздо лучше владеешь искусством 'wands'!")){
+        echo('-->[slook]');
+        send('slook wand');
+    }
+    if(text.match("Твоя арфа разваливается на куски.")){
+        echo('-->[new harp]');
+        send('get harp bag|wear harp|use harp');
+    }
+    if(text.match("Ты взмахиваешь арфой на себя.")){
+        echo('-->[run se|use harp]');
+        send('run se|use harp');
+    }
+    //Ты учишься на своих ошибках, и твое умение 'wands' совершенствуется.
+    //Теперь ты гораздо лучше владеешь искусством 'wands'!
+
     match = (/^ *сила *([0-9]{1,2}) \(из ([0-9]{1,2})\) *сложение *([0-9]{1,2}) \(из ([0-9]{1,2})\) *ловкость *([0-9]{1,2}) \(из ([0-9]{1,2})\)$/).exec(text);
     if(match) {
         str = Number(match[1]);
@@ -142,12 +166,6 @@ $('.trigger').on('text', function (e, text) {
         if (my_char.action.act === 'fade') {
             clearAction();
         }
-    }
-    if(text.match("Ты покупаешь свечу за ")){
-        send('sell candle');
-    }
-    if(text.match("Ты продаешь свечу за ")){
-        send('buy candle');
     }
 
     if (text.match('^Ты растворяешься в воздухе.$')) {
@@ -299,7 +317,8 @@ $('.trigger').on('text', function (e, text) {
         my_char.needsChanged = true;
         // echo('[буль-буль:' + my_char.thirst + ']\n');
     }
-    if (text.match('^Ты щелкаешь пальцами, и из земли пробивается магический родник.$') //text.match(' родник пробивается сквозь землю.$')
+    if (text.match('^Ты щелкаешь пальцами, и из земли пробивается магический родник.$') //text.match(' родник пробивается сквозь землю.$')        
+        || text.match('^Милостью .* из земли пробивается священный родник.$')
         || text.match('^Жестяная фляга наполнена.$')
         || text.match('^Милостью .* ты наполняешь жестяную флягу святой водой.$')
         || text.match('^В жестяной фляге уже что-то плещется.$')
@@ -1651,7 +1670,8 @@ function Pchar(name, char, level) {
             if(test) echo("------>Pchar->hasBuff("+cast+")->have one in my_char.buffs!");
             return true;
         }
-        
+
+
         if(buffs_list[cast].ally!=undefined) {
             for(let ally of buffs_list[cast].ally) {
                 if((mudprompt[buffs_list[ally].mgroup]!==undefined && mudprompt[buffs_list[ally].mgroup]!=='none') && mudprompt[buffs_list[ally].mgroup].a.indexOf(buffs_list[ally].mbrief)!==-1){
@@ -1893,7 +1913,7 @@ function getSpells(char, level) {
         spells.push(['ruler aura',10]);
     }
     if (char!==undefined && char.class === 'cleric') {
-        spells.push(['heal',2]);spells.push(['harm',2]);spells.push(['create water',3]);spells.push(['refresh',7]);spells.push(['create food',8]);spells.push(['observation',10]);spells.push(['cure blindness',11]);spells.push(['detect evil',11]);spells.push(['detect good',11]);spells.push(['shield',12]);spells.push(['blindness',14]);spells.push(['faerie fire',15]);spells.push(['detect magic',15]);spells.push(['fireproof',16]);spells.push(['detect invis',17]);spells.push(['earthquake',19]);spells.push(['cure disease',19]);spells.push(['armor',20]);spells.push(['bless',20]);spells.push(['continual light',21]);spells.push(['poison',22]);spells.push(['summon',22]);spells.push(['cure poison',23]);spells.push(['weaken',24]);spells.push(['infravision',25]);spells.push(['calm',26]);spells.push(['heating',27]);spells.push(['dispel evil',27]);spells.push(['dispel good',27]);spells.push(['create spring',27]);spells.push(['control weather',28]);spells.push(['sanctuary',29]);spells.push(['fly',30]);spells.push(['locate object',30]);spells.push(['enchant armor',30]);spells.push(['awakening',31]);spells.push(['faerie fog',31]);spells.push(['teleport',32]);spells.push(['remove curse',32]);spells.push(['pass door',32]);spells.push(['word of recall',32]);spells.push(['cancellation',32]);spells.push(['curse',33]);spells.push(['plague',33]);spells.push(['enhanced armor',33]);spells.push(['remove fear',34]);spells.push(['frenzy',34]);spells.push(['portal',35]);spells.push(['learning',35]);spells.push(['mental block',35]);spells.push(['gate',35]);spells.push(['mind light',36]);spells.push(['identify',36]);spells.push(['stone skin',36]);spells.push(['ray of truth',37]);spells.push(['bluefire',37]);spells.push(['weapon morph',37]);spells.push(['superior heal',38]);spells.push(['slow',38]);spells.push(['protective shield',38]);spells.push(['protection heat',39]);spells.push(['giant strength',39]);spells.push(['dragon skin',40]);spells.push(['healing light',41]);spells.push(['cursed lands',41]);spells.push(['sanctify lands',41]);spells.push(['flamestrike',42]);spells.push(['energy drain',42]);spells.push(['dispel affects',43]);spells.push(['protection cold',44]);spells.push(['severity force',45]);spells.push(['group defense',45]);spells.push(['improved detect',45]);spells.push(['holy word',48]);spells.push(['inspire',49]);spells.push(['cure corruption',50]);spells.push(['aid',53]);spells.push(['nexus',55]);spells.push(['master healing',58]);spells.push(['desert fist',58]);spells.push(['blade barrier',60]);spells.push(['group heal',65]);spells.push(['restoring light',71]);spells.push(['benediction',80]);
+        spells.push(['heal',2]);spells.push(['harm',2]);spells.push(['create water',3]);spells.push(['refresh',7]);spells.push(['create food',8]);spells.push(['observation',10]);spells.push(['cure blindness',11]);spells.push(['detect evil',11]);spells.push(['detect good',11]);spells.push(['shield',12]);spells.push(['blindness',14]);spells.push(['faerie fire',15]);spells.push(['detect magic',15]);spells.push(['fireproof',16]);spells.push(['earthquake',19]);spells.push(['cure disease',19]);spells.push(['armor',20]);spells.push(['bless',20]);spells.push(['continual light',21]);spells.push(['poison',22]);spells.push(['summon',22]);spells.push(['cure poison',23]);spells.push(['weaken',24]);spells.push(['infravision',25]);spells.push(['calm',26]);spells.push(['heating',27]);spells.push(['dispel evil',27]);spells.push(['dispel good',27]);spells.push(['create spring',27]);spells.push(['control weather',28]);spells.push(['sanctuary',29]);spells.push(['fly',30]);spells.push(['locate object',30]);spells.push(['enchant armor',30]);spells.push(['awakening',31]);spells.push(['faerie fog',31]);spells.push(['teleport',32]);spells.push(['remove curse',32]);spells.push(['pass door',32]);spells.push(['word of recall',32]);spells.push(['cancellation',32]);spells.push(['curse',33]);spells.push(['plague',33]);spells.push(['enhanced armor',33]);spells.push(['remove fear',34]);spells.push(['frenzy',34]);spells.push(['portal',35]);spells.push(['learning',35]);spells.push(['mental block',35]);spells.push(['gate',35]);spells.push(['mind light',36]);spells.push(['identify',36]);spells.push(['stone skin',36]);spells.push(['ray of truth',37]);spells.push(['bluefire',37]);spells.push(['weapon morph',37]);spells.push(['superior heal',38]);spells.push(['slow',38]);spells.push(['protective shield',38]);spells.push(['protection heat',39]);spells.push(['giant strength',39]);spells.push(['dragon skin',40]);spells.push(['healing light',41]);spells.push(['cursed lands',41]);spells.push(['sanctify lands',41]);spells.push(['flamestrike',42]);spells.push(['energy drain',42]);spells.push(['dispel affects',43]);spells.push(['protection cold',44]);spells.push(['severity force',45]);spells.push(['group defense',45]);spells.push(['improved detect',45]);spells.push(['holy word',48]);spells.push(['inspire',49]);spells.push(['cure corruption',50]);spells.push(['aid',53]);spells.push(['nexus',55]);spells.push(['master healing',58]);spells.push(['desert fist',58]);spells.push(['blade barrier',60]);spells.push(['group heal',65]);spells.push(['restoring light',71]);spells.push(['benediction',80]);//spells.push(['detect invis',17]);
     }
     if (char!==undefined && char.class === 'necromancer') {
         spells.push(['dark shroud',21]);
@@ -2001,6 +2021,7 @@ var buffPatterns = [
 	['aid', '^Это заклинание использовалось совсем недавно.$', true, true],
 	['armor', '^Окружавшая тебя броня исчезает.$', false, false],
 	['armor', '^Священная броня окружает .*.$', true, true],
+	['armor', '^Тебя окружает священная броня, дарованная .*$', true, true],
     //['armor', '^Волшебная броня окружает .*.$', true, true],
 	['armor', '^.* окружает магическая броня, улучшающая защитные навыки.$', true, true],
 	//['armor', '^.* уже защищен(а)? заклинанием брони.$', true, true],
@@ -2022,6 +2043,7 @@ var buffPatterns = [
 	['enhanced armor', '^Силовое поле уже окружает .*.$', true, true],
 	['bless', '^Ты больше не чувствуешь божественного благословления.$', false, false],
 	['bless', '^Ты больше не чувствуешь божественного благословения.$', false, false],
+	['bless', '^Ты чувствуешь благословение .*!$', true, true],
 	['bless', '^Ты чувствуешь божественное благословение.$', true, true],
 	['bless', '^.* уже благословлен\.$', true, true],
 	['bless', '.* уже под воздействием этого заклинания\.$', true, true],
@@ -2029,11 +2051,13 @@ var buffPatterns = [
 	['bless', '^Благословение богов снисходит на .*\.$', true, true],
 	['sanctuary', '^Белая аура вокруг тебя исчезает.$', false, false],
 	['sanctuary', '^Белая аура окружает .*.$', true, true],
+	['sanctuary', '^Вокруг тебя вспыхивает белая аура, дарованная .*.$', true, true],
 	['sanctuary', '^.* уже под защитой святилища.', true, true],
 	['sanctuary', 'Аура святилища уже защищает тебя.$', true, true],
 	['sanctuary', '^.* уже под защитой темных богов.', true, true],
 	['observation', '^Ты больше не видишь состояния других.$', false, false],
 	['observation', '^Теперь ты замечаешь состояние других.$', true, true],
+	['observation', '^Теперь ты можешь диагностировать негативные аффекты других существ.$', true, true],
 	['observation', '^Ты уже замечаешь состояние других.$', true, true],
 	['fly', '^Ты медленно опускаешься на землю.$', false, false],
 	['fly', '^Твои ноги отрываются от земли.$', true, true],
@@ -2248,7 +2272,7 @@ var buffs_list = {
     'shadow cloak': new Spell('shadow cloak', 'S', 'cln', 'protective'),
 
     //ruler:
-    'ruler aura': new Spell('ruler aura', 'A', 'cln', 'protective'),
+    'ruler aura': new Spell('ruler aura', 'A', 'cln', 'protective',false,false,[],['detect invis']),
 
     //protect:
     //necr
@@ -2308,7 +2332,7 @@ var attack_spells_list = {
     'magic jar': new AttackSpell('magic jar','jar','maladiction',true,false,false,false),
     'power word kill': new AttackSpell('power word kill','pwk','attack',true,false,false,false,'energy'),
     'web': new AttackSpell('web','web','maladiction',true,true,false,true),
-    'blindness': new AttackSpell('blindness','blind','curse',true,false,false,true),
+    'blindness': new AttackSpell('blindness','blind','maladiction',true,false,false,true),
     'poison': new AttackSpell('poison','pois','maladiction',true,false,false,true),
     'slow': new AttackSpell('slow','slow','maladiction',true,false,false,true),
     'weaken': new AttackSpell('weaken','weak','maladiction',true,false,false,true),
