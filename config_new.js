@@ -1006,6 +1006,8 @@ function checking() {
     if (my_char.affChanged)
     	checkBuffv2();
 
+    if(my_char.action.act != undefined) echo('[act:' + my_char.action.act + ' command:'+my_char.action.command+' target:'+my_char.action.target+']');
+
     if (my_char.needsChanged)
         checkNeeds();
 
@@ -1016,7 +1018,6 @@ function checking() {
     && (my_char.last_pose != undefined || my_char.was_afk != undefined))
         restoreStatus();
     
-    if(my_char.action.act != undefined) echo('[act:' + my_char.action.act + ' command:'+my_char.action.command+' target:'+my_char.action.target+']');
 }
 function checkGroup() {
     if(test) echo("->checkGroup()");
