@@ -51,12 +51,12 @@ var chars = {
             'giant strength': new Buff_need(false, false, false, true),
             'detect invis': new Buff_need(false, true, false, false),
             'improved detect': new Buff_need(false, false, false, false),
-            'infravision': new Buff_need(false, false, false, false),
-            'detect magic': new Buff_need(false, false, false, false),
+            'infravision': new Buff_need(true, false, false, false),
+            'detect magic': new Buff_need(true, false, false, false),
         
             //pets:
             'stardust': new Buff_need(false, true, false, true),
-            'sanctuary': new Buff_need(false, true, false, true),
+            'sanctuary': new Buff_need(true, true, false, true),
             'enhanced armor': new Buff_need(false, true, false, true),
             'haste': new Buff_need(false, false, false, true),
             'bless': new Buff_need(false, true, false, true),
@@ -255,16 +255,25 @@ $('.trigger').on('text', function (e, text) {
         	echo('[target not found -> fullbuff canceled]\n');
     	}
     }
+    //[#ruler badge]
+    //Ты надеваешь символ Хранителя Закона!
+    //Но у тебя уже что-то надето на шею.
+    if (text.match('^Серебряный символ Хранителя Закона превращается в пыль.$')) {
+        my_char.ruler_badge = false;
+        my_char.needsChanged = true;
+    }
+    if (text.match('^Ты надеваешь символ Хранителя Закона!$') 
+        || text.match('^Но у тебя уже что-то надето на шею.$')) {
+        my_char.ruler_badge = true;
+        my_char.needsChanged = true;
+        if (my_char.action.command !== undefined 
+            && my_char.action.command === 'ruler badge') {
+            clearAction();
+        }
+
+    }
 
     //[#food][#drink]
-    if (text.match('^Ты умираешь от голода|^Ты умираешь от жажды')) {
-        if (mudprompt.p2.pos === 'stand' || mudprompt.p2.pos === 'sit' || mudprompt.p2.pos === 'rest') {
-            //        echo('>>> Правильно питаюсь, когда не сплю и не сражаюсь.\n');
-            //        send('взять бочон сумка');
-            //        send('пить боч|пить боч|пить боч');
-            //        send('положить боч сумка');
-        }
-    }
     if (text.match('^Ты ешь .*\.$') || text.match('^У тебя нет этого.$') || text.match('^Это несъедобно.$')) {
         if (my_char.action.act !== undefined) {
             if (my_char.action.act === 'eat') {
@@ -961,7 +970,6 @@ function checking() {
         + ' pos:' + mudprompt.p2.pos
         + (mudprompt.p2.posf != '' ? '; posf:' + mudprompt.p2.posf : '')
         + '\n');
-    if(my_char.action.act != undefined) echo('[act:' + my_char.action.act + ' command:'+my_char.action.command+' target:'+my_char.action.target+']');
     let azazelStr = '';
     azazelStr = azazel.stat();
     //if(test) azazelStr = 'AZAZEL:['+azazelStr+']';
@@ -1007,6 +1015,8 @@ function checking() {
     if (!my_char.needsChanged && !my_char.eqChanged
     && (my_char.last_pose != undefined || my_char.was_afk != undefined))
         restoreStatus();
+    
+    if(my_char.action.act != undefined) echo('[act:' + my_char.action.act + ' command:'+my_char.action.command+' target:'+my_char.action.target+']');
 }
 function checkGroup() {
     if(test) echo("->checkGroup()");
@@ -1563,6 +1573,16 @@ function checkNeeds() {
             }
         }
     }
+    //[#ruler badge]
+    if (my_char.ruler_badge===false && my_char.hasSpell("ruler badge")
+        && my_char.action.act==undefined) {
+        if (checkPose('stand')) {
+            my_char.needsChanged = true;
+            doAct('cast','ruler badge');
+            return;
+        }
+    }
+
 }
 function checkPose(need_pose) {
     if (test) echo('->checkPose(' + need_pose + ')');
@@ -1641,6 +1661,7 @@ function Pchar(name, char, level) {
     this.name = name===undefined ? undefined : name;
     this.level = level===undefined ? undefined : level;
 
+    this.ruler_badge = (char===undefined || char.clan!='ruler') ? undefined : false;
     this.weapon = char===undefined ? undefined : char.weapon;
     this.align = char===undefined ? undefined : char.align;
     this.buffs_needs = char==undefined ? {} : char.buffs_needs;
@@ -1911,6 +1932,7 @@ function getSpells(char, level) {
     }
     if (char!==undefined && char.clan === 'ruler') {
         spells.push(['ruler aura',10]);
+        spells.push(['ruler badge',10]);
     }
     if (char!==undefined && char.class === 'cleric') {
         spells.push(['heal',2]);spells.push(['harm',2]);spells.push(['create water',3]);spells.push(['refresh',7]);spells.push(['create food',8]);spells.push(['observation',10]);spells.push(['cure blindness',11]);spells.push(['detect evil',11]);spells.push(['detect good',11]);spells.push(['shield',12]);spells.push(['blindness',14]);spells.push(['faerie fire',15]);spells.push(['detect magic',15]);spells.push(['fireproof',16]);spells.push(['earthquake',19]);spells.push(['cure disease',19]);spells.push(['armor',20]);spells.push(['bless',20]);spells.push(['continual light',21]);spells.push(['poison',22]);spells.push(['summon',22]);spells.push(['cure poison',23]);spells.push(['weaken',24]);spells.push(['infravision',25]);spells.push(['calm',26]);spells.push(['heating',27]);spells.push(['dispel evil',27]);spells.push(['dispel good',27]);spells.push(['create spring',27]);spells.push(['control weather',28]);spells.push(['sanctuary',29]);spells.push(['fly',30]);spells.push(['locate object',30]);spells.push(['enchant armor',30]);spells.push(['awakening',31]);spells.push(['faerie fog',31]);spells.push(['teleport',32]);spells.push(['remove curse',32]);spells.push(['pass door',32]);spells.push(['word of recall',32]);spells.push(['cancellation',32]);spells.push(['curse',33]);spells.push(['plague',33]);spells.push(['enhanced armor',33]);spells.push(['remove fear',34]);spells.push(['frenzy',34]);spells.push(['portal',35]);spells.push(['learning',35]);spells.push(['mental block',35]);spells.push(['gate',35]);spells.push(['mind light',36]);spells.push(['identify',36]);spells.push(['stone skin',36]);spells.push(['ray of truth',37]);spells.push(['bluefire',37]);spells.push(['weapon morph',37]);spells.push(['superior heal',38]);spells.push(['slow',38]);spells.push(['protective shield',38]);spells.push(['protection heat',39]);spells.push(['giant strength',39]);spells.push(['dragon skin',40]);spells.push(['healing light',41]);spells.push(['cursed lands',41]);spells.push(['sanctify lands',41]);spells.push(['flamestrike',42]);spells.push(['energy drain',42]);spells.push(['dispel affects',43]);spells.push(['protection cold',44]);spells.push(['severity force',45]);spells.push(['group defense',45]);spells.push(['improved detect',45]);spells.push(['holy word',48]);spells.push(['inspire',49]);spells.push(['cure corruption',50]);spells.push(['aid',53]);spells.push(['nexus',55]);spells.push(['master healing',58]);spells.push(['desert fist',58]);spells.push(['blade barrier',60]);spells.push(['group heal',65]);spells.push(['restoring light',71]);spells.push(['benediction',80]);//spells.push(['detect invis',17]);
@@ -2037,6 +2059,7 @@ var buffPatterns = [
 	['enhanced armor', '^Силовое поле, защищавшее тебя, исчезает.$', false, false],
 	//['enhanced armor', '^Силовая защита окружает .*.$', true, true],
     ['enhanced armor', '^Тебя окружает силовое поле, помогающее уходить от ударов.*.$', true, true],
+    ['enhanced armor', '^Тебя окружает силовое поле, дарованное .*$', true, true],
 //	['enhanced armor', '^Силовое поле уже защищает тебя.$', true, true],
 	['enhanced armor', 'Ты уже под защитой силового поля.$', true, true],
 	['enhanced armor', '.* уже под защитой силового поля\.$', true, true],
@@ -2120,6 +2143,9 @@ var buffPatterns = [
 //	['detect invis', '^Ты уже чувствуешь присутствие невидимых сил.$', true, true],
 	['detect invis', '^Ты уже видишь невидимое.$', true, true],
 	['detect invis', '^Глаза .* сужаются, получая способность видеть невидимое.$', true, true],
+	['detect magic', '^Теперь ты чувствуешь ауру магии вокруг предметов и существ.$', true, true],
+	['detect magic', '^Ты больше не различаешь ауру магии вокруг предметов и существ.$', false, false],
+	['infravision', '^Твои глаза загораются красным светом.$', true, true],
 //	['improved detect', '^Ты теперь не замечаешь очень невидимые силы.$', false, false],
 	['improved detect', '^Твои глаза расслабляются, теряя способность видеть очень невидимое.$', false, false],
 //	['improved detect', '^Теперь ты чувствуешь присутствие очень невидимых сил.$', true, true],
