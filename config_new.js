@@ -259,11 +259,15 @@ $('.trigger').on('text', function (e, text) {
     //Ты надеваешь символ Хранителя Закона!
     //Но у тебя уже что-то надето на шею.
     if (text.match('^Серебряный символ Хранителя Закона превращается в пыль.$')) {
+        //if(test)
+        echo("--> ruler badge expire triger <--");
         my_char.ruler_badge = false;
         my_char.needsChanged = true;
     }
     if (text.match('^Ты надеваешь символ Хранителя Закона!$') 
         || text.match('^Но у тебя уже что-то надето на шею.$')) {
+        //if(test)
+        echo("--> ruler badge wear triger <--");
         my_char.ruler_badge = true;
         my_char.needsChanged = true;
         if (my_char.action.command !== undefined 
@@ -2115,6 +2119,7 @@ var buffPatterns = [
 	//['protective shield', '^Охранный щит окружает тебя.$', true, true],
     ['protective shield', '^.* окружает тускло светящийся охранный щит, отклоняющий резкие толчки и удары.$', true, true],
 	['protective shield', '^Охранный щит уже окружает тебя.$', true, true],
+	['protective shield', '^Тебя окружает тускло светящийся охранный щит, дарованный .*.$', true, true],
 	['protective shield', 'Ты уже под воздействием охранного щита.$', true, true],
 	['protective shield', '^Предохранительный щит окружает тебя.$', true, true],
 	['giant strength', '^Ты становишься слабее.$', false, false],
@@ -2333,6 +2338,7 @@ var attack_spells_list = {
     //AttackSpell(sName,sClass,lTarget,lRange,lArea,lFight,sDamage)
     //cleric
     'harm': new AttackSpell('harm','harm','attack',true,true,false,true),
+    'bluefire': new AttackSpell('bluefire','blFr','attack',true,true,false,true),
     //necromancer
     'shadowlife': new AttackSpell('shadowlife','shLf','maladiction',true,false,false,false),
     'magic missile': new AttackSpell('magic missile','mm','attack',true,true,false,true,'energy'),
