@@ -26,7 +26,7 @@ var chars = {
     'Miyamoto': {
         name: 'Miyamoto',
         align: 'e',
-        weapon: 'warhammer', //'арапник',
+        weapon: 'hickey', //'арапник',
         class: 'cleric',
         clan: 'ruler',
         water: 'spring',//'flask',
