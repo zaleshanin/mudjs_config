@@ -1491,7 +1491,7 @@ function checkEquip() {
 function checkNeeds() {
     if (test) echo('->checkNeeds(hunger:' + my_char.hunger + ' f:' + my_char.lfood
         + ' thirst:' + my_char.thirst + ' w:' + my_char.lwater + ')');
-    if (my_char.hunger + my_char.thirst == 0) {
+    if (my_char.hunger + my_char.thirst == 0 && my_char.ruler_badge) {
         my_char.needsChanged = false;
         return;
     }
@@ -1499,7 +1499,8 @@ function checkNeeds() {
         return;
     }
 
-    if ((my_char.hunger <= 1 && my_char.thirst <= 1)
+    if ((my_char.hunger + my_char.thirst > 0) 
+        && (my_char.hunger <= 1 && my_char.thirst <= 1)
         && !(my_char.pract && (my_char.hunger || my_char.thirst))) {
             //TODO питаться если не полное здоровье/мана!!!
         if (test) echo('-->[not so hunger/thirst - EXIT]');
@@ -2115,6 +2116,7 @@ var buffPatterns = [
 	['dragon skin', '^Твоя кожа становится мягче.$', false, false],
 	['dragon skin', '^Твоя кожа уже тверда, как драконья.$', true, true],
 	['dragon skin', '^Твоя кожа становится тверже драконьей.$', true, true],
+	['dragon skin', '^Твоя кожа покрывается драконьей чешуей.$', true, true],
 	['protective shield', '^Охранный щит вокруг тебя исчезает.$', false, false],
 	//['protective shield', '^Охранный щит окружает тебя.$', true, true],
     ['protective shield', '^.* окружает тускло светящийся охранный щит, отклоняющий резкие толчки и удары.$', true, true],
