@@ -13,6 +13,12 @@
  * Расшифровка аффектов: https://github.com/dreamland-mud/mudjs/blob/dreamland/src/prompt.js
  */
 
+//возвращаем серый фон
+$('.terminal').css("background-color", "#2e3436");
+$('.terminal-wrap').css("background-color", "#2e3436");
+$('body').css("background-color", "#353535");
+$('input').css("background-color", "#2e3436");
+
 var test = false; //true - для вывода всякой отладочной информации
 var melt_counter = 0; //противодействие автовыкидыванию
 
@@ -26,7 +32,7 @@ var chars = {
     'Miyamoto': {
         name: 'Miyamoto',
         align: 'e',
-        weapon: 'hickey', //'арапник',
+        weapon: 'mace',//'hickey', //'арапник',
         class: 'cleric',
         clan: 'ruler',
         water: 'spring',//'flask',
@@ -51,7 +57,7 @@ var chars = {
             'giant strength': new Buff_need(false, false, false, true),
             'detect invis': new Buff_need(false, true, false, false),
             'improved detect': new Buff_need(false, false, false, false),
-            'infravision': new Buff_need(true, false, false, false),
+            'infravision': new Buff_need(false, false, false, false),
             'detect magic': new Buff_need(true, false, false, false),
         
             //pets:
@@ -2057,6 +2063,7 @@ var buffPatterns = [
 	['armor', '^Ты уже под воздействием заклинания брони.$', true, true],
     ['shield', '^Щит, окружавший тебя, исчезает.$', false, false],
 	['shield', '^Божественная энергия окружает .* щитом.$', true, true],
+    ['shield', '^.* окружает священный щит, дарованный .*\.', true, true],
 	['shield', '^Тебя окружает священный щит, дарованный .*\.$', true, true],
 	//['shield', '^Волшебный щит окружает .*.$', true, true],
     ['shield', '^.* окружает магический щит, помогающий блокировать удары.$', true, true],
@@ -2135,6 +2142,7 @@ var buffPatterns = [
 	['giant strength', ' уже обладает гигантской силой.$', true, true],
 	['protection heat', '^Твоя защищенность от воздействия высоких температур понижается.$', false, false],
 	['protection heat', '^Твоя защищенность от воздействия высоких температур повышается.$', true, true],
+	['protection heat', '^Ты теперь лучше защищен от воздействия высоких температур.$', true, true],
 	['protection heat', '^Ты уже защищен от огня.$', true, true],
 //	['protection cold', '^Твоя защищенность от воздействия низких температур повышается.$', true, true],
 	['protection cold', '^Ты теперь лучше защищен от воздействия низких температур.$', true, true],
