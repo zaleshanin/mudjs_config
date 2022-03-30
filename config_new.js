@@ -241,6 +241,7 @@ $('.trigger').on('text', function (e, text) {
     }
 
     if (text.match('^Ты не можешь сконцентрироваться.$')
+        || text.match('^Увы, никого с таким именем в этой местности обнаружить не удается.$')
         || text.match('^Ты пытаешься сотворить заклинание, но теряешь концентрацию и терпишь неудачу.$')
         || text.match('^Твоя попытка закончилась неудачей.$')
         || text.match('На кого именно ты хочешь произнести заклинание') 
@@ -1397,6 +1398,15 @@ function buffChange(sBuff, lStatus, lActionDone, action) {
 	if (sBuff in buffs_list) {
     	if (test) echo('---->("' + sBuff + '" имеется в buffs_list)');
 
+        if(buffs_list[sBuff].grSpell != undefined) {
+            if (test) echo('---->(есть grSpell)');
+            if (buffs_list[sBuff].grSpell === action.command){
+                if (test) echo('---->(group spell: ' + action.command + ')');
+                lGroupAlly = true;
+                sBuff = action.command;
+            }
+        }
+
     	if (buffs_list[sBuff].ally !== undefined) {
         	if (test) echo('---->(есть ally)');
         	buffs_list[sBuff].ally.forEach(function (spell) {
@@ -2055,6 +2065,7 @@ var buffPatterns = [
 	['aid', '^Это заклинание использовалось совсем недавно.$', true, true],
 	['armor', '^Окружавшая тебя броня исчезает.$', false, false],
 	['armor', '^Священная броня окружает .*.$', true, true],
+ 	['armor', '^.* окружает священная броня, дарованная .*.$', true, true],
 	['armor', '^Тебя окружает священная броня, дарованная .*$', true, true],
     //['armor', '^Волшебная броня окружает .*.$', true, true],
 	['armor', '^.* окружает магическая броня, улучшающая защитные навыки.$', true, true],
@@ -2071,6 +2082,7 @@ var buffPatterns = [
 	['shield', '^.* уже под воздействием этого заклинания.$', true, true],
 	['enhanced armor', '^Силовое поле, защищавшее тебя, исчезает.$', false, false],
 	//['enhanced armor', '^Силовая защита окружает .*.$', true, true],
+    ['enhanced armor', '^.* окружает силовое поле, дарованное .*.$', true, true],
     ['enhanced armor', '^Тебя окружает силовое поле, помогающее уходить от ударов.*.$', true, true],
     ['enhanced armor', '^Тебя окружает силовое поле, дарованное .*$', true, true],
 //	['enhanced armor', '^Силовое поле уже защищает тебя.$', true, true],
@@ -2084,11 +2096,13 @@ var buffPatterns = [
 	['bless', '^.* уже благословлен\.$', true, true],
 	['bless', '.* уже под воздействием этого заклинания\.$', true, true],
 	['bless', '^Ты даришь .* благословение своих богов\.$', true, true],
+	['bless', '^Благословение .* снисходит на .*\.$', true, true],
 	['bless', '^Благословение богов снисходит на .*\.$', true, true],
 	['sanctuary', '^Белая аура вокруг тебя исчезает.$', false, false],
 	['sanctuary', '^Белая аура окружает .*.$', true, true],
-	['sanctuary', '^Вокруг тебя вспыхивает белая аура, дарованная .*.$', true, true],
+	['sanctuary', '^Вокруг .* вспыхивает белая аура, дарованная .*.$', true, true],
 	['sanctuary', '^.* уже под защитой святилища.', true, true],
+	['sanctuary', '^Аура святилища уже защищает .*.', true, true],
 	['sanctuary', 'Аура святилища уже защищает тебя.$', true, true],
 	['sanctuary', '^.* уже под защитой темных богов.', true, true],
 	['observation', '^Ты больше не видишь состояния других.$', false, false],
@@ -2110,6 +2124,7 @@ var buffPatterns = [
 	['frenzy', '^Твой гнев проходит.$', false, false],
 	['frenzy', '^Дикая ярость наполняет тебя!$', true, true],
 	['frenzy', '^В глазах .* вспыхивает дикая ярость!$', true, true],
+	['frenzy', '^Волею .* глаза .*зажигаются диким огнем!$', true, true],
 	['frenzy', '^Твои боги не благосклонны к ', true, true],
 	['frenzy', '^Сейчас ничто не может разозлить ', true, true],
 	['frenzy', '^.* уже в ярости!$', true, true],
@@ -2349,6 +2364,12 @@ var attack_spells_list = {
     //cleric
     'harm': new AttackSpell('harm','harm','attack',true,true,false,true),
     'bluefire': new AttackSpell('bluefire','blFr','attack',true,true,false,true),
+    'heating': new AttackSpell('heating','heat','attack',true,false,false,true,'fire'),
+    'ray of truth': new AttackSpell('ray of truth','RoT','attack',true,true,false,true),
+    'flamestrike': new AttackSpell('flamestrike','flam','attack',true,true,false,true,'fire'),
+    'severity force': new AttackSpell('severity force','SevF','attack',true,false,false,true),
+    //RULER
+    //optic resonance 
     //necromancer
     'shadowlife': new AttackSpell('shadowlife','shLf','maladiction',true,false,false,false),
     'magic missile': new AttackSpell('magic missile','mm','attack',true,true,false,true,'energy'),
