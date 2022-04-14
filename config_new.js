@@ -249,7 +249,7 @@ $('.trigger').on('text', function (e, text) {
         
         if(test) echo('[spell fail trigger]')
         clearAction();
-        if (my_char.fullbuff.target && text.match('На кого именно ты хочешь произнести заклинание')) {
+        if (my_char.fullbuff.target && (text.match('На кого именно ты хочешь произнести заклинание') || text.match('^Увы, никого с таким именем в этой местности обнаружить не удается.$'))) {
         	my_char.fullbuff = new Fullbuff();
         	echo('[target not found -> fullbuff canceled]\n');
     	}
@@ -1326,7 +1326,7 @@ function checkBuffv2() {
 
         //если член группы или я - нет ли группового спела с этим баффом.
         if(group_member && buffs_list[spell_name].grSpell!=undefined 
-            && oSpells[buffs_list[spell_name].grSpell]!=undefined){
+            && oSpells[buffs_list[spell_name].grSpell]!=undefined && fb){
             spell_to_cast = buffs_list[spell_name].grSpell;
             caster = oSpells[spell_to_cast].member;
             victim = caster;
@@ -2129,6 +2129,7 @@ var buffPatterns = [
 	['frenzy', '^Сейчас ничто не может разозлить ', true, true],
 	['frenzy', '^.* уже в ярости!$', true, true],
     ['frenzy', 'молит о неистовстве, но богам явно не по душе .*$', true, true],
+    ['frenzy', 'Ты молишь о неистовстве, но .* явно не по душе .*$\.', true, true],
 	['stone skin', '^Твоя кожа становится мягче.$', false, false],
     ['stone skin', '^Каменная корка на твоей коже трескается под ударами и исчезает.$', false, false],
 	//['stone skin', '^Твоя кожа становится тверже камня.$', true, true],
