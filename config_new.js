@@ -425,7 +425,7 @@ function command(e, cmd, text, handler) {
     var match, re;
 
     // Попытаться распознать команду в формате 'cmd' или 'cmd аргумент'
-    re = new RegExp('^' + cmd + ' *(.*)');
+    re = new RegExp('^' + cmd + '(?:(?: +)(.*))?$');
     match = re.exec(text);
     if (!match)
         return false;
