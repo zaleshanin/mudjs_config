@@ -341,7 +341,7 @@ $('.trigger').on('text', function (e, text) {
         || text.match('^В этой местности и так есть чем напиться.')) {
         if (test) echo("[water creation trigger]");
         my_char.lwater = 1;
-        if (my_char.action.command == 'create spring' || my_char.action.command == 'create water')
+        if (my_char.action.command == 'spring' || my_char.action.command == 'create water')
             clearAction();
     }
     if (text.match('^Ты пьешь [^\s]* из ')) {
@@ -1564,7 +1564,7 @@ function checkNeeds() {
             if (my_char.water === 'spring') {
                 if (checkPose('stand')) {
                     my_char.needsChanged = true;
-                    doAct('cast', 'create spring');
+                    doAct('cast', 'spring');
                     return;
                 }
             }
@@ -1952,7 +1952,7 @@ function getSpells(char, level) {
         spells.push(['ruler badge',10]);
     }
     if (char!==undefined && char.class === 'cleric') {
-        spells.push(['heal',2]);spells.push(['harm',2]);spells.push(['create water',3]);spells.push(['refresh',7]);spells.push(['create food',8]);spells.push(['observation',10]);spells.push(['cure blindness',11]);spells.push(['detect evil',11]);spells.push(['detect good',11]);spells.push(['shield',12]);spells.push(['blindness',14]);spells.push(['faerie fire',15]);spells.push(['detect magic',15]);spells.push(['fireproof',16]);spells.push(['earthquake',19]);spells.push(['cure disease',19]);spells.push(['armor',20]);spells.push(['bless',20]);spells.push(['continual light',21]);spells.push(['poison',22]);spells.push(['summon',22]);spells.push(['cure poison',23]);spells.push(['weaken',24]);spells.push(['infravision',25]);spells.push(['calm',26]);spells.push(['heating',27]);spells.push(['dispel evil',27]);spells.push(['dispel good',27]);spells.push(['create spring',27]);spells.push(['control weather',28]);spells.push(['sanctuary',29]);spells.push(['fly',30]);spells.push(['locate object',30]);spells.push(['enchant armor',30]);spells.push(['awakening',31]);spells.push(['faerie fog',31]);spells.push(['teleport',32]);spells.push(['remove curse',32]);spells.push(['pass door',32]);spells.push(['word of recall',32]);spells.push(['cancellation',32]);spells.push(['curse',33]);spells.push(['plague',33]);spells.push(['enhanced armor',33]);spells.push(['remove fear',34]);spells.push(['frenzy',34]);spells.push(['portal',35]);spells.push(['learning',35]);spells.push(['mental block',35]);spells.push(['gate',35]);spells.push(['mind light',36]);spells.push(['identify',36]);spells.push(['stone skin',36]);spells.push(['ray of truth',37]);spells.push(['bluefire',37]);spells.push(['weapon morph',37]);spells.push(['superior heal',38]);spells.push(['slow',38]);spells.push(['protective shield',38]);spells.push(['protection heat',39]);spells.push(['giant strength',39]);spells.push(['dragon skin',40]);spells.push(['healing light',41]);spells.push(['cursed lands',41]);spells.push(['sanctify lands',41]);spells.push(['flamestrike',42]);spells.push(['energy drain',42]);spells.push(['dispel affects',43]);spells.push(['protection cold',44]);spells.push(['severity force',45]);spells.push(['group defense',45]);spells.push(['improved detect',45]);spells.push(['holy word',48]);spells.push(['inspire',49]);spells.push(['cure corruption',50]);spells.push(['aid',53]);spells.push(['nexus',55]);spells.push(['master healing',58]);spells.push(['desert fist',58]);spells.push(['blade barrier',60]);spells.push(['group heal',65]);spells.push(['restoring light',71]);spells.push(['benediction',80]);//spells.push(['detect invis',17]);
+        spells.push(['heal',2]);spells.push(['harm',2]);spells.push(['create water',3]);spells.push(['refresh',7]);spells.push(['create food',8]);spells.push(['observation',10]);spells.push(['cure blindness',11]);spells.push(['detect evil',11]);spells.push(['detect good',11]);spells.push(['shield',12]);spells.push(['blindness',14]);spells.push(['faerie fire',15]);spells.push(['detect magic',15]);spells.push(['fireproof',16]);spells.push(['earthquake',19]);spells.push(['cure disease',19]);spells.push(['armor',20]);spells.push(['bless',20]);spells.push(['continual light',21]);spells.push(['poison',22]);spells.push(['summon',22]);spells.push(['cure poison',23]);spells.push(['weaken',24]);spells.push(['infravision',25]);spells.push(['calm',26]);spells.push(['heating',27]);spells.push(['dispel evil',27]);spells.push(['dispel good',27]);spells.push(['spring',27]);spells.push(['control weather',28]);spells.push(['sanctuary',29]);spells.push(['fly',30]);spells.push(['locate object',30]);spells.push(['enchant armor',30]);spells.push(['awakening',31]);spells.push(['faerie fog',31]);spells.push(['teleport',32]);spells.push(['remove curse',32]);spells.push(['pass door',32]);spells.push(['word of recall',32]);spells.push(['cancellation',32]);spells.push(['curse',33]);spells.push(['plague',33]);spells.push(['enhanced armor',33]);spells.push(['remove fear',34]);spells.push(['frenzy',34]);spells.push(['portal',35]);spells.push(['learning',35]);spells.push(['mental block',35]);spells.push(['gate',35]);spells.push(['mind light',36]);spells.push(['identify',36]);spells.push(['stone skin',36]);spells.push(['ray of truth',37]);spells.push(['bluefire',37]);spells.push(['compound',37]);spells.push(['superior heal',38]);spells.push(['slow',38]);spells.push(['protective shield',38]);spells.push(['protection heat',39]);spells.push(['giant strength',39]);spells.push(['dragon skin',40]);spells.push(['healing light',41]);spells.push(['cursed lands',41]);spells.push(['sanctify lands',41]);spells.push(['flamestrike',42]);spells.push(['energy drain',42]);spells.push(['dispel affects',43]);spells.push(['protection cold',44]);spells.push(['severity force',45]);spells.push(['group defense',45]);spells.push(['improved detect',45]);spells.push(['holy word',48]);spells.push(['inspire',49]);spells.push(['cure corruption',50]);spells.push(['aid',53]);spells.push(['nexus',55]);spells.push(['master healing',58]);spells.push(['desert fist',58]);spells.push(['blade barrier',60]);spells.push(['group heal',65]);spells.push(['restoring light',71]);spells.push(['benediction',80]);//spells.push(['detect invis',17]);
     }
     if (char!==undefined && char.class === 'necromancer') {
         spells.push(['dark shroud',21]);
@@ -1990,7 +1990,7 @@ function getSpells(char, level) {
         spells.push(['spectral furor',35]);
         spells.push(['hurricane',65]);
         spells.push(['cursed lands',64]);
-        spells.push(['mysterious dream',27]);
+        spells.push(['narcotic mist',27]);
         spells.push(['shielding',53]);
         spells.push(['energy drain',45]);
         spells.push(['magic jar',68]);
@@ -2263,7 +2263,7 @@ var buffPatterns = [
 var pets = {
     'Легенда': {
         'spells' : ['armor', 'acute vision', 'continual light', 'control weather', 
-            'create food', 'create rose', 'create spring', 'detect invis', 'dragon skin', 
+            'create food', 'create rose', 'spring', 'detect invis', 'dragon skin', 
             'enhanced armor', 'faerie fog', 'fly', 'giant strength', 'haste', 'improved detect', 
             'improved invis', 'infravision', 'invisibility', 'knock', 'learning', 'link', 
             'pass door', 'protection cold', 'protection heat', 'protective shield', 'refresh',
@@ -2273,23 +2273,23 @@ var pets = {
         'ename' : 'legend',
     },
     'коровища': {
-        'spells' : ['aid', 'armor', 'bless', 'calm', 'continual light', 'control weather', 'create food', 'create spring', 'cure blindness', 'cure disease', 'cure poison', 'detect invis', 'dragon skin', 'enhanced armor', 'faerie fog', 'fly', 'frenzy', 'giant strength', 'group defense', 'group heal', 'heal', 'healing light', 'improved detect', 'infravision', 'inspire', 'learning', 'mind light', 'pass door', 'protection cold', 'protection heat', 'protective shield', 'refresh', 'remove curse', 'remove fear', 'restoring light', 'sanctify lands', 'sanctuary', 'shield', 'stone skin'
+        'spells' : ['aid', 'armor', 'bless', 'calm', 'continual light', 'control weather', 'create food', 'spring', 'cure blindness', 'cure disease', 'cure poison', 'detect invis', 'dragon skin', 'enhanced armor', 'faerie fog', 'fly', 'frenzy', 'giant strength', 'group defense', 'group heal', 'heal', 'healing light', 'improved detect', 'infravision', 'inspire', 'learning', 'mind light', 'pass door', 'protection cold', 'protection heat', 'protective shield', 'refresh', 'remove curse', 'remove fear', 'restoring light', 'sanctify lands', 'sanctuary', 'shield', 'stone skin'
         ],
         'align' : 'n',
         'ename' : 'cow',
     },
     'ночная тен' :{
-        'spells' : ['armor', 'assist', 'create food', 'create spring', 'dark shroud', 'detect invis', 'fly', 'giant strength', 'improved detect', 'infravision', 'invisibility', 'knock', 'learning', 'link', 'pass door', 'protection cold', 'protection good', 'protection negative', 'protective shield', 'refresh', 'shield', 'spell resistance', 'stone skin'],
+        'spells' : ['armor', 'assist', 'create food', 'spring', 'dark shroud', 'detect invis', 'fly', 'giant strength', 'improved detect', 'infravision', 'invisibility', 'knock', 'learning', 'link', 'pass door', 'protection cold', 'protection good', 'protection negative', 'protective shield', 'refresh', 'shield', 'spell resistance', 'stone skin'],
         'align' : 'e',
         'ename' : 'night'
     },
     'призванная' :{
-        'spells' : ['armor', 'assist', 'create food', 'create spring', 'detect invis', 'fly', 'giant strength', 'improved detect', 'infravision', 'invisibility', 'knock', 'learning', 'link', 'pass door', 'protection cold', 'protection negative', 'protective shield', 'refresh', 'shield', 'spell resistance', 'stone skin'],
+        'spells' : ['armor', 'assist', 'create food', 'spring', 'detect invis', 'fly', 'giant strength', 'improved detect', 'infravision', 'invisibility', 'knock', 'learning', 'link', 'pass door', 'protection cold', 'protection negative', 'protective shield', 'refresh', 'shield', 'spell resistance', 'stone skin'],
         'align' : 'n',
         'ename' : 'shadow',
     },
     'теневой дв':{
-        'spells' : ['armor', 'assist', 'create food', 'create spring', 'detect invis', 'fly', 'giant strength', 'improved detect', 'infravision', 'invisibility', 'knock', 'learning', 'link', 'pass door', 'protection cold', 'protection negative', 'protective shield', 'refresh', 'shield', 'spell resistance', 'stone skin'],
+        'spells' : ['armor', 'assist', 'create food', 'spring', 'detect invis', 'fly', 'giant strength', 'improved detect', 'infravision', 'invisibility', 'knock', 'learning', 'link', 'pass door', 'protection cold', 'protection negative', 'protective shield', 'refresh', 'shield', 'spell resistance', 'stone skin'],
         'align' : 'n',
         'ename' : 'shadow',
     },
@@ -2381,7 +2381,7 @@ var attack_spells_list = {
     'spectral furor': new AttackSpell('spectral furor','spect','attack',true,true,false,true,'energy'),
     'hurricane': new AttackSpell('hurricane','hur','attack',false,false,true,true,'other'),
     'cursed lands': new AttackSpell('cursed lands','curLd','room',false,false,true,false),
-    'mysterious dream': new AttackSpell('mysterious dream','myst','room',false,false,true,false),
+    'narcotic mist': new AttackSpell('narcotic mist','myst','room',false,false,true,false),
     'hand of undead': new AttackSpell('hand of undead','HoU','attack',true,true,false,true,'energy'),
     'shielding': new AttackSpell('shielding','shng','maladiction',true,false,false,false),
     'energy drain': new AttackSpell('energy drain','engDr','attack',true,false,false,true,'energy'),
