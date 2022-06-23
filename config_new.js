@@ -2413,7 +2413,7 @@ function Spell(name, brief, mgroup, sclass, target, party, aAntogonist, aAlly, g
     this.name = name;
     this.mbrief = brief; //буква из mudprompt
     this.mgroup = mgroup; //группа из mudprompt
-    this.class = sclass; //внутреннее поголялово для класса заклинания
+    this.class = sclass; //внутреннее погонялово для класса заклинания
     this.target = target === undefined ? false : target; //кастуется ли на цель
     //this.buff = buff === undefined ? 0 : buff;
     //this.group = group === undefined ? 0 : group;
