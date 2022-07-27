@@ -13,6 +13,7 @@ $('.terminal').css("background-color", "#2e3436");
 $('.terminal-wrap').css("background-color", "#2e3436");
 $('body').css("background-color", "#353535");
 $('input').css("background-color", "#2e3436");
+$('#cs-subject').css("color","#F8F8F2");
 
 var test = false; //true - для вывода всякой отладочной информации
 var melt_counter = 0; //противодействие автовыкидыванию
@@ -1585,7 +1586,7 @@ function checkNeeds() {
         } else {
             if (checkPose('stand')) {
                 my_char.needsChanged = true;
-                doAct('drink', my_char.water);
+                doAct('drink', my_char.water=='spring'?'':my_char.water);
                 return;
             }
         }
@@ -2161,8 +2162,9 @@ var buffPatterns = [
 //	['protection cold', '^Твоя защищенность от воздействия низких температур понижается.$', false, false],
 	['protection cold', '^Ты теряешь защиту от воздействия низких температур.$', false, false],
 	['inspire', '^Твое воодушевление проходит.$', false, false],
-	['inspire', '^Ты чувствуешь воодушевление!$', true, true],
+	['inspire', 'Ты чувствуешь воодушевление!', true, true],
 	['inspire', '^Ты уже воодушевлен.$', true, true],
+	['inspire', 'Волею .* ты чувствуешь воодушевление!', true, true],
 	//['detect invis', '^Ты более не чувствуешь присутствие невидимых сил.$', false, false],
 	['detect invis', '^Ты больше не видишь невидимое.$', false, false],
 //	['detect invis', '^Теперь ты чувствуешь присутствие невидимых сил.$', true, true],
