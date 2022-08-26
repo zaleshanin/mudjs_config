@@ -37,6 +37,7 @@ var chars = {
             //(всегда, при фулбафе, всегда на члена группы, при фулбафе на члена группы)
             'ruler aura': new Buff_need(true, true, false, false),
             'group defense': new Buff_need(false, false, false, true),
+            'holy word': new Buff_need(false, false, false, true),
             'inspire': new Buff_need(false, true, false, true),
             'shadow cloak': new Buff_need(false, true, false, false),
             'dark shroud': new Buff_need(false, true, false, true),
@@ -238,6 +239,7 @@ $('.trigger').on('text', function (e, text) {
 
     if (text.match('^Ты не можешь сконцентрироваться.$')
         || text.match('^Увы, никого с таким именем в этой местности обнаружить не удается.$')
+        || text.match('^Ты пытаешься сотворить заклинание, но изолирующий экран блокирует тебя.$')
         || text.match('^Ты пытаешься сотворить заклинание, но теряешь концентрацию и терпишь неудачу.$')
         || text.match('^Твоя попытка закончилась неудачей.$')
         || text.match('На кого именно ты хочешь произнести заклинание') 
@@ -2319,9 +2321,14 @@ var pets = {
 };
 
 var buffs_list = {
+    //Spell(name, brief, mgroup, sclass, target, party, aAntogonist, aAlly, grSpell, aligns)
     'rainbow shield': new Spell('rainbow shield', 'R', 'pro','protective'),
+
+    //cler
     'group defense': new Spell('group defense', 'gd', 'pro', 'protective', false, true,[],["shield","armor","sanctuary"]),
-    'inspire': new Spell('inspire', 'i','enh','protective', false, true),
+    'holy word': new Spell('holy word', 'hw', 'enh', 'protective', false, true,[],["inspire","frenzy"]),
+    'inspire': new Spell('inspire', 'i','enh','protective', false, true, ['holy word']),
+    'learning': new Spell('learning', 'l', 'enh', 'protective',true,false),
 
     //invader:
     'shadow cloak': new Spell('shadow cloak', 'S', 'cln', 'protective'),
@@ -2355,7 +2362,7 @@ var buffs_list = {
     'haste': new Spell('haste', 'h', 'enh', 'protective', true),
     'bless': new Spell('bless', 'b', 'enh', 'protective', true),
     'dragon skin': new Spell('dragon skin', 'D', 'pro', 'protective'),
-    'frenzy': new Spell('frenzy', 'f', 'enh', 'protective', true, false, [],[],undefined,'ng'),
+    'frenzy': new Spell('frenzy', 'f', 'enh', 'protective', true, false, ['holy word'],[],undefined,'ng'),
 };
 var attack_spells_list = {
     //AttackSpell(sName,sClass,lTarget,lRange,lArea,lFight,sDamage)
@@ -2366,6 +2373,8 @@ var attack_spells_list = {
     'ray of truth': new AttackSpell('ray of truth','RoT','attack',true,true,false,true),
     'flamestrike': new AttackSpell('flamestrike','flam','attack',true,true,false,true,'fire'),
     'severity force': new AttackSpell('severity force','SevF','attack',true,false,false,true),
+    'desert fist': new AttackSpell('desert fist','dFst','attack',true,true,false,true),
+    'blade barrier': new AttackSpell('blade barrier','bdBr','attack',true,true,false,true),
     //RULER
     //optic resonance 
     //necromancer
