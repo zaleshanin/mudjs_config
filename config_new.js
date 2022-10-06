@@ -56,6 +56,7 @@ var chars = {
             'improved detect': new Buff_need(false, false, false, false),
             'infravision': new Buff_need(false, false, false, false),
             'detect magic': new Buff_need(true, false, false, false),
+            'benediction': new Buff_need(false, true, false, true),
         
             //pets:
             'stardust': new Buff_need(false, true, false, true),
@@ -2087,7 +2088,12 @@ var buffPatterns = [
 	['enhanced armor', 'Ты уже под защитой силового поля.$', true, true],
 	['enhanced armor', '.* уже под защитой силового поля\.$', true, true],
 	['enhanced armor', '^Силовое поле уже окружает .*.$', true, true],
-	['bless', '^Ты больше не чувствуешь божественного благословления.$', false, false],
+    ['benediction', '^Ты ощущаешь дарованную .* благость!$', true, true],
+    ['benediction', '^Ты уже наслаждаешься благостью богов.$', true, true],
+    ['benediction', '^.* ощущает дарованную .* благость!$', true, true],
+    ['benediction', '^.* уже наслаждается благостью богов.$', true, true],
+    ['benediction', '^Аура божественной благости вокруг тебя исчезает.$', false, false],
+    ['bless', '^Ты больше не чувствуешь божественного благословления.$', false, false],
 	['bless', '^Ты больше не чувствуешь божественного благословения.$', false, false],
 	['bless', '^Ты чувствуешь благословение .*!$', true, true],
 	['bless', '^Ты чувствуешь божественное благословение.$', true, true],
@@ -2130,6 +2136,7 @@ var buffPatterns = [
 	['frenzy', '^Сейчас ничто не может разозлить ', true, true],
 	['frenzy', '^.* уже в ярости!$', true, true],
     ['frenzy', 'молит о неистовстве, но богам явно не по душе .*$', true, true],
+    ['frenzy', 'слишком миролюбив для этого.*$', true, true],
     ['frenzy', 'Ты молишь о неистовстве, но .* явно не по душе .*\.$', true, true],
 	['stone skin', '^Твоя кожа становится мягче.$', false, false],
     ['stone skin', '^Каменная корка на твоей коже трескается под ударами и исчезает.$', false, false],
@@ -2331,8 +2338,9 @@ var buffs_list = {
     'group defense': new Spell('group defense', 'gd', 'pro', 'protective', false, true,[],["shield","armor","sanctuary"]),
     'holy word': new Spell('holy word', 'hw', 'enh', 'protective', false, true,[],["inspire","frenzy"]),
     'inspire': new Spell('inspire', 'i','enh','protective', false, true, ['holy word']),
-    'learning': new Spell('learning', 'l', 'enh', 'protective',true,false),
-
+    'learning': new Spell('learning', 'l', 'enh', 'protective', true, false),
+    'benediction': new Spell('benediction', 'B', 'enh', 'protective', true, false),
+    
     //invader:
     'shadow cloak': new Spell('shadow cloak', 'S', 'cln', 'protective'),
 
