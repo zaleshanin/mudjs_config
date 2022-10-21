@@ -111,8 +111,6 @@ $('.trigger').on('text', function (e, text) {
         echo('-->[run se|use harp]');
         send('run se|use harp');
     }
-    //Ты учишься на своих ошибках, и твое умение 'wands' совершенствуется.
-    //Теперь ты гораздо лучше владеешь искусством 'wands'!
 
     match = (/^ *сила *([0-9]{1,2}) \(из ([0-9]{1,2})\) *сложение *([0-9]{1,2}) \(из ([0-9]{1,2})\) *ловкость *([0-9]{1,2}) \(из ([0-9]{1,2})\)$/).exec(text);
     if(match) {
@@ -254,7 +252,8 @@ $('.trigger').on('text', function (e, text) {
     	}
     }
     if (text.match('^Ты просыпаешься и встаешь.$')
-    || text.match('^Ты уже стоишь.$') || text.match('^Ты встаешь.$') || text.match('^Ты уже сражаешься!$')) {
+        || text.match('^Ты уже стоишь.$') || text.match('^Ты встаешь.$') || text.match('^Ты уже сражаешься!$')) {
+
         clearAction();
         if (my_char.fullbuff.target && text.match('На кого именно ты хочешь произнести заклинание')) {
         	my_char.fullbuff = new Fullbuff();
@@ -1506,7 +1505,7 @@ function checkEquip() {
 function checkNeeds() {
     if (test) echo('->checkNeeds(hunger:' + my_char.hunger + ' f:' + my_char.lfood
         + ' thirst:' + my_char.thirst + ' w:' + my_char.lwater + ')');
-    if (my_char.hunger + my_char.thirst == 0 && my_char.ruler_badge) {
+    if (my_char.hunger + my_char.thirst == 0 && (my_char.ruler_badge===true || my_char.ruler_badge===undefined)) {
         my_char.needsChanged = false;
         return;
     }
@@ -1682,6 +1681,7 @@ function Pchar(name, char, level) {
     this.name = name===undefined ? undefined : name;
     this.level = level===undefined ? undefined : level;
 
+    this.needsChanged = true; //проверить рулер бэйдж при входе
     this.ruler_badge = (char===undefined || char.clan!='ruler') ? undefined : false;
     this.weapon = char===undefined ? undefined : char.weapon;
     this.align = char===undefined ? undefined : char.align;
