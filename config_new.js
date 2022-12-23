@@ -68,6 +68,49 @@ var chars = {
             'frenzy': new Buff_need(false, false, false, true),
         }
     },
+    'Uesugi': {
+        name: 'Uesugi',
+        align: 'e',
+        weapon: 'warhammer',//'hickey', //'арапник',
+        class: 'warrior',
+        clan: '',
+        water: 'juice',//'flask',
+        food: 'rusk',
+        buffs_needs: {
+            //(всегда, при фулбафе, всегда на члена группы, при фулбафе на члена группы)
+            'ruler aura': new Buff_need(true, true, false, false),
+            'group defense': new Buff_need(false, false, false, true),
+            'holy word': new Buff_need(false, false, false, true),
+            'inspire': new Buff_need(false, true, false, true),
+            'shadow cloak': new Buff_need(false, true, false, false),
+            'dark shroud': new Buff_need(false, true, false, true),
+            'shield': new Buff_need(false, true, false, true),
+            'protective shield': new Buff_need(false, true, false, true), 
+            'armor': new Buff_need(false, true, false, true),
+            'stone skin': new Buff_need(false, true, false, true),
+            'protection good': new Buff_need(false, true, false, false),
+            'spell resistance': new Buff_need(false, true, false, true),
+            'mental block': new Buff_need(true, true, false, false),
+            'magic concentrate': new Buff_need(false, true, false, false),
+            'protection negative': new Buff_need(false, true, false, false),
+            'protection cold': new Buff_need(false, true, false, false),
+            'giant strength': new Buff_need(false, false, false, true),
+            'detect invis': new Buff_need(false, true, false, false),
+            'improved detect': new Buff_need(false, false, false, false),
+            'infravision': new Buff_need(false, false, false, false),
+            'detect magic': new Buff_need(true, false, false, false),
+            'benediction': new Buff_need(false, true, false, true),
+        
+            //pets:
+            'stardust': new Buff_need(false, true, false, true),
+            'sanctuary': new Buff_need(true, true, false, true),
+            'enhanced armor': new Buff_need(false, true, false, true),
+            'haste': new Buff_need(false, false, false, true),
+            'bless': new Buff_need(false, true, false, true),
+            'dragon skin': new Buff_need(false, true, false, true),
+            'frenzy': new Buff_need(false, false, false, true),
+        }
+    },
     'Zaleshanin': {
         name: 'Zaleshanin',
         align: 'n',
@@ -178,15 +221,23 @@ $('.trigger').on('text', function (e, text) {
         echo('[melt:' + melt_counter + ']');
 
     }
+    /*Драш Азазеля загорается загорается багровым пламенем!
 
-    if (text.match('^В твоей голове звучат торжественные слова на тайном наречии Азазеля:$')) {
+В твоей голове звучат торжественные слова на тайном наречии Азазеля:
+    lulshafan anigeron, netilat yadaim, sefer yetsirah
+
+Чтобы воззвать к Азазелю, произнеси его имя и добавь тайные слова -- 
+например, сказать azazel sefer yetsirah. Используй их вовремя и с умом,
+ибо безжалостный Азазель не прощает ошибок. */
+
+    if (text.match('В твоей голове звучат торжественные слова на тайном наречии Азазеля:')) {
         if(test) echo("[wait for Azazel words]");
         lAzazel = true;
         return;
     }
     
     if(lAzazel) {
-        match = (/^[\s]*([\w\s]*), ([\w\s]*), ([\w\s]*)$/).exec(text);
+        match = (/[\s]*([\w\s]*), ([\w\s]*), ([\w\s]*)/).exec(text);
         if(match) {
             if(test) echo('[new Azazel words]');
             azazel = new Azazel(match[1],match[2],match[3]);
