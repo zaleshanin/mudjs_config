@@ -15,7 +15,7 @@ $('body').css("background-color", "#353535");
 $('input').css("background-color", "#2e3436");
 $('#cs-subject').css("color","#F8F8F2");
 
-var test = false; //true - для вывода всякой отладочной информации
+var test = true; //true - для вывода всякой отладочной информации
 var melt_counter = 0; //противодействие автовыкидыванию
 
 //номер панели заклинаний
@@ -118,6 +118,10 @@ var chars = {
         class: 'thief',
         water: 'flask',
         food: 'rusk',
+        buffs_needs: {
+            //skills:thief:
+            'detect hide': new Buff_need(true, true, false, false),
+        }
     }
 };
 
@@ -200,13 +204,13 @@ $('.trigger').on('text', function (e, text) {
 
     match = (/^Режим AFK в(ы)?ключен.$/).exec(text);
     if (match) {
-        if (test) echo("[AFK trigger]");
+        if(test) console.log("[AFK trigger]");
         if (my_char.action.act === 'afk') {
             clearAction();
         }
     }
     if (text.match('^Ты прячешься в тенях.$')) {
-        if (test) echo("[Fade trigger]");
+        if(test) console.log("[Fade trigger]");
         my_char.was_fade = undefined;
         if (my_char.action.act === 'fade') {
             clearAction();
@@ -231,7 +235,7 @@ $('.trigger').on('text', function (e, text) {
 ибо безжалостный Азазель не прощает ошибок. */
 
     if (text.match('В твоей голове звучат торжественные слова на тайном наречии Азазеля:')) {
-        if(test) echo("[wait for Azazel words]");
+        if(test) console.log("[wait for Azazel words]");
         lAzazel = true;
         return;
     }
@@ -239,11 +243,11 @@ $('.trigger').on('text', function (e, text) {
     if(lAzazel) {
         match = (/[\s]*([\w\s]*), ([\w\s]*), ([\w\s]*)/).exec(text);
         if(match) {
-            if(test) echo('[new Azazel words]');
+            if(test) console.log('[new Azazel words]');
             azazel = new Azazel(match[1],match[2],match[3]);
             setTimeout(() => azazel=new Azazel(), 35*60*1000);
         } else {
-            if(test) echo('[no any Azazel words]');
+            if(test) console.log('[no any Azazel words]');
         }
         lAzazel = false;
     }
@@ -251,7 +255,7 @@ $('.trigger').on('text', function (e, text) {
     buffPatterns.forEach(function (elem) {
         if (buffs_list[elem[0]] !== undefined) {
             if (text.match(elem[1])) {
-                if(test) echo("[buffPattert trigger]:"+elem[0]);
+                if(test) console.log("[buffPattert trigger]:"+elem[0]);
                 
                 my_char.affChanged = true;
                 buffQueue.push(new BuffQueue(elem[0], elem[2], elem[3], new Action(my_char.action.act, my_char.action.command, my_char.action.target)));
@@ -266,12 +270,12 @@ $('.trigger').on('text', function (e, text) {
     if (text.match(' у тебя оружие, и оно упало на землю!$')) {
         my_char.eqChanged = true;
         my_char.armed = 0;
-        if (test) echo('(armed=0)\n');
+        if(test) console.log('(armed=0)\n');
     }
     if (text.match(' ВЫБИЛ.? у тебя оружие!$')) {
         my_char.eqChanged = true;
         my_char.armed = 1;
-        if (test) echo('(armed=1)\n');
+        if(test) console.log('(armed=1)\n');
     }
     if (my_char.action.act === '\\get' && my_char.action.command === my_char.weapon && text.match('^Ты берешь .*\.$')) {
         clearAction();
@@ -279,12 +283,12 @@ $('.trigger').on('text', function (e, text) {
             my_char.armed = 1;
             my_char.eqChanged = true;
         }
-        if (test) echo('(armed=1)\n');
+        if(test) console.log('(armed=1)\n');
     }
     if (text.match('^Ты вооружаешься .*\.$')) {
         if (my_char.action.act === '\\wield' && my_char.action.command === my_char.weapon) clearAction();
         my_char.armed = 2;
-        if (test) echo('(armed=2)\n');
+        if(test) console.log('(armed=2)\n');
     }
 
     if (text.match('^Ты не можешь сконцентрироваться.$')
@@ -295,7 +299,7 @@ $('.trigger').on('text', function (e, text) {
         || text.match('На кого именно ты хочешь произнести заклинание') 
         || text.match('Это заклинание нельзя использовать во время сражения.') ) {
         
-        if(test) echo('[spell fail trigger]')
+        if(test) console.log('[spell fail trigger]')
         clearAction();
         if (my_char.fullbuff.target && (text.match('На кого именно ты хочешь произнести заклинание') || text.match('^Увы, никого с таким именем в этой местности обнаружить не удается.$'))) {
         	my_char.fullbuff = new Fullbuff();
@@ -316,14 +320,14 @@ $('.trigger').on('text', function (e, text) {
     //Но у тебя уже что-то надето на шею.
     if (text.match('^Серебряный символ Хранителя Закона превращается в пыль.$')) {
         //if(test)
-        echo("--> ruler badge expire triger <--");
+        echo("[ruler badge expire triger]");
         my_char.ruler_badge = false;
         my_char.needsChanged = true;
     }
     if (text.match('^Ты надеваешь символ Хранителя Закона!$') 
         || text.match('^Но у тебя уже что-то надето на шею.$')) {
         //if(test)
-        echo("--> ruler badge wear triger <--");
+        echo("[ruler badge wear triger]");
         my_char.ruler_badge = true;
         my_char.needsChanged = true;
         if (my_char.action.command !== undefined 
@@ -393,7 +397,7 @@ $('.trigger').on('text', function (e, text) {
         || text.match('^В жестяной фляге уже что-то плещется.$')
         || text.match('^Ты хочешь сделать тут озеро?')
         || text.match('^В этой местности и так есть чем напиться.')) {
-        if (test) echo("[water creation trigger]");
+        if(test) console.log("[water creation trigger]");
         my_char.lwater = 1;
         if (my_char.action.command == 'spring' || my_char.action.command == 'create water')
             clearAction();
@@ -415,7 +419,7 @@ $('.trigger').on('text', function (e, text) {
             not_here = '[not here]';
             my_char.fullbuff.away.push(my_char.group.members[my_char.action.target].name);
         }
-        if(test) echo('-->"Ok.'+not_here+'" match!!!<--\n');
+        if(test) console.log('-->"Ok.'+not_here+'" match!!!<--\n');
         if (my_char.action.act !== undefined) {
             if (my_char.action.act==='order') {
                 clearAction();
@@ -423,7 +427,7 @@ $('.trigger').on('text', function (e, text) {
         }
     }
     if (text.match('^.* произносит \'Хозяин, у меня мана кончилась!\'\.$')) {
-        if(test) echo('-->empty mana trigger!!!<--\n');
+        if(test) console.log('-->empty mana trigger!!!<--\n');
         if (my_char.action.act !== undefined) {
             if(my_char.fullbuff.target!=null) {
                 my_char.fullbuff.empty.push(my_char.group.members[my_char.action.target].name);
@@ -509,9 +513,9 @@ $('.trigger').on('input', function (e, text) {
         if (test) {
             args.forEach(function (t, number) {
                 //if (number > 0)
-                echo(number + ':[' + t + '];\n');
+                console.log(number + ':[' + t + '];\n');
             });
-            echo('(total:' + args.length + ')\n');
+            console.log('(total:' + args.length + ')\n');
         }
         if (args[0] === 'clear') {
             my_char.order = new Order();
@@ -519,7 +523,7 @@ $('.trigger').on('input', function (e, text) {
         } else if (args[0] === 'all') {
             echo('>>> Начинаем всем приказывать \n');
             my_char.order = new Order(args.join(' ').replace(args[0] + ' ', ''));
-            if (test) echo('-->' + my_char.order.command);
+            if(test) console.log('-->' + my_char.order.command);
             my_char.ordersChange = true;
             doOrder();
         } else {
@@ -530,7 +534,7 @@ $('.trigger').on('input', function (e, text) {
     //обкаст fullbuff
     command(e, 'fb', text, function (args) {
         if(test)
-            echo('test fullbuff start --> ok. args['+args+"]("+args.length+")");
+            console.log('test fullbuff start --> ok. args['+args+"]("+args.length+")");
 
         var bclass;
         var match;
@@ -596,11 +600,11 @@ $('.trigger').on('input', function (e, text) {
     command(e,'azazel',text,function(args){
         match = (/^[\s]?([\w\s]*), ([\w\s]*), ([\w\s]*)$/).exec(args[1]);
         if(match) {
-            if(test) echo('[new Azazel words]');
+            if(test) console.log('[new Azazel words]');
             azazel = new Azazel(match[1],match[2],match[3]);
             setTimeout(() => azazel=new Azazel(), AZAZEL_TIMER*60*1000);
         } else {
-            if(test) echo('[no any Azazel words]');
+            if(test) console.log('[no any Azazel words]');
         }
     });
 
@@ -717,7 +721,7 @@ function dir(d, e) {
 }
 
 function setSpell(g,key,e) {
-    if(test) console.log("setSpell("+d+")"
+    if(test) console.log("setSpell("+g+")"
         +(e.ctrlKey?" ctrl":"")
         +(e.altKey?" alt":"")
         +(e.shiftKey?" shift":""));
@@ -887,17 +891,18 @@ keydown = function (e) {
 };
 
 function charInit() {
-    if (test) echo(' -->charInit()');
+    if(test) console.log(' -->charInit()');
 
     let char_obj = getChar();
 
-    if (test) echo(' -->charname=' + char_obj.sees);
+    if(test) console.log(' -->charname=' + char_obj.sees);
 
     if (chars[char_obj.sees] !== undefined){
         my_char = new Pchar(char_obj.sees, chars[char_obj.sees], char_obj.level);
     } else {
-        if (test) echo(' -->chars[' + char_obj.sees + '] == undefined');
+        if(test) console.log(' -->chars[' + char_obj.sees + '] == undefined');
     }
+    if (test) console.log(' -->charInit().my_char', my_char);
 }
 
 function getChar() {
@@ -920,7 +925,7 @@ function isEqualChar(ch) {
     return false;
 }
 function checkOrders() {
-	if (test) echo('->checkOrders()\n');
+	if(test) console.log('->checkOrders()\n');
 	if (my_char.order.proced==mudprompt.group.npc.length) {
         echo("->doOrder()[finished]");
     	my_char.ordersChange = false;
@@ -935,11 +940,11 @@ function doOrder() {
     if(my_char.action.act != undefined) {
         return;
     }
-    if (test) echo('->doOrder('+(my_char.order.proced+1)+'/'+mudprompt.group.npc.length+')');
+    if(test) console.log('->doOrder('+(my_char.order.proced+1)+'/'+mudprompt.group.npc.length+')');
 
     if(my_char.order.command!== undefined && mudprompt.group.npc[my_char.order.proced]!=undefined) {
         vict_name = mudprompt.group.npc[my_char.order.proced].sees;
-        if(test) echo('-->proceed:' + my_char.order.proced + ' mudprompt.group.npc['+my_char.order.proced+']:' + vict_name);
+        if(test) console.log('-->proceed:' + my_char.order.proced + ' mudprompt.group.npc['+my_char.order.proced+']:' + vict_name);
 
         if(my_char.order.name_num[vict_name]==undefined) {
             my_char.order.name_num[vict_name] = 1;
@@ -948,7 +953,7 @@ function doOrder() {
         }
         vict_name = '' + my_char.order.name_num[vict_name] + '.' + vict_name;
         vict_name="'"+vict_name+"'";
-        if(test) echo("-->changed:"+vict_name);
+        if(test) console.log("-->changed:"+vict_name);
 
         if(my_char.action.act === undefined) {
             my_char.order.proced++;
@@ -957,7 +962,7 @@ function doOrder() {
     } 
 }
 function doAct(act, comm, tag) {
-    if (test) echo('-->doAct(action:' + act + ', command:' + comm + ', target:' + tag + ')');
+    if(test) console.log('-->doAct(action:' + act + ', command:' + comm + ', target:' + tag + ')');
     my_char.action = new Action(act, comm, tag);
 
     var result = '';
@@ -982,18 +987,18 @@ function doAct(act, comm, tag) {
         echo('\ndoAct(' + act + ',' + comm + ',' + tag + '): ERROR\n');
 }
 function clearAction() {
-    if (test) echo(' -->clearAction()\n');
+    if(test) console.log(' -->clearAction()\n');
     for (var key in my_char.action) {
         my_char.action[key] = undefined;
     }
 }
 //[#prompt]
 function promptRecived(afk) {
-    if (test) echo('prompt(ok)');
+    if(test) console.log('prompt(ok)');
 
     if (!my_char.init || my_char.name != getChar().sees) {
         charInit();
-        if (test) echo('\n');
+        if(test) console.log('\n');
     }
     if (my_char.was_fade !== undefined &&  (mudprompt['trv']!==undefined && mudprompt['trv']!=='none' && mudprompt['trv'].a.indexOf('F')!==-1)) {
         my_char.was_fade = undefined;
@@ -1019,8 +1024,8 @@ function promptRecived(afk) {
 
 //[#checks] [#проверялки]
 function checking() {
-    if (test) echo(' -->checking()');
-    if (test) echo(' --> status:'
+    if(test) console.log(' -->checking()');
+    if(test) console.log(' --> status:'
         + (my_char.afk ? '[afk]' : '')
         + ((mudprompt['trv']!==undefined && mudprompt['trv']!=='none' && mudprompt['trv'].a.indexOf('F')!==-1) ? '[fade]' : '')
         + (my_char.last_pose != undefined ? '[last:' + my_char.last_pose + ']' : '')
@@ -1032,7 +1037,6 @@ function checking() {
         + '\n');
     let azazelStr = '';
     azazelStr = azazel.stat();
-    //if(test) azazelStr = 'AZAZEL:['+azazelStr+']';
 
     if(my_char.init) echo(my_char.attack_spells.get_prompt());
     
@@ -1063,8 +1067,8 @@ function checking() {
 
     if (buffQueue.length)
     	changeBuffsStatus();
-    if (my_char.affChanged)
-    	checkBuffv2();
+    //if (my_char.affChanged)
+    checkBuffv2();
 
     if(my_char.action.act != undefined) echo('[act:' + my_char.action.act + ' command:'+my_char.action.command+' target:'+my_char.action.target+']');
 
@@ -1080,7 +1084,7 @@ function checking() {
     
 }
 function checkGroup() {
-    if(test) echo("->checkGroup()");
+    if(test) console.log("->checkGroup()");
     my_char.group = new Group();
     if(mudprompt.group.pc!==undefined)
         setGroupMembersFrom(mudprompt.group.pc);
@@ -1088,11 +1092,11 @@ function checkGroup() {
     if(mudprompt.group.npc!==undefined)
         setGroupMembersFrom(mudprompt.group.npc);
 
-    if(test) {echo("-->members:"+Object.keys(my_char.group.members).length+" pet_spells:"+my_char.group.spells.length);}
+    if(test) console.log("-->members:"+Object.keys(my_char.group.members).length+" pet_spells:"+my_char.group.spells.length);
 }
 
 function setGroupMembersFrom(list) {
-    if(test) echo("-->setGroupMembersFrom("+list.length+")");
+    if(test) console.log("-->setGroupMembersFrom("+list.length+")");
 
     for(let member in list) {
         let name = pets[list[member].sees]
@@ -1125,19 +1129,16 @@ function setGroupMembersFrom(list) {
 }
 function checkBuffv2() {
 	if (test) {
-        echo('\n->chkBffv2()');
+        console.log('\n->chkBffv2()');
         console.log("chckBuffv2 started");
-        console.log("my_char.fullbuff:");
-        console.log(my_char.fullbuff);
+        console.log("my_char.fullbuff:",my_char.fullbuff);
     }
-    
     //чар чем-то занят - прерываем
     if (my_char.action.act === undefined && ["stand", "sit", "rest", "sleep"].indexOf(mudprompt.p2.pos)!=-1) {
         my_char.affChanged = false;
     } else {
         return;
     }
-
     var fb = my_char.fullbuff.target === undefined ? false : true;
     var fb_all = my_char.fullbuff.all === undefined ? false : my_char.fullbuff.all;
     var fb_class = my_char.fullbuff.class;
@@ -1162,9 +1163,12 @@ function checkBuffv2() {
     */
     var oSpells = {}; 
     //мои бафы
-    for(let spell of my_char.spells) {
+    var spellsAndSkills = my_char.spells.concat(my_char.skills);
+    for(let spell of spellsAndSkills) {
+        if(test) console.log('-->spell/skill:',spell);
         //х.з. что с этим спелом дальше делать!
         if(my_char.buffs_needs[spell]==undefined) {
+            if(test) console.log('-->not in buffs_needs', my_char.buffs_needs);
             continue;
         }
 
@@ -1172,16 +1176,20 @@ function checkBuffv2() {
             || my_char.buffs_needs[spell].gm_always
             || my_char.buffs_needs[spell].fullbuff
             || my_char.buffs_needs[spell].gm_fullbuff)==false) {
+                if(test) console.log('-->not in buffs_needs.needs');
                 continue;
             }
     
-
         //вообще не баффы - пропускем
         if (['combat', 'creation', 'maladiction'].indexOf(buffs_list[spell].class) >= 0) {
+            if(test) console.log('-->not a buff');
+
             continue;
         }
         //не тот класс заклинания - пропускаем
         if(fb_class!==undefined && fb_class !== buffs_list[spell].class) {
+            if(test) console.log('-->wrong class',  fb_class, buffs_list[spell].class);
+
             continue;
         }
         oSpells[spell]=new MemberSpell(my_char.name, my_char.level);
@@ -1223,30 +1231,33 @@ function checkBuffv2() {
         oSpells[aSpell[1]]=new MemberSpell(aSpell[0], aSpell[2]);
     }
     if(test) {
-        console.log('chkBuffv2::oSpells:');console.log(oSpells);
-        console.log('chkBuffv2::targets:');console.log(targets);
+        console.log('chkBuffv2::targets:',targets);
+        console.log('chkBuffv2::oSpells:',oSpells);
     }
     let spell_to_cast, victim, caster, victim_align, group_member;
+    let isSpell, isSkill;
     for(let spell_name in oSpells) {
         caster = oSpells[spell_name].member;
         spell_to_cast = spell_name;
         victim = undefined; victim_align = undefined;
+        isSpell = buffs_list[spell_name] instanceof Spell;
+        isSkill = buffs_list[spell_name] instanceof Skill;
 
-        if(test) echo("---->["+caster+"]["+spell_name+"]"+'[key:'+buffs_list[spell_name].mgroup+"-"+buffs_list[spell_name].mbrief+']');
+        if(test) console.log("---->["+caster+"]["+spell_name+"]"+'[key:'+buffs_list[spell_name].mgroup+"-"+buffs_list[spell_name].mbrief+']');
     
         //не фулбаф, не обязательный - пропускаем
         if(!fb) {
             group_member=true;
             if(my_char.buffs_needs[spell_name].always==false) {
-                if(test) echo('------>not fullbuff not required spell skipped!');
+                if(test) console.log('------>not fullbuff not required spell skipped!');
                 continue;
             }
         }
         for(let target_name of targets) {
-            if(test) echo('------>check "'+spell_name+'" for '+target_name);
+            if(test) console.log('------>check "'+spell_name+'" for '+target_name);
             //если на чаре уже числится бафф - пропускаем чара
             if(my_char.fullbuff.hasBuff(target_name, spell_name)) {
-                if(test) echo("------>skipped (char have one)");
+                if(test) console.log("------>skipped (char have one)");
                 continue;
             }
             if(target_name==my_char.name) {
@@ -1256,18 +1267,19 @@ function checkBuffv2() {
                 if(!fb) {
                     //не фулбаф, не обязательный - пропускаем
                     if(my_char.buffs_needs[spell_name].always==false) {
-                        if(test) echo('------>spell skipped: not fullbuff not required!');
+                        if(test) console.log('------>spell skipped: not fullbuff not required!');
                         continue;
                     }
                 } else {
                     //фулбаф, не вешается - пропускаем
                     if(my_char.buffs_needs[spell_name].fullbuff==false) {
-                        if(test) echo('------>spell skipped: not required while fullbuff!');
+                        if(test) console.log('------>spell skipped: not required while fullbuff!');
                         continue;
                     }
                 }
                 //на цель не вешается, пытаемся сменить на своё
                 if(!buffs_list[spell_name].target && !buffs_list[spell_name].party && caster!=my_char.name) {
+                    if(test) console.log("на цель не вешается, пытаемся сменить на своё");
                     for(let my_spell of my_char.spells) {
                         if((my_spell[0]==spell_name || buffs_list[spell_name].ally.indexOf(my_spell[0])!=-1) 
                             && my_spell[1]<=my_char.level){
@@ -1277,7 +1289,7 @@ function checkBuffv2() {
                         }
                     }
                     if(caster!=my_char.name) {
-                        if(test) echo('------>only for self ('+caster+') spell skipped for me!');
+                        if(test) console.log('------>only for self ('+caster+') spell skipped for me!');
                         continue;
                     }
                 }
@@ -1291,25 +1303,25 @@ function checkBuffv2() {
                 if(!fb) {
                     //не фулбаф, не обязательный - пропускаем
                     if(my_char.buffs_needs[spell_name].gm_always==false) {
-                        if(test) echo('------>spell skipped: not fullbuff not required for charmed!');
+                        if(test) console.log('------>spell skipped: not fullbuff not required for charmed!');
                         continue;
                     }
                 } else {
                     //фулбаф, не вешается - пропускаем
                     if(my_char.buffs_needs[spell_name].gm_fullbuff==false) {
-                        if(test) echo('------>spell skipped: not required for charmed while fullbuff!');
+                        if(test) console.log('------>spell skipped: not required for charmed while fullbuff!');
                         continue;
                     }
                 }
                 //на цель не вешается, пытаемся сменить на своё
                 if(!buffs_list[spell_name].target && caster!=my_char.group.members[target_name].name) {
                     if(pet_name==undefined) {
-                        if(test) echo('------>only for self ('+caster+') spell skipped for uncknown pet '+target_name+'!');
+                        if(test) console.log('------>only for self ('+caster+') spell skipped for uncknown pet '+target_name+'!');
                         continue;
                     }
                     
                     if(pets[pet_name].spells.indexOf(spell_name)!=-1) {
-                        if(test) echo('------>caster '+caster+' changed to '+pet_name+' for self use spell!');
+                        if(test) console.log('------>caster '+caster+' changed to '+pet_name+' for self use spell!');
                         caster = pet_name;
                     }
                     if(caster!=pet_name) {
@@ -1324,7 +1336,7 @@ function checkBuffv2() {
                     }
 
                     if(caster!=pet_name) {
-                        if(test) echo('------>only for self ('+caster+') spell skipped for pet '+pet_name+'!');
+                        if(test) console.log('------>only for self ('+caster+') spell skipped for pet '+pet_name+'!');
                         continue;
                     }
                 }
@@ -1334,23 +1346,22 @@ function checkBuffv2() {
                 //баф на кого-то еще...
                 //пропускаем бафы на группу
                 if(buffs_list[spell_name].party==true) {
-                    if(test) echo('------>party spell skipped for not group member: '+target_name+'!');
+                    if(test) console.log('------>party spell skipped for not group member: '+target_name+'!');
                     continue;
                 }
                 //на цель не вешается
                 if(!buffs_list[spell_name].target) {
-                    if(test) echo('------>only for self ('+caster+') spell skipped for: '+target_name+'!');
+                    if(test) console.log('------>only for self ('+caster+') spell skipped for: '+target_name+'!');
                     continue;
                 }
             }
             victim = target_name;
         }
         if(victim==undefined){
-            if(test) echo('------>chars dont need buff - skipped');
+            if(test) console.log('------>chars dont need buff - skipped');
             continue;
         } 
-
-        if(victim_align!=undefined) {
+        if(isSpell && victim_align!=undefined) {
             //не подходит по алигну:
             if(buffs_list[spell_name].aligns.indexOf(victim_align)==-1) {
                 //ищем аналоги:
@@ -1366,10 +1377,17 @@ function checkBuffv2() {
                     }
                 }
                 if(spell_to_cast==spell_name) {
-                    if(test) echo("------>skipped for "+target_name+"(align:"+buffs_list[spell_name].align+":"+victim_align+")");
+                    if(test) console.log("------>skipped for "+target_name+"(align:"+buffs_list[spell_name].align+":"+victim_align+")");
                     continue;
                 }
-                if(test) echo("------>spell changed: "+spell_to_cast);
+                if(test) console.log("------>spell changed: "+spell_to_cast);
+            }
+        }
+        //проверка на количество маны/мувов:
+        if(isSkill) {
+            if(mudprompt.mana<buffs_list[spell_name].mana||mudprompt.move<buffs_list[spell_name].move) {
+                if(test) console.log('------>Skill skeepped: not enough mana/move');
+                continue;
             }
         }
 
@@ -1380,10 +1398,10 @@ function checkBuffv2() {
             caster = oSpells[spell_to_cast].member;
             victim = caster;
 
-            if(test) echo('------>spell changet to group spell:"'+spell_to_cast+'", caster:'+caster);
+            if(test) console.log('------>spell changet to group spell:"'+spell_to_cast+'", caster:'+caster);
         }       
-        
-        if(test) echo("---->spell:'"+spell_to_cast+"' caster:"+caster+" target:"+victim);
+       
+        if(test) console.log("---->spell:'"+spell_to_cast+"' caster:"+caster+" target:"+victim);
 
         if (my_char.afk) {
             changeAFK();
@@ -1396,7 +1414,10 @@ function checkBuffv2() {
         if(caster==my_char.name) {
             if (mudprompt.p2.pos === "stand") {
                 my_char.affChanged = true;
-                doAct('cast', spell_to_cast, victim==my_char.name?'self':victim);
+                if(isSpell)
+                    doAct('cast', spell_to_cast, victim==my_char.name?'self':victim);
+                if(isSkill)
+                    doAct(buffs_list[spell_to_cast].command);
                 return;
             } else {
                 echo('надо чё-та кастануть!!!');
@@ -1409,6 +1430,7 @@ function checkBuffv2() {
             doAct('order', "cast '"+spell_to_cast+"'"+(caster==victim?'':" "+victim), caster);
             return;
         } 
+
     }
 
     if(my_char.fullbuff.target) {
@@ -1418,12 +1440,12 @@ function checkBuffv2() {
 };
 
 function changeBuffsStatus() {
-	if (test) echo('-->changeBuffsStatus()');
+	if(test) console.log('-->changeBuffsStatus()');
 	var buff; var action;
 	while (buffQueue.length) {
     	buff = buffQueue.pop();
         action = new Action(buff.action.act,buff.action.command,buff.action.target);
-    	if (test) echo('---->(buff status change: ' + buff.sBuff + ':' + buff.lStatus + ' {a:'+action.act+',c:'+action.command+',t:'+action.target+'})');
+    	if(test) console.log('---->(buff status change: ' + buff.sBuff + ':' + buff.lStatus + ' {a:'+action.act+',c:'+action.command+',t:'+action.target+'})');
 
         if(action.act == 'order') {
             let match = (/^(cast) '(.*)'(?: (.*))?$/).exec(action.command);
@@ -1436,51 +1458,54 @@ function changeBuffsStatus() {
 	}
 }
 function buffChange(sBuff, lStatus, lActionDone, action) {
-	if (test) echo('-->buffChange('+sBuff+','+lStatus+','+lActionDone +',{a:'+action.act+',c:'+action.command+',t:'+action.target+'})');
+	if(test) console.log('-->buffChange('+sBuff+','+lStatus+','+lActionDone +',{a:'+action.act+',c:'+action.command+',t:'+action.target+'})');
 
 	var forGroup = false;
 	var forGroupMember = false;
 	var forSelf = false;
 	var forTarg = false;
+    let actionCommandBuff = buffs_list[sBuff] instanceof Spell 
+        ? sBuff === action.command
+        : buffs_list[sBuff].command === action.act;
 
 	var lGroupAlly = false;
 	if (sBuff in buffs_list) {
-    	if (test) echo('---->("' + sBuff + '" имеется в buffs_list)');
+    	if(test) console.log('---->("' + sBuff + '" имеется в buffs_list)');
 
         if(buffs_list[sBuff].grSpell != undefined) {
-            if (test) echo('---->(есть grSpell)');
+            if(test) console.log('---->(есть grSpell)');
             if (buffs_list[sBuff].grSpell === action.command){
-                if (test) echo('---->(group spell: ' + action.command + ')');
+                if(test) console.log('---->(group spell: ' + action.command + ')');
                 lGroupAlly = true;
                 sBuff = action.command;
             }
         }
 
     	if (buffs_list[sBuff].ally !== undefined) {
-        	if (test) echo('---->(есть ally)');
+        	if(test) console.log('---->(есть ally)');
         	buffs_list[sBuff].ally.forEach(function (spell) {
             	if (spell === action.command && buffs_list[spell].target)
-                	if (test) echo('---->(ally4group ' + spell + ')');
+                	if(test) console.log('---->(ally4group ' + spell + ')');
             	lGroupAlly = true;
         	});
     	}
     	if (buffs_list[sBuff].target || lGroupAlly) {
-        	if (test) echo('---->(ally4group&me)');
+        	if(test) console.log('---->(ally4group&me)');
         	forGroup = true;
         	forSelf = true;
     	}
-    	if (action.command === sBuff && action.target !== 'self') {
-        	if (test) echo('---->(not4me?' + my_char.fullbuff.target + ')');
+    	if (actionCommandBuff && action.target !== 'self') {
+        	if(test) console.log('---->(not4me?' + my_char.fullbuff.target + ')');
         	if (action.target === my_char.fullbuff.target) {
-            	if (test) echo('---->(not4me4: fb.target:' + my_char.fullbuff.target + ', act.target:'+action.target+')');
+            	if(test) console.log('---->(not4me4: fb.target:' + my_char.fullbuff.target + ', act.target:'+action.target+')');
                 forGroup = false;
                 forSelf = false;
             	forTarg = true;
         	} else {
-            	if (test) echo('---->(4group?)');
+            	if(test) console.log('---->(4group?)');
                 for(let member_name in my_char.group.members) {
                     if (member_name == action.target) {
-                        if (test) echo('---->(4"' + member_name + '")');
+                        if(test) console.log('---->(4"' + member_name + '")');
                         forGroupMember = true;
                     }
                 }
@@ -1488,15 +1513,15 @@ function buffChange(sBuff, lStatus, lActionDone, action) {
 
     	}
     	if (action.target === 'self' || (!forGroup && !forTarg && !forGroupMember)) {
-        	if (test) echo('---->(4self)'+"(+target_self:"+(action.target === 'self')+")");
+        	if(test) console.log('---->(4self)'+"(+target_self:"+(action.target === 'self')+")");
         	forSelf = true;
     	}
     	if (!lStatus && buffs_list[sBuff].party) {
-        	if (test) echo('---->(remove from group)');
+        	if(test) console.log('---->(remove from group)');
         	forGroup = true;
     	}
 
-    	if (sBuff !== action.command && buffs_list[sBuff].antogonist !== undefined) {
+    	if (!actionCommandBuff && buffs_list[sBuff].antogonist !== undefined) {
         	buffs_list[sBuff].antogonist.forEach(function (spell) {
             	if (spell === action.command) {
                 	sBuff = action.command;
@@ -1505,16 +1530,16 @@ function buffChange(sBuff, lStatus, lActionDone, action) {
     	}
 	}
 	//Результаты:
-	if (test) echo('---->(result_finale: 4Self:' + forSelf + ' 4Group:' + forGroup + ' 4Targ:' + forTarg + ' 4GroupMember:' + forGroupMember + ')');
+	if(test) console.log('---->(result_finale: 4Self:' + forSelf + ' 4Group:' + forGroup + ' 4Targ:' + forTarg + ' 4GroupMember:' + forGroupMember + ')');
 	if (forSelf) {
     	//вешаем на себя
     	
         if(lStatus && !my_char.hasBuff(sBuff)) {
-            if (test) echo('---->(forSelf:' + sBuff + ': ' + lStatus + ')->add to buffs[missing in mudprompt] ');
+            if(test) console.log('---->(forSelf:' + sBuff + ': ' + lStatus + ')->add to buffs[missing in mudprompt] ');
 
             my_char.buffs.set(sBuff);
         } else if (!lStatus && my_char.hasBuff(sBuff)) {
-            if (test) echo('---->(forSelf:' + sBuff + ': ' + lStatus + ')->removing from buffs');
+            if(test) console.log('---->(forSelf:' + sBuff + ': ' + lStatus + ')->removing from buffs');
             my_char.buffs.remove(sBuff);
         }
     	//my_char.hasBuff(sBuff) = lStatus;
@@ -1522,27 +1547,26 @@ function buffChange(sBuff, lStatus, lActionDone, action) {
 	if (forGroup) {
     	//вешаем на группу
         for(let member_name in my_char.group.members) {
-            if (test) echo('---->(forGroup:' + sBuff + ' ' + member_name + ' ' + lStatus + ')');
+            if(test) console.log('---->(forGroup:' + sBuff + ' ' + member_name + ' ' + lStatus + ')');
         	my_char.group.members[member_name].buffs[sBuff] = lStatus;
         }
 	}
 	if (forTarg) {
-    	if (test) echo('---->(forTarg:' + sBuff + ' ' + action.target + ' ' + lStatus + ')');
+    	if(test) console.log('---->(forTarg:' + sBuff + ' ' + action.target + ' ' + lStatus + ')');
     	my_char.fullbuff.buffs[sBuff] = lStatus;
 	}
 	if (forGroupMember) {
     	//вешаем на кого скастовано
-        if (test) echo('---->(forGroupMember:' + sBuff + ' ' + action.target + ' ' + lStatus + ')');
+        if(test) console.log('---->(forGroupMember:' + sBuff + ' ' + action.target + ' ' + lStatus + ')');
         my_char.group.members[action.target].buffs[sBuff] = lStatus;
 	}
 
-	if (sBuff === action.command && lActionDone)
-    	clearAction();
-
+    if (actionCommandBuff && lActionDone)
+        clearAction();
 }
 
 function checkEquip() {
-    if (test) echo(' -->checkEquip()');
+    if(test) console.log(' -->checkEquip()');
     my_char.eqChanged = false;
 
     if (my_char.armed === 0 && my_char.action.act !== '\\get') {
@@ -1554,7 +1578,7 @@ function checkEquip() {
 }
 
 function checkNeeds() {
-    if (test) echo('->checkNeeds(hunger:' + my_char.hunger + ' f:' + my_char.lfood
+    if(test) console.log('->checkNeeds(hunger:' + my_char.hunger + ' f:' + my_char.lfood
         + ' thirst:' + my_char.thirst + ' w:' + my_char.lwater + ')');
     if (my_char.hunger + my_char.thirst == 0 && (my_char.ruler_badge===true || my_char.ruler_badge===undefined)) {
         my_char.needsChanged = false;
@@ -1568,7 +1592,7 @@ function checkNeeds() {
         && (my_char.hunger <= 1 && my_char.thirst <= 1)
         && !(my_char.pract && (my_char.hunger || my_char.thirst))) {
             //TODO питаться если не полное здоровье/мана!!!
-        if (test) echo('-->[not so hunger/thirst - EXIT]');
+        if(test) console.log('-->[not so hunger/thirst - EXIT]');
         return;
     }
 
@@ -1613,7 +1637,7 @@ function checkNeeds() {
     }
     //[#drink]
     if (my_char.thirst) {
-        if(test) echo("-->хочу пить!(lwater:"+my_char.lwater+")");
+        if(test) console.log("-->хочу пить!(lwater:"+my_char.lwater+")");
         if (!my_char.lwater) {
             if (my_char.water === 'spring') {
                 if (checkPose('stand')) {
@@ -1623,11 +1647,11 @@ function checkNeeds() {
                 }
             }
             if (my_char.water === 'flask') {
-                if (test) echo('->(water === flask)');
-                if (test) echo('-->(create water=' + my_char.spells.indexOf('create water') + ')');
+                if(test) console.log('->(water === flask)');
+                if(test) console.log('-->(create water=' + my_char.spells.indexOf('create water') + ')');
                 if(test) console.log(my_char.spells);
                 if (my_char.spells.indexOf('create water') !== undefined) {
-                    if (test) echo('->(create water !== undefined)');
+                    if(test) console.log('->(create water !== undefined)');
                     if (checkPose('stand')) {
                         my_char.needsChanged = true;
                         doAct('cast', 'create water', my_char.water);
@@ -1656,7 +1680,7 @@ function checkNeeds() {
 
 }
 function checkPose(need_pose) {
-    if (test) echo('->checkPose(' + need_pose + ')');
+    if(test) console.log('->checkPose(' + need_pose + ')');
     if (need_pose == mudprompt.p2.pos)
         return true;
 
@@ -1672,12 +1696,12 @@ function changeAFK() {
     doAct('afk');
 }
 function restoreStatus() {
-    if (test) echo('->restoreStatus()');
-    if (test && my_char.last_pose != undefined) echo('[last:' + my_char.last_pose + ']');
-    if (test && my_char.was_afk) echo('[was_afk]');
-    if (test && my_char.was_fade) echo('[was_fade]');
+    if(test) console.log('->restoreStatus()');
+    if (test && my_char.last_pose != undefined) console.log('[last:' + my_char.last_pose + ']');
+    if (test && my_char.was_afk) console.log('[was_afk]');
+    if (test && my_char.was_fade) console.log('[was_fade]');
     if (my_char.action.act !== undefined) {
-        if (test) echo('[' + my_char.action.act + '->EXIT]');
+        if(test) console.log('[' + my_char.action.act + '->EXIT]');
         return;
     }
     if (my_char.was_fade !== undefined && !((mudprompt['trv']!==undefined && mudprompt['trv']!=='none') && mudprompt['trv'].a.indexOf('F')!==-1)) {
@@ -1702,7 +1726,6 @@ function Action(act, command, target) {
 }
 
 function GroupMember(name, index_name) {
-    //if(test) echo(' -->GroupMember('+index_name+')');
     this.name = name;
     this.index_name = index_name;
     this.align = pets[name] != undefined ? pets[name].align : 'n';
@@ -1719,7 +1742,7 @@ function MemberSpell(member_name, member_level) {
 
 function Pchar(name, char, level) {
     if (test)
-        echo(' -->Pchar() (name:' + name + ';weapon:' + (char===undefined?undefined:char.weapon) + ')');
+        console.log(' -->Pchar() (name:' + name + ';weapon:' + (char===undefined?undefined:char.weapon) + ')');
 
     this.init = name===undefined ? false : true; 
     this.afk = false;
@@ -1740,6 +1763,8 @@ function Pchar(name, char, level) {
     //[#armed] 0 - без оружия(оружие на земле), 1 - оружие в мешке, 2 - вооружен
     this.armed = false;
 
+    this.affChanged = true; //проверить бафы
+
     this.food = char===undefined ? undefined : char.food;
     this.water = char===undefined ? undefined : char.water;
     this.thirst = 0;
@@ -1755,12 +1780,20 @@ function Pchar(name, char, level) {
     this.ordersChange = false;
 
     this.spells = getSpells(char, level);
+    if(test) {
+        console.log("getSpells() --> result:", this.spells);
+    }
+    this.skills = getSkills(char, level);
+    if(test) {
+        console.log("getSkills() --> result:", this.skills);
+    }
+
     this.hasBuff = function(cast){
         if((mudprompt[buffs_list[cast].mgroup]!==undefined && mudprompt[buffs_list[cast].mgroup]!=='none') && mudprompt[buffs_list[cast].mgroup].a.indexOf(buffs_list[cast].mbrief)!==-1){
-            if(test) echo("------>Pchar->hasBuff("+cast+")->have one in mudprompt!");
+            if(test) console.log("------>Pchar->hasBuff("+cast+")->have one in mudprompt!");
             return true;
         } else if(this.buffs.isSet(cast)) { 
-            if(test) echo("------>Pchar->hasBuff("+cast+")->have one in my_char.buffs!");
+            if(test) console.log("------>Pchar->hasBuff("+cast+")->have one in my_char.buffs!");
             return true;
         }
 
@@ -1768,15 +1801,15 @@ function Pchar(name, char, level) {
         if(buffs_list[cast].ally!=undefined) {
             for(let ally of buffs_list[cast].ally) {
                 if((mudprompt[buffs_list[ally].mgroup]!==undefined && mudprompt[buffs_list[ally].mgroup]!=='none') && mudprompt[buffs_list[ally].mgroup].a.indexOf(buffs_list[ally].mbrief)!==-1){
-                    if(test) echo("------>Pchar->hasBuff("+cast+")->have ally("+ally+")!");
+                    if(test) console.log("------>Pchar->hasBuff("+cast+")->have ally("+ally+")!");
                     return true;
                 } else if (this.buffs.isSet(ally)) { 
-                    if(test) echo("------>Pchar->hasBuff("+cast+")->have ally("+ally+") in my_char.buffs!");
+                    if(test) console.log("------>Pchar->hasBuff("+cast+")->have ally("+ally+") in my_char.buffs!");
                     return true;
                 }
             }
         }
-        if(test) echo("------>Pchar->hasBuff=>FALSE");
+        if(test) console.log("------>Pchar->hasBuff=>FALSE");
         return false;
     };
     this.hasSpell = (spell) => this.spells.indexOf(spell) >= 0 ? true : false;
@@ -1907,9 +1940,9 @@ function Pchar(name, char, level) {
         },
     };
 }
-
+//структура fullbuff
 function Fullbuff(bclass, btarget, all) {
-    if(test) echo('->Fullbuff('+bclass+','+btarget+','+all+')');
+    if(test) console.log('->Fullbuff('+bclass+','+btarget+','+all+')');
 	this.class = bclass === undefined ? undefined : bclass;
 	this.target = btarget === undefined ? undefined : btarget;
 	this.all = all === undefined ? false : all;
@@ -1919,13 +1952,13 @@ function Fullbuff(bclass, btarget, all) {
     this.hasBuff = function (ch_name, spell_name) {
         if(ch_name==my_char.name) {
             if(my_char.hasBuff(spell_name)) {
-                if(test)echo("------->Fullbuff->hasBuff(has one)");
+                if(test)console.log("------->Fullbuff->hasBuff(has one)");
                 return true;
             }
             if(buffs_list[spell_name].antogonist!=undefined) {
                 for(let antogonist of buffs_list[spell_name].antogonist) {
                     if(my_char.hasBuff(antogonist)) {
-                        if(test)echo("------->Fullbuff->hasBuff(has antogonist: "+antogonist+")");
+                        if(test)console.log("------->Fullbuff->hasBuff(has antogonist: "+antogonist+")");
                         return true;
                     }
                 }
@@ -1933,21 +1966,21 @@ function Fullbuff(bclass, btarget, all) {
             if(buffs_list[spell_name].ally!=undefined) {
                 for(let ally of buffs_list[spell_name].ally) {
                     if(my_char.hasBuff(ally)) {
-                        if(test)echo("------->Fullbuff->hasBuff(has ally: "+ally+")");
+                        if(test)console.log("------->Fullbuff->hasBuff(has ally: "+ally+")");
                         return true;
                     }
                 }
             }
         } else if (my_char.group.members[ch_name]!=undefined) {
             if(my_char.group.members[ch_name].buffs[spell_name]) {
-                if(test)echo("------->Fullbuff->hasBuff(member have one)");
+                if(test)console.log("------->Fullbuff->hasBuff(member have one)");
                 return true;
             }
             if(buffs_list[spell_name].antogonist!=undefined) {
                 for(let antogonist in buffs_list[spell_name].antogonist) {
                     //my_char.group.members[target_name].buffs[spell_name]
                     if(my_char.group.members[ch_name].buffs[antogonist]) {
-                        if(test)echo("------->Fullbuff->hasBuff(member has antogonist: "+antogonist+")");
+                        if(test)console.log("------->Fullbuff->hasBuff(member has antogonist: "+antogonist+")");
                         return true;
                     }
                 }
@@ -1955,21 +1988,21 @@ function Fullbuff(bclass, btarget, all) {
             if(buffs_list[spell_name].ally!=undefined) {
                 for(let ally in buffs_list[spell_name].ally) {
                     if(my_char.group.members[ch_name].buffs[ally]) {
-                        if(test)echo("------->Fullbuff->hasBuff(member has ally: "+ally+")");
+                        if(test)console.log("------->Fullbuff->hasBuff(member has ally: "+ally+")");
                         return true;
                     }
                 }
             }
         } else {
             if(my_char.fullbuff.buffs[spell_name]) {
-                if(test) echo("------->Fullbuff->hasBuff(target have one)");
+                if(test) console.log("------->Fullbuff->hasBuff(target have one)");
                 return true;
             }
             if(buffs_list[spell_name].antogonist!==[]) {
                 for(let antogonist in buffs_list[spell_name].antogonist) {
                     //my_char.group.members[target_name].buffs[spell_name]
                     if(my_char.fullbuff.buffs[antogonist]) {
-                        if(test)echo("------->Fullbuff->hasBuff(target has antogonist: "+antogonist+")");
+                        if(test)console.log("------->Fullbuff->hasBuff(target has antogonist: "+antogonist+")");
                         return true;
                     }
                 }
@@ -1977,13 +2010,13 @@ function Fullbuff(bclass, btarget, all) {
             if(buffs_list[spell_name].ally!==[]) {
                 for(let ally in buffs_list[spell_name].ally) {
                     if(my_char.fullbuff.buffs[ally]) {
-                        if(test)echo("------->Fullbuff->hasBuff(target has ally: "+ally+")");
+                        if(test)console.log("------->Fullbuff->hasBuff(target has ally: "+ally+")");
                         return true;
                     }
                 }
             }
         }
-        if(test)echo("------->Fullbuff->hasBuff()==FALSE!")
+        if(test)console.log("------->Fullbuff->hasBuff()==FALSE!")
         return false;
     }
 }
@@ -1994,8 +2027,26 @@ function Order(comm) {
     this.name_num = [];
 }
 
+function getSkills(char, level) {
+    let skills = [];
+
+    if(char===undefined) return skills;
+
+    if(char.class=== 'thief') {
+        skills.push(['detect hide', 5]);
+    }
+
+    return skills
+        .filter(function(item, index, array){
+            return item[1]<=level;
+        })
+        .map(function(item, index, array){
+            return item[0]
+        });
+}
+
 function getSpells(char, level) {
-    let spells = [], result = [];
+    let spells = [];//, result = [];
     if (char!==undefined && char.clan === 'invader') {
         spells.push(['shadow cloak',10]);
         spells.push(['shadowlife',30]);
@@ -2063,15 +2114,13 @@ function getSpells(char, level) {
         spells.push(['dispel affects',24]);
         spells.push(['evil spirit',33]);
     }
-    for(let aSpell of spells) {
-        if(aSpell[1] <= level) //&& (buffs_list[aSpell[0]]!==undefined || attack_spells_list[aSpell[0]]!==undefined)
-            result.push(aSpell[0]);
-    }
-    if(test) {
-        console.log("getSpells() --> result:");
-        console.log(result);
-    }
-    return result;
+    return spells
+        .filter(function(item, index, array){
+            return item[1]<=level;
+        })
+        .map(function(item, index, array){
+            return item[0]
+        });
 }
 
 function getBuffClass(text) {
@@ -2324,6 +2373,9 @@ var buffPatterns = [
 	['detect undead', '^Ты перестаешь чувствовать мертвецов.$', false, false],
 	['detect undead', '^Теперь ты чувствуешь нежить.$', true, true],
 	['detect undead', '^Ты уже чувствуешь нежить.', true, true],
+    ['detect hide', 'Ты пытаешься увидеть скрытое, но у тебя ничего не выходит.', false, true],
+    ['detect hide', 'Ты перестаешь замечать скрытые детали в окружающей обстановке.', false, false],
+    ['detect hide', 'Теперь ты можешь увидеть скрытое.', true, true],
 ];
 var pets = {
     'Легенда': {
@@ -2396,7 +2448,7 @@ var buffs_list = {
     'shadow cloak': new Spell('shadow cloak', 'S', 'cln', 'protective'),
 
     //ruler:
-    'ruler aura': new Spell('ruler aura', 'A', 'cln', 'protective',false,false,[],['detect invis']),
+    'ruler aura': new Spell('ruler aura', 'A', 'cln', 'protective',false,false,[],['detect invis', 'detect hide']),
 
     //protect:
     //necr
@@ -2425,6 +2477,10 @@ var buffs_list = {
     'bless': new Spell('bless', 'b', 'enh', 'protective', true),
     'dragon skin': new Spell('dragon skin', 'D', 'pro', 'protective'),
     'frenzy': new Spell('frenzy', 'f', 'enh', 'protective', true, false, ['holy word'],[],undefined,'ng'),
+
+    //skills: thief
+    //Spell(name, brief, mgroup, sclass, target, party, aAntogonist, aAlly, grSpell, aligns)
+    'detect hide': new Skill('detect hide', 'detect', 'h', 'det', 'detection', false, 50, 50, ['ruler aura']),
 };
 var attack_spells_list = {
     //AttackSpell(sName,sClass,lTarget,lRange,lArea,lFight,sDamage)
@@ -2479,6 +2535,27 @@ function Buff_need(always, fullbuff, gm_always, gm_fullbuff){
     this.fullbuff = fullbuff ? true : false;
     this.gm_fullbuff = gm_fullbuff ? true : false;
 };
+function Skill(name, command, brief, mgroup, sclass, target, min_mana, min_move, aAlly) { //party, aAntogonist, aAlly, grSpell, aligns //brief, mgroup, sclass, buff, group, party, aAntogonist, aAlly, grSpell, aligns
+    //buff: 0 - никогда, 1 - всегда, 2 - fullbuff, 3 - только при прокачке
+    //group (кастовать на членов группы): 0-no, 1-yes, 2-full, 3-target
+    //party (кастуется на всю группу)
+    this.name = name;
+    this.command = command;
+    this.mbrief = brief; //буква из mudprompt
+    this.mgroup = mgroup; //группа из mudprompt
+    this.class = sclass; //внутреннее погонялово для класса заклинания
+    this.target = target === undefined ? false : target; //кастуется ли на цель
+    this.mana = min_mana ?? 0;
+    this.move = min_move ?? 0;
+    //this.buff = buff === undefined ? 0 : buff;
+    //this.group = group === undefined ? 0 : group;
+    //this.party = party === undefined ? false : party; //кастуется на свою группу
+    //this.antogonist = aAntogonist==undefined ? [] : aAntogonist; //противоположности
+    //this.ally = aAlly==undefined ? [] : aAlly; //альтернативные
+    //this.aligns = aligns === undefined ? 'eng' : aligns; //ограничение по алигну
+    //this.progress = 0; // прокачка
+    //this.grSpell = grSpell; //спел, которым вешается несколько баффов в т.ч. и текущий
+}
 function Spell(name, brief, mgroup, sclass, target, party, aAntogonist, aAlly, grSpell, aligns) { //brief, mgroup, sclass, buff, group, party, aAntogonist, aAlly, grSpell, aligns
     //buff: 0 - никогда, 1 - всегда, 2 - fullbuff, 3 - только при прокачке
     //group (кастовать на членов группы): 0-no, 1-yes, 2-full, 3-target
