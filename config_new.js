@@ -23,17 +23,17 @@ var numpad_set = 0;
 var panel_set = 0;
 var str, con, dex, wis, int, cha;
 var str_max, con_max, dex_max, wis_max, int_max, cha_max;
-var counter=0, bonus=0;
+var counter=0, bonus=0, total=0;
 var chars = {
     'Miyamoto': {
         name: 'Miyamoto',
         align: 'e',
-        weapon: 'mace',//'hickey', //'арапник',
-        class: 'cleric',
-        clan: 'ruler',
-        water: 'spring',//'flask',
-        food: 'manna',
-        buffs_needs: {
+        weapon: 'sword',//'hickey', //'арапник',
+        class: 'samurai',
+        clan: 'none',
+        water: 'barrel',//'flask',
+        food: 'rusk',
+/*         buffs_needs: {
             //(всегда, при фулбафе, всегда на члена группы, при фулбафе на члена группы)
             'ruler aura': new Buff_need(true, true, false, false),
             'group defense': new Buff_need(false, false, false, true),
@@ -67,7 +67,7 @@ var chars = {
             'dragon skin': new Buff_need(false, true, false, true),
             'frenzy': new Buff_need(false, false, false, true),
         }
-    },
+ */    },
     'Uesugi': {
         name: 'Uesugi',
         align: 'e',
@@ -144,11 +144,14 @@ $('.trigger').on('text', function (e, text) {
     if(text.match("Ты продаешь свечу за ")){
         send('buy candle');
     }
-    //качаем wand
-    if(text.match("Ты учишься на своих ошибках, и твое умение 'wands' совершенствуется.")
-    ||text.match("Теперь ты гораздо лучше владеешь искусством 'wands'!")){
-        echo('-->[slook]');
-        send('slook wand');
+    //качаем
+    match = (/^Ты учишься на своих ошибках, и твое умение ('.*') совершенствуется.$|^Теперь ты гораздо лучше владеешь искусством ('.*')!$/).exec(text);
+    /* if(text.match("Ты учишься на своих ошибках, и твое умение '.*' совершенствуется.")
+    ||text.match("Теперь ты гораздо лучше владеешь искусством '.*'!")){ */
+    if(match){
+        console.log('march',match);
+        echo('-->[slook '+(match[1]==undefined?match[2]:match[1])+']');
+        send('slook '+(match[1]==undefined?match[2]:match[1]));
     }
     if(text.match("Твоя арфа разваливается на куски.")){
         echo('-->[new harp]');
@@ -177,13 +180,17 @@ $('.trigger').on('text', function (e, text) {
         int_max = Number(match[4]); 
         cha = Number(match[5]);
         cha_max = Number(match[6]);
-        bonus = (wis+int+dex) - (wis_max+dex_max+int_max-3);
-        if(str>=15 && cha >= 18 && (wis+int+dex) >= (wis_max+dex_max+int_max-3)) {
-            echo("YES: "+(wis+dex+int)+" >= "+(wis_max+dex_max+int_max-3));
+        //bonus = (wis+int+dex) - (wis_max+dex_max+int_max-3);
+        total = wis + int + cha + str + con + dex;
+        if(
+            str>=15 && cha >= 18 && 
+            (wis+con+dex) >= (wis_max+dex_max+con_max-3)
+        ) {
+            echo("("+total+")?("+(int+15+18+wis_max+dex_max+con_max-3)+") "+"YES: "+(wis+dex+int)+" >= "+(wis_max+dex_max+int_max-3)+ "("+int+"int)");
         }else{
             counter++;
             if(counter>20) {send("sca s");counter=0;}
-            echo("NO: "+(wis+dex+int)+" >= "+(wis_max+dex_max+int_max-3) + "("+str+"str)" + "("+cha+"cha)");
+            echo("("+total+")?("+(int+15+18+wis_max+dex_max+con_max-3)+") "+"NO: "+(wis+dex+con)+" >= "+(wis_max+dex_max+con_max-3) + "("+str+"str)" + "("+cha+"cha)"+ "("+int+"int)");
             send("гов лекарь нет");
         }
         return;
@@ -639,6 +646,10 @@ $('.trigger').on('input', function (e, text) {
         doorToBash = args[1];
         echo('>>> Поехали, вышибаем по направлению ' + doorToBash + '\n');
         send('выбить ' + doorToBash);
+    });
+
+    command(e, 'zz', text, function (args) {
+        send('get ' + args[1] + " rock|sell "+args[1]+" |drop "+args[1]);
     });
 
 });
@@ -1646,7 +1657,7 @@ function checkNeeds() {
                     return;
                 }
             }
-            if (my_char.water === 'flask') {
+            if (my_char.water === 'flask' && my_char.hasSpell("create water")) {
                 if(test) console.log('->(water === flask)');
                 if(test) console.log('-->(create water=' + my_char.spells.indexOf('create water') + ')');
                 if(test) console.log(my_char.spells);
@@ -1659,7 +1670,7 @@ function checkNeeds() {
                     }
                 }
 
-            }
+            } 
         } else {
             if (checkPose('stand')) {
                 my_char.needsChanged = true;
