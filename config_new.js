@@ -16,6 +16,8 @@ $('input').css("background-color", "#2e3436");
 $('#cs-subject').css("color","#F8F8F2");
 
 var test = true; //true - для вывода всякой отладочной информации
+var kach = false;
+var opDown = false;
 var melt_counter = 0; //противодействие автовыкидыванию
 
 //номер панели заклинаний
@@ -28,7 +30,7 @@ var chars = {
     'Miyamoto': {
         name: 'Miyamoto',
         align: 'e',
-        weapon: 'sword',//'hickey', //'арапник',
+        weapon: 'warhammer',//'sword',//'hickey', //'арапник',
         class: 'samurai',
         clan: 'none',
         water: 'barrel',//'flask',
@@ -133,6 +135,10 @@ var attack_spell_wait = undefined;
 
 var buffQueue = [];
 
+var hasHarp = false;
+var isHarp = false;
+var timeout = false;
+var herbCooldown = false;
 /*--------------------------------------------------------------------------
  * Триггера - автоматические действия как реакция на какую-то строку в мире.
  *-------------------------------------------------------------------------*/
@@ -153,15 +159,57 @@ $('.trigger').on('text', function (e, text) {
         echo('-->[slook '+(match[1]==undefined?match[2]:match[1])+']');
         send('slook '+(match[1]==undefined?match[2]:match[1]));
     }
+    if(text.match("Ты берешь арфу из большого камня.")){
+        hasHarp=true;
+        if (my_char.action.act === 'get') {
+            clearAction();
+        }
+    }
+    if(text.match("Ты берешь в руки арфу.")){
+        isHarp=true;
+        if (my_char.action.act === 'hold') {
+            clearAction();
+        }
+    }
     if(text.match("Твоя арфа разваливается на куски.")){
-        echo('-->[new harp]');
-        send('get harp bag|wear harp|use harp');
+        hasHarp=false;
+        isHarp=false;
     }
     if(text.match("Ты взмахиваешь арфой на себя.")){
-        echo('-->[run se|use harp]');
-        send('run se|use harp');
+        if (my_char.action.act === 'use') {
+            clearAction();
+        }
+    }
+    if(text.match("Ты садишься отдыхать.")){
+        if (my_char.action.act === 'rest') {
+            clearAction();
+        }
+    }
+    if(text.match("Ты ищешь целебные травы, но ничего не находишь.")) {
+        if (my_char.action.act === 'herb') {
+            clearAction();
+        }
+    } 
+    if(text.match("Ты собираешь ароматные травы на окрестных холмах.")
+    || text.match("Ты пока не можешь искать травы, подожди немного.")){
+        herbCooldown = true;
+        if (my_char.action.act === 'herb') {
+            clearAction();
+        }
+    }
+    if(text.match("Ты чувствуешь, что вновь настало удачное время для сбора лечебных трав.")){
+        herbCooldown=false;
     }
 
+/*    if(text.match("Твоя арфа разваливается на куски.")){
+        echo('-->[new harp]');
+        send('get harp rock|wear harp|use harp');
+    }
+    if(text.match("Ты взмахиваешь арфой на себя.")){
+        echo('-->[s|s|use harp]');
+        send('s|s|use harp');
+    }
+ */
     match = (/^ *сила *([0-9]{1,2}) \(из ([0-9]{1,2})\) *сложение *([0-9]{1,2}) \(из ([0-9]{1,2})\) *ловкость *([0-9]{1,2}) \(из ([0-9]{1,2})\)$/).exec(text);
     if(match) {
         str = Number(match[1]);
@@ -272,7 +320,27 @@ $('.trigger').on('text', function (e, text) {
             }
         }
     });
-
+    //[#trip]
+    if (text.match('^От неудачного удара стражник тролль оступается и неуклюже валится наземь!$')
+    || text.match('^От неудачной попытки уворота стражник тролль оступается и неуклюже валится наземь!$')
+    || text.match('^Когда ты уворачиваешься от атаки стражника тролля, он оступается и неуклюже валится наземь!$')
+    || text.match('^Стражник тролль не может устоять на ногах и падает вниз!$')) {
+        opDown = true;
+    }
+    if (text.match('^Стражник тролль наконец поднимается и встает, готовясь атаковать.$')) {
+        opDown = false;
+    }
+    //[#shield]
+    if (text.match('^От боли ты роняешь .*!$') 
+    || text.match('^.* превращается в труху и опилки.$')
+    || text.match('^.* раскалывается на куски.$')
+    || text.match('^.* распадается на части.$')) {
+        my_char.shield = false;
+        if(kach) send('nsh');
+    }
+    if (text.match('^Ты надеваешь .* как щит.$')) {
+        my_char.shield = true;
+    }
     //[#weapon]
     if (text.match(' у тебя оружие, и оно упало на землю!$')) {
         my_char.eqChanged = true;
@@ -373,7 +441,7 @@ $('.trigger').on('text', function (e, text) {
         my_char.lfood = 1;
         my_char.needsChanged = true;
         if (my_char.action.command === 'create food'
-            || (my_char.action.act == 'get' && my_char.action.command === my_char.food))
+            || (my_char.action.act == 'get rusk pack' && my_char.food=="rusk"))
             clearAction();
     }
 
@@ -538,6 +606,11 @@ $('.trigger').on('input', function (e, text) {
         }
     });
 
+    command(e, 'kach', text, function (args) {
+        kach=!kach;
+        echo("KACH "+(kach?"ON":"OFF")+"!!!");
+    });
+    
     //обкаст fullbuff
     command(e, 'fb', text, function (args) {
         if(test)
@@ -620,6 +693,7 @@ $('.trigger').on('input', function (e, text) {
         victim = args[1];
         echo('>>> Твоя мишень теперь ' + victim + "\n");
     });
+    
 
     // Установить оружие (см. тригер выше), например: /weapon меч
     command(e, '/weapon', text, function (args) {
@@ -1049,6 +1123,29 @@ function checking() {
     let azazelStr = '';
     azazelStr = azazel.stat();
 
+    if(kach) {
+        let kachPrompt = '';
+        if(opDown)
+            kachPrompt += '<span style="color:red;">[opp:down]</span>';
+        if(!my_char.shield)
+            kachPrompt += '<span style="color:red;">[SHIELD]</span>';
+        
+        kachPrompt += checkKach();
+        if(my_char.name=='Miyamoto') {
+            if(mudprompt.p2.pos=='fight'
+            //&& mudprompt.mana==mudprompt.max_mana 
+            && mudprompt.move==mudprompt.max_move ) {
+                if(opDown) 
+                    kachPrompt += '<span style="color:darkred;">[trip skip]</span>';
+                else {
+                    echo("[trip]");
+                    send('trip');
+                }
+            } 
+        }
+        echo(kachPrompt);
+    }
+
     if(my_char.init) echo(my_char.attack_spells.get_prompt());
     
     let needsStatus = '';
@@ -1093,6 +1190,58 @@ function checking() {
     && (my_char.last_pose != undefined || my_char.was_afk != undefined))
         restoreStatus();
     
+}
+function checkKach() {
+    if(my_char.action.act != undefined)
+        return '';
+
+    let result = '';
+
+    if(!herbCooldown && mudprompt.move==mudprompt.max_move && mudprompt.mana==mudprompt.max_mana) {
+        if(checkPose('stand')) {
+            doAct('herb');
+        }
+        return result;
+    } else {
+        let timeoutCount = 10000;
+        if(herbCooldown) {
+            timeoutCount = 30000;
+            result += '<span style="color:green;">[herb cooldown]</span>';
+        }
+        if(mudprompt.p2.pos!=="rest") {
+            doAct('rest');
+        }
+        result += '[timeout]';
+        if(!timeout) {
+            setTimeout(function(){send('');timeout=false;}, timeoutCount);
+            timeout = true;
+        }
+    }
+
+    //harp
+    /* 
+    if(!hasHarp) {
+        doAct('get', 'harp', 'rock');
+        return '';
+    }
+
+    if(!isHarp) {
+        doAct('hold', 'harp');
+        return '';
+    }
+
+    if(mudprompt.move==mudprompt.max_move) {
+        doAct('use', 'harp');
+    } else {
+        result += '[timeout]';
+        if(!timeout) {
+            setTimeout(function(){send('');timeout=false;},10000);
+            timeout = true;
+        }
+    } 
+    */
+
+    return result;
 }
 function checkGroup() {
     if(test) console.log("->checkGroup()");
@@ -1599,15 +1748,16 @@ function checkNeeds() {
         return;
     }
 
-    if ((my_char.hunger + my_char.thirst > 0) 
-        && (my_char.hunger <= 1 && my_char.thirst <= 1)
-        && !(my_char.pract && (my_char.hunger || my_char.thirst))) {
-            //TODO питаться если не полное здоровье/мана!!!
-        if(test) console.log('-->[not so hunger/thirst - EXIT]');
-        return;
+    if ((my_char.hunger + my_char.thirst > 0)) {
+        if(!kach && (my_char.hunger <= 1 && my_char.thirst <= 1)
+           && !(my_char.pract && (my_char.hunger || my_char.thirst))) {
+                //TODO питаться если не полное здоровье/мана!!!
+            if(test) console.log('-->[not so hunger/thirst - EXIT]');
+            return;
+        }
     }
 
-    if (['fight', 'stun', 'incap', 'mort', 'dead'].indexOf(mudprompt.p2.pos) !== -1) {
+    if (!kach && ['fight', 'stun', 'incap', 'mort', 'dead'].indexOf(mudprompt.p2.pos) !== -1 ) {
         return;
     }
 
@@ -1649,7 +1799,7 @@ function checkNeeds() {
     //[#drink]
     if (my_char.thirst) {
         if(test) console.log("-->хочу пить!(lwater:"+my_char.lwater+")");
-        if (!my_char.lwater) {
+        if (!my_char.lwater && my_char.water !== 'barrel') {
             if (my_char.water === 'spring') {
                 if (checkPose('stand')) {
                     my_char.needsChanged = true;
@@ -1672,7 +1822,7 @@ function checkNeeds() {
 
             } 
         } else {
-            if (checkPose('stand')) {
+            if (checkPose('rest')) {
                 my_char.needsChanged = true;
                 doAct('drink', my_char.water=='spring'?'':my_char.water);
                 return;
@@ -1773,6 +1923,7 @@ function Pchar(name, char, level) {
     this.buffs_needs = char==undefined ? {} : char.buffs_needs;
     //[#armed] 0 - без оружия(оружие на земле), 1 - оружие в мешке, 2 - вооружен
     this.armed = false;
+    this.shield = true;
 
     this.affChanged = true; //проверить бафы
 
