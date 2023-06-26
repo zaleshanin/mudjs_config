@@ -15,7 +15,7 @@ $('body').css("background-color", "#353535");
 $('input').css("background-color", "#2e3436");
 $('#cs-subject').css("color","#F8F8F2");
 
-var test = true; //true - для вывода всякой отладочной информации
+var test = false; //true - для вывода всякой отладочной информации
 var kach = false;
 var opDown = false;
 var melt_counter = 0; //противодействие автовыкидыванию
@@ -35,7 +35,7 @@ var chars = {
         clan: 'none',
         water: 'barrel',//'flask',
         food: 'rusk',
-/*         buffs_needs: {
+        buffs_needs: {
             //(всегда, при фулбафе, всегда на члена группы, при фулбафе на члена группы)
             'ruler aura': new Buff_need(true, true, false, false),
             'group defense': new Buff_need(false, false, false, true),
@@ -69,7 +69,7 @@ var chars = {
             'dragon skin': new Buff_need(false, true, false, true),
             'frenzy': new Buff_need(false, false, false, true),
         }
- */    },
+    },
     'Uesugi': {
         name: 'Uesugi',
         align: 'e',
@@ -126,7 +126,10 @@ var chars = {
         }
     }
 };
-
+var rest_rooms =  {
+    9510: 'lawn',   //Общ.плодащь Нового Талоса
+    9706: 'mat',    //Кабинет помощника мэра Нового Талоса
+};
 var match;
 
 var my_char = new Pchar();
@@ -139,10 +142,75 @@ var hasHarp = false;
 var isHarp = false;
 var timeout = false;
 var herbCooldown = false;
+var slook = {};
+var lSlook = false;
 /*--------------------------------------------------------------------------
  * Триггера - автоматические действия как реакция на какую-то строку в мире.
  *-------------------------------------------------------------------------*/
 $('.trigger').on('text', function (e, text) {
+    if(text==='') return;
+    //качаем lore
+    if(text.match('^Ты пытаешься вспомнить хоть что-то из древних преданий про эту вещь, но безуспешно.$|^.* -- это .* [0-9]{1,3} уровня.$')){
+        if(test) console.log("[lore detected]");
+        if (my_char.action.act === 'lore') {
+            clearAction();
+        }
+        return;
+    }
+    //slook
+    /*
+        Умение 'lore' или 'легенды', входит в группы 'detection', 'adventure'.
+        * Задержка при выполнении 4 секунды. 
+        * Расход маны 40, шагов 10. 
+        * Доступно тебе с уровня 22, изучено на 59%.
+        * Это умение можно выучить в твоей гильдии.
+        * Доступно классам: анти-паладин, ниндзя, паладин, рейнджер, самурай, вор, вампир, воин
+        * Бонус для рас: кендеры, свирфнебли, гномы
+
+        См. также справка lore.
+
+        Заклинание 'benediction' или 'благость', входит в группу 'benedictions'.
+        * Задержка при выполнении 6 секунд. 
+        * Расход маны 150. 
+        * Тип заклинания защитная молитва. 
+        * Целью служит персонаж рядом. 
+        * Досталось тебе разученное до 100%.
+        * Доступно классам: анти-паладин, клерик, паладин
+
+        См. также справка benediction.
+    */
+    match = (/^(?:Умение|Заклинание) '(?<name>.*?)' или '(?<runame>.*?)', входит в групп(?:у|ы) .*\.$/).exec(text);
+    if(match){
+        lSlook = true;
+        slook.name = match.groups.name;
+        slook.runame = match.groups.runame;
+
+        if (my_char.action.act === 'slook') {
+            clearAction();
+        }
+        return;
+    }
+    if(lSlook) {
+        //Доступно тебе с уровня 20, изучено на 49%, работает на 48%.
+        match = (/\* Доступно тебе с уровня [0-9]{1,3}, изучено на ([0-9]{1,3})%(?:, работает на [0-9]{1,3}%)?\./).exec(text);
+        if(match) {
+            slook.progress = match[1];
+            return;
+        }
+        match = (/\* Расход (?:маны (?<mana>[0-9]{1,4}))?(?:, )?(?:шагов (?<moves>[0-9]{1,4}))?\./).exec(text);
+        if(match) {
+            slook.mana = match.groups.mana ? match.groups.mana : 0;
+            slook.moves = match.groups.moves ? match.groups.moves : 0;
+            return;
+        }
+
+        if(text.match('^См. также справка .*\.$')) {
+            my_char.kach_skills[slook.name] = slook;
+            slook = {};
+            lSlook = false;
+        }
+        return;
+    }
     //качаем haggle
     if(text.match("Ты покупаешь свечу за ")){
         send('sell candle');
@@ -150,15 +218,13 @@ $('.trigger').on('text', function (e, text) {
     if(text.match("Ты продаешь свечу за ")){
         send('buy candle');
     }
-    //качаем
     match = (/^Ты учишься на своих ошибках, и твое умение ('.*') совершенствуется.$|^Теперь ты гораздо лучше владеешь искусством ('.*')!$/).exec(text);
-    /* if(text.match("Ты учишься на своих ошибках, и твое умение '.*' совершенствуется.")
-    ||text.match("Теперь ты гораздо лучше владеешь искусством '.*'!")){ */
     if(match){
         console.log('march',match);
         echo('-->[slook '+(match[1]==undefined?match[2]:match[1])+']');
         send('slook '+(match[1]==undefined?match[2]:match[1]));
     }
+    // *** качаем wand *** //
     if(text.match("Ты берешь арфу из большого камня.")){
         hasHarp=true;
         if (my_char.action.act === 'get') {
@@ -180,7 +246,9 @@ $('.trigger').on('text', function (e, text) {
             clearAction();
         }
     }
-    if(text.match("Ты садишься отдыхать.")){
+    // *** end wand *** //
+
+    if(text.match("Ты садишься отдыхать.|Ты садишься .* и отдыхаешь.")){
         if (my_char.action.act === 'rest') {
             clearAction();
         }
@@ -201,7 +269,7 @@ $('.trigger').on('text', function (e, text) {
         herbCooldown=false;
     }
 
-/*    if(text.match("Твоя арфа разваливается на куски.")){
+/*  if(text.match("Твоя арфа разваливается на куски.")){
         echo('-->[new harp]');
         send('get harp rock|wear harp|use harp');
     }
@@ -209,7 +277,7 @@ $('.trigger').on('text', function (e, text) {
         echo('-->[s|s|use harp]');
         send('s|s|use harp');
     }
- */
+*/
     match = (/^ *сила *([0-9]{1,2}) \(из ([0-9]{1,2})\) *сложение *([0-9]{1,2}) \(из ([0-9]{1,2})\) *ловкость *([0-9]{1,2}) \(из ([0-9]{1,2})\)$/).exec(text);
     if(match) {
         str = Number(match[1]);
@@ -250,10 +318,12 @@ $('.trigger').on('text', function (e, text) {
     match = (/^(<([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) \[(.*)]\[.*]>\[.*](\([0-9]{1,3}%:[0-9]{1,3}%\))?)|(<([0-9]{1,5})\/([0-9]{1,5})зд ([0-9]{1,5})\/([0-9]{1,5})ман ([0-9]{1,5})\/([0-9]{1,5})шг ([0-9]{1,5})оп Вых:.*>( \[[0-9]{1,3}%:[0-9]{1,3}%\])?)$/).exec(text);
     if (match) {
         promptRecived(false);
+        return;
     }
     match = (/^<(AFK|АФК)>[\s]?$/).exec(text);
     if (match) {
         promptRecived(true);
+        return;
     }
     if (!my_char.init) return;
 
@@ -266,7 +336,7 @@ $('.trigger').on('text', function (e, text) {
     }
     if (text.match('^Ты прячешься в тенях.$')) {
         if(test) console.log("[Fade trigger]");
-        my_char.was_fade = undefined;
+        my_char.was_fade = null;
         if (my_char.action.act === 'fade') {
             clearAction();
         }
@@ -282,12 +352,12 @@ $('.trigger').on('text', function (e, text) {
     }
     /*Драш Азазеля загорается загорается багровым пламенем!
 
-В твоей голове звучат торжественные слова на тайном наречии Азазеля:
-    lulshafan anigeron, netilat yadaim, sefer yetsirah
+    В твоей голове звучат торжественные слова на тайном наречии Азазеля:
+        lulshafan anigeron, netilat yadaim, sefer yetsirah
 
-Чтобы воззвать к Азазелю, произнеси его имя и добавь тайные слова -- 
-например, сказать azazel sefer yetsirah. Используй их вовремя и с умом,
-ибо безжалостный Азазель не прощает ошибок. */
+    Чтобы воззвать к Азазелю, произнеси его имя и добавь тайные слова -- 
+    например, сказать azazel sefer yetsirah. Используй их вовремя и с умом,
+    ибо безжалостный Азазель не прощает ошибок. */
 
     if (text.match('В твоей голове звучат торжественные слова на тайном наречии Азазеля:')) {
         if(test) console.log("[wait for Azazel words]");
@@ -298,7 +368,7 @@ $('.trigger').on('text', function (e, text) {
     if(lAzazel) {
         match = (/[\s]*([\w\s]*), ([\w\s]*), ([\w\s]*)/).exec(text);
         if(match) {
-            if(test) console.log('[new Azazel words]');
+            if(test) console.log('[new Azazel words]',[match[1],match[2],match[3]]);
             azazel = new Azazel(match[1],match[2],match[3]);
             setTimeout(() => azazel=new Azazel(), 35*60*1000);
         } else {
@@ -307,6 +377,7 @@ $('.trigger').on('text', function (e, text) {
         lAzazel = false;
     }
 
+    if(test) console.log(`[buffPatterns check started]:[${text}]`);
     buffPatterns.forEach(function (elem) {
         if (buffs_list[elem[0]] !== undefined) {
             if (text.match(elem[1])) {
@@ -320,6 +391,8 @@ $('.trigger').on('text', function (e, text) {
             }
         }
     });
+    if(test) console.log("[buffPatterns check finished]");
+
     //[#trip]
     if (text.match('^От неудачного удара стражник тролль оступается и неуклюже валится наземь!$')
     || text.match('^От неудачной попытки уворота стражник тролль оступается и неуклюже валится наземь!$')
@@ -605,10 +678,26 @@ $('.trigger').on('input', function (e, text) {
             send(text);
         }
     });
+    
+    command(e, 'var', text, function (args) {
+        let result;
+        if(args[1]==='char') result=my_char;
 
+        console.log(args[1],result);
+    });
     command(e, 'kach', text, function (args) {
         kach=!kach;
-        echo("KACH "+(kach?"ON":"OFF")+"!!!");
+        let msg = "KACH "+(kach?"ON":"OFF")+"!!!";
+        echo(`<span style='color:lightgreen;'>${msg}</span>`);
+        console.log(msg)
+        send('');
+    });
+    command(e, 'test', text, function (args) {
+        test=!test;
+        let msg = "TEST "+(test?"ON":"OFF")+"!!!";
+        echo(`<span style='color:lightgreen;'>${msg}</span>`);
+        console.log(msg);
+        send('');
     });
     
     //обкаст fullbuff
@@ -1066,7 +1155,7 @@ function doAct(act, comm, tag) {
     }
 
     if (result !== '') {
-        echo('-->[' + result + ']\n');
+        echo('-->[doAct: ' + result + ']\n');
         send(result);
     } else
         echo('\ndoAct(' + act + ',' + comm + ',' + tag + '): ERROR\n');
@@ -1079,14 +1168,17 @@ function clearAction() {
 }
 //[#prompt]
 function promptRecived(afk) {
-    if(test) console.log('prompt(ok)');
+    if(test) {
+        console.log('prompt(ok)');
+        echo("["+mudprompt.vnum+"]");
+    }
 
     if (!my_char.init || my_char.name != getChar().sees) {
         charInit();
         if(test) console.log('\n');
     }
-    if (my_char.was_fade !== undefined &&  (mudprompt['trv']!==undefined && mudprompt['trv']!=='none' && mudprompt['trv'].a.indexOf('F')!==-1)) {
-        my_char.was_fade = undefined;
+    if (my_char.was_fade &&  (mudprompt['trv']!==undefined && mudprompt['trv']!=='none' && mudprompt['trv'].a.indexOf('F')!==-1)) {
+        my_char.was_fade = null;
     }
 
     my_char.afk = afk;
@@ -1095,7 +1187,7 @@ function promptRecived(afk) {
         my_char.was_afk = undefined;
     }
 
-    if (my_char.last_pose !== undefined) {
+    if (my_char.last_pose) {
         if (my_char.last_pose == mudprompt.p2.pos) {
             my_char.last_pose = undefined;
         }
@@ -1110,18 +1202,29 @@ function promptRecived(afk) {
 //[#checks] [#проверялки]
 function checking() {
     if(test) console.log(' -->checking()');
-    if(test) console.log(' --> status:'
+    if(test) console.log(' -->status:'
         + (my_char.afk ? '[afk]' : '')
         + ((mudprompt['trv']!==undefined && mudprompt['trv']!=='none' && mudprompt['trv'].a.indexOf('F')!==-1) ? '[fade]' : '')
         + (my_char.last_pose != undefined ? '[last:' + my_char.last_pose + ']' : '')
         + (my_char.was_afk != undefined ? '[was_afk]' : '')
-        + (my_char.was_fade != undefined ? '[was_fade]' : '')
+        + (my_char.was_fade ? '[was_fade]' : '')
         + (my_char.action.act != undefined ? '[act:' + my_char.action.act + ']' : '')
         + ' pos:' + mudprompt.p2.pos
         + (mudprompt.p2.posf != '' ? '; posf:' + mudprompt.p2.posf : '')
         + '\n');
     let azazelStr = '';
     azazelStr = azazel.stat();
+
+    if (buffQueue.length)
+    	changeBuffsStatus();
+    //if (my_char.affChanged)
+    checkBuffv2();
+
+    if (my_char.eqChanged)
+        checkEquip();
+
+    if (my_char.needsChanged)
+        checkNeeds();
 
     if(kach) {
         let kachPrompt = '';
@@ -1131,18 +1234,7 @@ function checking() {
             kachPrompt += '<span style="color:red;">[SHIELD]</span>';
         
         kachPrompt += checkKach();
-        if(my_char.name=='Miyamoto') {
-            if(mudprompt.p2.pos=='fight'
-            //&& mudprompt.mana==mudprompt.max_mana 
-            && mudprompt.move==mudprompt.max_move ) {
-                if(opDown) 
-                    kachPrompt += '<span style="color:darkred;">[trip skip]</span>';
-                else {
-                    echo("[trip]");
-                    send('trip');
-                }
-            } 
-        }
+
         echo(kachPrompt);
     }
 
@@ -1170,53 +1262,171 @@ function checking() {
     if (my_char.hunger + my_char.thirst > 0)
         echo(needsStatus);
 
-    if (my_char.eqChanged)
-        checkEquip();
-
-    if (buffQueue.length)
-    	changeBuffsStatus();
-    //if (my_char.affChanged)
-    checkBuffv2();
-
     if(my_char.action.act != undefined) echo('[act:' + my_char.action.act + ' command:'+my_char.action.command+' target:'+my_char.action.target+']');
-
-    if (my_char.needsChanged)
-        checkNeeds();
 
     if(my_char.ordersChange)
     	checkOrders();
 
     if (!my_char.needsChanged && !my_char.eqChanged
-    && (my_char.last_pose != undefined || my_char.was_afk != undefined))
+        && (my_char.last_pose || my_char.was_afk))
         restoreStatus();
     
+        
 }
 function checkKach() {
+    if(test) console.warn("---->checkKach()");
+    let result = '[kach]';
+
     if(my_char.action.act != undefined)
         return '';
 
-    let result = '';
+    for(let skill in my_char.skills) {
+        //пропускаем если нет парамтров для прокачки
+        let msg = skill;
+        if(!skills[skill]) {
+            if(test) console.log(`  -->[${msg}:no command]`);
+            //result += `[${msg}:no command]`;
+            continue;
+        }
 
-    if(!herbCooldown && mudprompt.move==mudprompt.max_move && mudprompt.mana==mudprompt.max_mana) {
-        if(checkPose('stand')) {
-            doAct('herb');
+        //определяем процент разученности
+        if(!my_char.kach_skills[skill]) {
+            if(test) console.log(`  -->[${msg}:no kach_skills.${skill} --> slook ${skill}`);
+            doAct('slook', skill);
+            result += `[${msg}:slook]`;
+            return result;
         }
-        return result;
-    } else {
-        let timeoutCount = 10000;
-        if(herbCooldown) {
-            timeoutCount = 30000;
-            result += '<span style="color:green;">[herb cooldown]</span>';
+
+        //пропускаем если 100%
+        if(my_char.kach_skills[skill].progress >= 100) {
+            result += `[${msg}:${my_char.kach_skills[skill].progress}%]`;
+            continue;
         }
-        if(mudprompt.p2.pos!=="rest") {
-            doAct('rest');
+
+        //проверка на бафф
+        if(buffs_list[skill]) {
+            if(test)console.log('  -->buff_check', buffs_list[skill]);
+
+            if(my_char.hasBuff(skill)) {
+                result += `[${msg}:${my_char.kach_skills[skill].progress}% have one]`;
+                continue;
+            }
         }
-        result += '[timeout]';
-        if(!timeout) {
-            setTimeout(function(){send('');timeout=false;}, timeoutCount);
-            timeout = true;
+
+        //проверка на move/mana
+        if(mudprompt.move < (my_char.kach_skills[skill].moves ?? 0)  
+            || mudprompt.mana < (my_char.kach_skills[skill].mana ?? 0)) {
+            result += `[${msg}:${my_char.kach_skills[skill].progress}%${(mudprompt.move < my_char.kach_skills[skill].moves) ? ' '+mudprompt.move+'/'+my_char.kach_skills[skill].moves + 'mv' : ''}${(mudprompt.mana < my_char.kach_skills[skill].mana) ? ' '+mudprompt.mana+'/'+my_char.kach_skills[skill].mana + 'mn' : ''}]`;
+            if(test) {
+                console.log("      -->skip: not enough moves/mana", 
+                    my_char.kach_skills[skill].moves, 
+                    mudprompt.move, 
+                    my_char.kach_skills[skill].mana, 
+                    mudprompt.mana
+                );
+            }
+            continue;
+        } else {
+            if(test) console.log("  -->mana/moves check ok!")
+        }
+        //проверяем на АФК
+        if (my_char.afk) {
+            changeAFK();
+            my_char.needsChanged = true;
+            result += `[${msg}:${my_char.kach_skills[skill].progress}%:afk]`
+            return result;
+        }
+        //проверяем pos
+        if(!checkPose(skills[skill].pos)) {
+            if(test) console.log("      -->skip: position");
+            result += `[${msg}:${my_char.kach_skills[skill].progress}% req:${skills[skill].pos}]`;
+            return result;
+        }
+        
+
+        result += `[${msg}:${my_char.kach_skills[skill].progress}%-->run]`;
+        doAct(
+            skills[skill].act.act, 
+            skills[skill].act.command, 
+            skills[skill].act.target
+        );
+        break;
+    }
+    /* if(my_char.hasSkill('lore')) {
+        if(test) console.log("      check lore");
+
+        if(!my_char.kach_skills['lore']) {
+            if(test) console.log("      no kach_skills.lore --> slook lore");
+            doAct('slook', 'lore');
+            return;
+        }
+
+        if(my_char.kach_skills['lore'].progress<100) {
+            if(mudprompt.p2.pos==='fight') {
+                if(test) console.log("      -->skip: fight");
+            } else {
+                if(mudprompt.move > (my_char.kach_skills['lore'].moves ?? 10)  
+                    && mudprompt.mana > (my_char.kach_skills['lore'].mana ?? 40)) {
+                    if (my_char.afk) {
+                        changeAFK();
+                        my_char.needsChanged = true;
+                        return;
+                    }
+                    result += '[-->lore:'+(my_char.kach_skills['lore'].progress)+'%]'
+                    doAct('lore', 'warhammer');
+                }
+            }
+        }
+    } */
+
+    /* if(my_char.hasSkill('herbs')) {
+        console.log("      check herbs:");
+        if(mudprompt.p2.pos==='fight') {
+            console.log("      -->skip: fight");
+        } else {
+            if(!herbCooldown 
+                && mudprompt.move==mudprompt.max_move 
+                && mudprompt.mana==mudprompt.max_mana) {
+                if(checkPose('stand')) {
+                    doAct('herbs');
+                    console.log("      -->[herbs]");
+                }
+                return result;
+            } else {
+                let timeoutCount = 10000;
+                if(herbCooldown) {
+                    timeoutCount = 30000;
+                    result += '<span style="color:green;">[herb cooldown]</span>';
+                }
+                if(mudprompt.p2.pos!=="fight" && mudprompt.p2.pos!=="rest") {
+                    doAct('rest');
+                }
+                result += '[timeout]';
+                if(!timeout) {
+                    setTimeout(function(){send('');timeout=false;}, timeoutCount);
+                    timeout = true;
+                }
+                console.log("      -->skip:timeout");
+            }
+        }
+    } */
+/*     if(my_char.hasSkill('berserk')) {
+        console.log("      check berserk:");
+        if(mudprompt.p2.pos=='fight'
+        && mudprompt.mana > mudprompt.max_mana-100
+        && mudprompt.move==mudprompt.max_move ) {
+            if(mudprompt['enh'].a.indexOf('z')===-1) {
+                echo("[berserk]");
+                send('berserk');
+                console.log("      -->[berserk]");
+            } {
+                console.log("      -->has one!");
+            }
+        } else {
+            console.log("      -->skip");
         }
     }
+ */
 
     //harp
     /* 
@@ -1292,6 +1502,7 @@ function checkBuffv2() {
         console.log('\n->chkBffv2()');
         console.log("chckBuffv2 started");
         console.log("my_char.fullbuff:",my_char.fullbuff);
+        console.log("my_char.buffs_needs:",my_char.buffs_needs);
     }
     //чар чем-то занят - прерываем
     if (my_char.action.act === undefined && ["stand", "sit", "rest", "sleep"].indexOf(mudprompt.p2.pos)!=-1) {
@@ -1323,7 +1534,7 @@ function checkBuffv2() {
     */
     var oSpells = {}; 
     //мои бафы
-    var spellsAndSkills = my_char.spells.concat(my_char.skills);
+    var spellsAndSkills = my_char.spells.concat(Object.keys(my_char.skills));
     for(let spell of spellsAndSkills) {
         if(test) console.log('-->spell/skill:',spell);
         //х.з. что с этим спелом дальше делать!
@@ -1841,14 +2052,31 @@ function checkNeeds() {
 
 }
 function checkPose(need_pose) {
-    if(test) console.log('->checkPose(' + need_pose + ')');
+    let need_index = positions.indexOf(need_pose),
+        current_index = positions.indexOf(mudprompt.p2.pos);
+    if(test) {
+        console.log('-->checkPose()', need_pose); 
+        console.log('  -->need', need_index, need_pose);
+        console.log('  -->current', current_index, mudprompt.p2.pos);
+    }
+    
+    if(need_index > current_index || position_commands.indexOf(need_pose)===-1) {
+        for(let i=need_index; i < positions.length; i++) {
+            if(position_commands.indexOf(positions[i])!==-1) {
+                need_pose = positions[i];
+                break;
+            }
+        }
+    }
+
     if (need_pose == mudprompt.p2.pos)
         return true;
 
-    if (need_pose == 'rest' && mudprompt.p2.pos !== 'sleep')
-        return true;
+/*     if (need_pose == 'rest' && mudprompt.p2.pos !== 'sleep')
+        return true;*/
 
-    my_char.last_pose = mudprompt.p2.pos;
+    if(!my_char.last_pose) my_char.last_pose = mudprompt.p2.pos;
+
     doAct(need_pose);
     return false;
 }
@@ -1858,19 +2086,21 @@ function changeAFK() {
 }
 function restoreStatus() {
     if(test) console.log('->restoreStatus()');
-    if (test && my_char.last_pose != undefined) console.log('[last:' + my_char.last_pose + ']');
+    if (test && my_char.last_pose) console.log('[last:' + my_char.last_pose + ']');
     if (test && my_char.was_afk) console.log('[was_afk]');
     if (test && my_char.was_fade) console.log('[was_fade]');
     if (my_char.action.act !== undefined) {
         if(test) console.log('[' + my_char.action.act + '->EXIT]');
         return;
     }
-    if (my_char.was_fade !== undefined && !((mudprompt['trv']!==undefined && mudprompt['trv']!=='none') && mudprompt['trv'].a.indexOf('F')!==-1)) {
+    if (my_char.was_fade && !((mudprompt['trv']!==undefined && mudprompt['trv']!=='none') && mudprompt['trv'].a.indexOf('F')!==-1)) {
         doAct('fade');
         return;
     }
-    if (my_char.last_pose !== undefined && my_char.last_pose != mudprompt.p2.pos) {
-        doAct(my_char.last_pose);
+    if (my_char.last_pose && my_char.last_pose != mudprompt.p2.pos) {
+        let command =  rest_rooms[mudprompt.vnum] ?? '';
+        doAct(my_char.last_pose, command);
+        my_char.last_pose = null;
         return;
     }
     if (my_char.was_afk && !my_char.afk) {
@@ -1909,9 +2139,9 @@ function Pchar(name, char, level) {
     this.afk = false;
 
     this.pract = false; //признак состояния прокачки скилов
-    this.last_pose = undefined;
-    this.was_afk = undefined;
-    this.was_fade = undefined;
+    this.last_pose = null;
+    this.was_afk = null;
+    this.was_fade = null;
 
     this.name = name===undefined ? undefined : name;
     this.level = level===undefined ? undefined : level;
@@ -1949,6 +2179,7 @@ function Pchar(name, char, level) {
     if(test) {
         console.log("getSkills() --> result:", this.skills);
     }
+    this.kach_skills = {};
 
     this.hasBuff = function(cast){
         if((mudprompt[buffs_list[cast].mgroup]!==undefined && mudprompt[buffs_list[cast].mgroup]!=='none') && mudprompt[buffs_list[cast].mgroup].a.indexOf(buffs_list[cast].mbrief)!==-1){
@@ -1975,6 +2206,7 @@ function Pchar(name, char, level) {
         return false;
     };
     this.hasSpell = (spell) => this.spells.indexOf(spell) >= 0 ? true : false;
+    this.hasSkill = (skill) => this.skills.hasOwnProperty(skill);
 
     this.fullbuff = new Fullbuff();
 
@@ -2088,7 +2320,7 @@ function Pchar(name, char, level) {
 
             my_char.attack_spells.set[numpad_set][group][key] = my_char.attack_spells.list[group][new_index];
 
-            echo(this.get_prompt());
+            echo(this.attack_spells.get_prompt());
         },
         showSpells:function(group,key) {
             let result = '';
@@ -2190,21 +2422,36 @@ function Order(comm) {
 }
 
 function getSkills(char, level) {
-    let skills = [];
+    let result = {};
+    let askills = [];
 
-    if(char===undefined) return skills;
+    if(char===undefined) return askills;
 
     if(char.class=== 'thief') {
-        skills.push(['detect hide', 5]);
+        askills.push(['detect hide', 5]);
     }
 
-    return skills
+    if(char.class=== 'samurai') {
+        askills.push(['kick', 2]);
+        askills.push(['trip', 9]);
+        askills.push(['herbs', 12]);
+        askills.push(['berserk', 20]);
+        askills.push(['lore', 22]);
+    }
+
+    askills = askills
         .filter(function(item, index, array){
             return item[1]<=level;
         })
         .map(function(item, index, array){
             return item[0]
         });
+    
+    for(let skill of askills) {
+        result[skill] = skills[skill];
+    }
+
+    return result;
 }
 
 function getSpells(char, level) {
@@ -2537,7 +2784,11 @@ var buffPatterns = [
 	['detect undead', '^Ты уже чувствуешь нежить.', true, true],
     ['detect hide', 'Ты пытаешься увидеть скрытое, но у тебя ничего не выходит.', false, true],
     ['detect hide', 'Ты перестаешь замечать скрытые детали в окружающей обстановке.', false, false],
-    ['detect hide', 'Теперь ты можешь увидеть скрытое.', true, true],
+    ['detect hide', '^Теперь ты можешь увидеть скрытое.$', true, true],
+    ['berserk', '^Твой пульс учащается, когда ты входишь в ярость!$', true, true],
+    ['berserk', '^Ты уже в состоянии боевой ярости!$', true, true],
+    ['berserk', '^Тебе не удается войти в боевую ярость.$', false, true],
+    ['berserk', '^Твой пульс замедляется, и боевая ярость пропадает.$', false, false],
 ];
 var pets = {
     'Легенда': {
@@ -2643,6 +2894,10 @@ var buffs_list = {
     //skills: thief
     //Spell(name, brief, mgroup, sclass, target, party, aAntogonist, aAlly, grSpell, aligns)
     'detect hide': new Skill('detect hide', 'detect', 'h', 'det', 'detection', false, 50, 50, ['ruler aura']),
+
+    //skills: samurai
+    //Skill(name, command, brief, mgroup, sclass, target, min_mana, min_move, aAlly)
+    'berserk': new Skill('berserk', 'berserk', 'z', 'enh', 'enchant', false, 50, 100),
 };
 var attack_spells_list = {
     //AttackSpell(sName,sClass,lTarget,lRange,lArea,lFight,sDamage)
@@ -2801,3 +3056,36 @@ function Words(name, str) {
         }
     };
 };
+/****************SKILLS FOR KACH **************/
+var skills = {
+    lore: {
+        act: {
+            act: 'lore',
+            command: 'warhammer',
+        },
+        pos: "rest",
+    },
+    berserk: {
+        act: {
+            act: 'berserk',
+        },
+        pos: 'fight',
+    }
+}
+var position_commands = [
+    "sleep",
+    "rest",
+    "sit",
+    "stand",
+];
+var positions = [
+    "dead",
+    "mort",
+    "incap",
+    "stun",
+    "sleep",
+    "rest",
+    "sit",
+    "fight",
+    "stand",
+];
