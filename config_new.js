@@ -129,6 +129,7 @@ var chars = {
 var rest_rooms =  {
     9510: 'lawn',   //Общ.плодащь Нового Талоса
     9706: 'mat',    //Кабинет помощника мэра Нового Талоса
+    3054: 'chair',  //Храм Лео
 };
 var match;
 
@@ -205,7 +206,7 @@ $('.trigger').on('text', function (e, text) {
         }
 
         if(text.match('^См. также справка .*\.$')) {
-            my_char.kach_skills[slook.name] = slook;
+            Object.assign(my_char.skills[slook.name], slook);
             slook = {};
             lSlook = false;
         }
@@ -1283,23 +1284,23 @@ function checkKach() {
     for(let skill in my_char.skills) {
         //пропускаем если нет парамтров для прокачки
         let msg = skill;
-        if(!skills[skill]) {
-            if(test) console.log(`  -->[${msg}:no command]`);
+        if(!my_char.skills[skill]) {
+            if(test) console.log(`  -->[${msg}:no act]`);
             //result += `[${msg}:no command]`;
             continue;
         }
 
         //определяем процент разученности
-        if(!my_char.kach_skills[skill]) {
-            if(test) console.log(`  -->[${msg}:no kach_skills.${skill} --> slook ${skill}`);
+        if(!my_char.skills[skill].progress) {
+            if(test) console.log(`  -->[${msg}:no skills.${skill} --> slook ${skill}`);
             doAct('slook', skill);
             result += `[${msg}:slook]`;
             return result;
         }
 
         //пропускаем если 100%
-        if(my_char.kach_skills[skill].progress >= 100) {
-            result += `[${msg}:${my_char.kach_skills[skill].progress}%]`;
+        if(my_char.skills[skill].progress >= 100) {
+            result += `[${msg}:${my_char.skills[skill].progress}%]`;
             continue;
         }
 
@@ -1308,20 +1309,20 @@ function checkKach() {
             if(test)console.log('  -->buff_check', buffs_list[skill]);
 
             if(my_char.hasBuff(skill)) {
-                result += `[${msg}:${my_char.kach_skills[skill].progress}% have one]`;
+                result += `[${msg}:${my_char.skills[skill].progress}% have one]`;
                 continue;
             }
         }
 
         //проверка на move/mana
-        if(mudprompt.move < (my_char.kach_skills[skill].moves ?? 0)  
-            || mudprompt.mana < (my_char.kach_skills[skill].mana ?? 0)) {
-            result += `[${msg}:${my_char.kach_skills[skill].progress}%${(mudprompt.move < my_char.kach_skills[skill].moves) ? ' '+mudprompt.move+'/'+my_char.kach_skills[skill].moves + 'mv' : ''}${(mudprompt.mana < my_char.kach_skills[skill].mana) ? ' '+mudprompt.mana+'/'+my_char.kach_skills[skill].mana + 'mn' : ''}]`;
+        if(mudprompt.move < (my_char.skills[skill].moves ?? 0)  
+            || mudprompt.mana < (my_char.skills[skill].mana ?? 0)) {
+            result += `[${msg}:${my_char.skills[skill].progress}%${(mudprompt.move < my_char.skills[skill].moves) ? ' '+mudprompt.move+'/'+my_char.skills[skill].moves + 'mv' : ''}${(mudprompt.mana < my_char.skills[skill].mana) ? ' '+mudprompt.mana+'/'+my_char.skills[skill].mana + 'mn' : ''}]`;
             if(test) {
                 console.log("      -->skip: not enough moves/mana", 
-                    my_char.kach_skills[skill].moves, 
+                    my_char.skills[skill].moves, 
                     mudprompt.move, 
-                    my_char.kach_skills[skill].mana, 
+                    my_char.skills[skill].mana, 
                     mudprompt.mana
                 );
             }
@@ -1333,18 +1334,18 @@ function checkKach() {
         if (my_char.afk) {
             changeAFK();
             my_char.needsChanged = true;
-            result += `[${msg}:${my_char.kach_skills[skill].progress}%:afk]`
+            result += `[${msg}:${my_char.skills[skill].progress}%:afk]`
             return result;
         }
         //проверяем pos
         if(!checkPose(skills[skill].pos)) {
             if(test) console.log("      -->skip: position");
-            result += `[${msg}:${my_char.kach_skills[skill].progress}% req:${skills[skill].pos}]`;
+            result += `[${msg}:${my_char.skills[skill].progress}% req:${skills[skill].pos}]`;
             return result;
         }
         
 
-        result += `[${msg}:${my_char.kach_skills[skill].progress}%-->run]`;
+        result += `[${msg}:${my_char.skills[skill].progress}%-->run]`;
         doAct(
             skills[skill].act.act, 
             skills[skill].act.command, 
@@ -2059,6 +2060,8 @@ function checkPose(need_pose) {
         console.log('  -->need', need_index, need_pose);
         console.log('  -->current', current_index, mudprompt.p2.pos);
     }
+
+    if(need_index <= current_index) return true;
     
     if(need_index > current_index || position_commands.indexOf(need_pose)===-1) {
         for(let i=need_index; i < positions.length; i++) {
@@ -2179,7 +2182,7 @@ function Pchar(name, char, level) {
     if(test) {
         console.log("getSkills() --> result:", this.skills);
     }
-    this.kach_skills = {};
+    //this.kach_skills = {};
 
     this.hasBuff = function(cast){
         if((mudprompt[buffs_list[cast].mgroup]!==undefined && mudprompt[buffs_list[cast].mgroup]!=='none') && mudprompt[buffs_list[cast].mgroup].a.indexOf(buffs_list[cast].mbrief)!==-1){
