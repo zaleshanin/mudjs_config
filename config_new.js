@@ -25,14 +25,22 @@ var numpad_set = 0;
 var panel_set = 0;
 var str, con, dex, wis, int, cha;
 var str_max, con_max, dex_max, wis_max, int_max, cha_max;
-var counter=0, bonus=0, total=0;
+var counter=0, total=0;
 var chars = {
     'Miyamoto': {
         name: 'Miyamoto',
         align: 'e',
-        weapon: 'warhammer',//'sword',//'hickey', //'арапник',
+        weapon: 'katana',//'warhammer',//'sword',//'hickey', //'арапник',
+        weapons: {
+            weapon_main: { name: 'katana' },//'warhammer'
+            weapon_second: {},
+            range_shoot: { name: 'bow', type: 'bow'}, //type: bow, two-handed
+            range_throw: { name: 'spear'},
+            hold: 'luck',
+            shield: 'shield',
+        },
         class: 'samurai',
-        clan: 'none',
+        clan: 'hunter',
         water: 'barrel',//'flask',
         food: 'rusk',
         buffs_needs: {
@@ -132,6 +140,7 @@ var rest_rooms =  {
     9706:   'mat',      // Кабинет помощника мэра Нового Талоса
     3054:   'chair',    // Храм Лео
     40032:  'mat',      // Мачта галеона   
+    580: 'gold'         // Наемники
 };
 var match;
 
@@ -182,11 +191,12 @@ $('.trigger').on('text', function (e, text) {
 
         См. также справка benediction.
     */
-    match = (/^(?:Умение|Заклинание) '(?<name>.*?)' или '(?<runame>.*?)', входит в групп(?:у|ы) .*\.$/).exec(text);
+    match = (/^(?<type>Умение|Заклинание) '(?<name>.*?)' или '(?<runame>.*?)', входит в групп(?:у|ы) .*\.$/).exec(text);
     if(match){
         lSlook = true;
         slook.name = match.groups.name;
         slook.runame = match.groups.runame;
+        slook.type = match.groups.type==='Умение'?'skills':'spells';
 
         if (my_char.action.act === 'slook') {
             clearAction();
@@ -208,7 +218,9 @@ $('.trigger').on('text', function (e, text) {
         }
 
         if(text.match('^См. также справка .*\.$')) {
-            Object.assign(my_char.skills[slook.name], slook);
+            console.log('[slook]:', slook);
+            console.log('my_char['+slook.type+']['+slook.name+']',my_char[slook.type][slook.name]);
+            Object.assign(my_char[slook.type][slook.name], slook);
             slook = {};
             lSlook = false;
         }
@@ -428,7 +440,7 @@ $('.trigger').on('text', function (e, text) {
         my_char.armed = 1;
         if(test) console.log('(armed=1)\n');
     }
-    if (my_char.action.act === '\\get' && my_char.action.command === my_char.weapon && text.match('^Ты берешь .*\.$')) {
+    if (my_char.action.act === '\\get' && my_char.action.command === my_char.weapon.name && text.match('^Ты берешь .*\.$')) {
         clearAction();
         if (my_char.armed === 0) {
             my_char.armed = 1;
@@ -437,7 +449,7 @@ $('.trigger').on('text', function (e, text) {
         if(test) console.log('(armed=1)\n');
     }
     if (text.match('^Ты вооружаешься .*\.$')) {
-        if (my_char.action.act === '\\wield' && my_char.action.command === my_char.weapon) clearAction();
+        if (my_char.action.act === '\\wield' && my_char.action.command === my_char.weapon.name) clearAction();
         my_char.armed = 2;
         if(test) console.log('(armed=2)\n');
     }
@@ -657,6 +669,21 @@ $('.trigger').on('input', function (e, text) {
             e.stopPropagation();
         }
     }
+    //смена оружия
+    command(e, 'weapon', text, function (args) {
+        args = args[1].toLowerCase().split(' ');
+
+        var weaponSet = new Set(['main', 'shoot', 'throw']);
+        if(!weaponSet.has(args[0])) {
+            var newCommand = 'weapon ' + args.join(' ');
+            //echo(`-->${newCommand}`);
+            send(newCommand);
+        }
+        if(args[0] === 'shoot') {
+
+        }
+    });
+
     //приказать всем
     command(e, 'ord(?:er)?', text, function (args) {
         args = args[1].toLowerCase().split(' ');
@@ -1507,18 +1534,20 @@ function checkBuffv2() {
         console.log("my_char.fullbuff:",my_char.fullbuff);
         console.log("my_char.buffs_needs:",my_char.buffs_needs);
     }
+    console.log(1);
     //чар чем-то занят - прерываем
     if (my_char.action.act === undefined && ["stand", "sit", "rest", "sleep"].indexOf(mudprompt.p2.pos)!=-1) {
         my_char.affChanged = false;
     } else {
         return;
     }
+    console.log(2);
     var fb = my_char.fullbuff.target === undefined ? false : true;
     var fb_all = my_char.fullbuff.all === undefined ? false : my_char.fullbuff.all;
     var fb_class = my_char.fullbuff.class;
     var fb_target = my_char.fullbuff.target;
     var targets = [];
-    
+    console.log(3);
     if(fb_target===undefined || fb_target==='self') {
         targets.push(my_char.name);
     } else if(fb_all) {
@@ -1529,7 +1558,7 @@ function checkBuffv2() {
     } else {
         targets.push(fb_target);
     }
-
+    console.log(4);
     /*  
     собирается список всех спелов 
     в случае прокачки спелов - только спелы чара
@@ -1537,7 +1566,13 @@ function checkBuffv2() {
     */
     var oSpells = {}; 
     //мои бафы
-    var spellsAndSkills = my_char.spells.concat(Object.keys(my_char.skills));
+    if(test) {
+        console.log(my_char);
+        console.log(Object.keys(my_char.spells));
+        console.log(Object.keys(my_char.skills));
+    }
+    var spellsAndSkills = Object.keys(my_char.spells).concat(Object.keys(my_char.skills));
+    if(test) console.log('->spellsAndSkills:', spellsAndSkills);
     for(let spell of spellsAndSkills) {
         if(test) console.log('-->spell/skill:',spell);
         //х.з. что с этим спелом дальше делать!
@@ -1654,7 +1689,7 @@ function checkBuffv2() {
                 //на цель не вешается, пытаемся сменить на своё
                 if(!buffs_list[spell_name].target && !buffs_list[spell_name].party && caster!=my_char.name) {
                     if(test) console.log("на цель не вешается, пытаемся сменить на своё");
-                    for(let my_spell of my_char.spells) {
+                    for(let my_spell in my_char.spells) {
                         if((my_spell[0]==spell_name || buffs_list[spell_name].ally.indexOf(my_spell[0])!=-1) 
                             && my_spell[1]<=my_char.level){
                             spell_to_cast = my_spell[0];
@@ -1944,10 +1979,10 @@ function checkEquip() {
     my_char.eqChanged = false;
 
     if (my_char.armed === 0 && my_char.action.act !== '\\get') {
-        doAct('\\get', my_char.weapon);
+        doAct('\\get', my_char.weapon.name);
     }
     if (my_char.armed === 1 && my_char.action.act !== '\\wield') {
-        doAct('\\wield', my_char.weapon);
+        doAct('\\wield', my_char.weapon.name);
     }
 }
 
@@ -2138,9 +2173,11 @@ function MemberSpell(member_name, member_level) {
 
 function Pchar(name, char, level) {
     if (test)
-        console.log(' -->Pchar() (name:' + name + ';weapon:' + (char===undefined?undefined:char.weapon) + ')');
+        console.log(' -->Pchar() (name:' + name + ';weapon:' + (char===undefined?undefined:char.weapons.weapon_main.name) + ')');
 
-    this.init = name===undefined ? false : true; 
+    if( char === undefined ) char = {};
+
+    this.init = name !== undefined; 
     this.afk = false;
 
     this.pract = false; //признак состояния прокачки скилов
@@ -2148,13 +2185,46 @@ function Pchar(name, char, level) {
     this.was_afk = null;
     this.was_fade = null;
 
-    this.name = name===undefined ? undefined : name;
-    this.level = level===undefined ? undefined : level;
+    this.name = name;
+    this.level = level;
 
     this.needsChanged = true; //проверить рулер бэйдж при входе
     this.ruler_badge = (char===undefined || char.clan!='ruler') ? undefined : false;
-    this.weapon = char===undefined ? undefined : char.weapon;
-    this.align = char===undefined ? undefined : char.align;
+    
+    this.weapon_main = char?.weapons?.weapon_main ?? {name: char?.weapon};
+    this.weapon_second = char?.weapons?.weapon_second;
+    this.shoot = char?.weapons?.range_shoot ?? {};
+    this.shoot = char?.weapons?.range_throw ?? {};
+    this.hold_equip = char?.weapons?.hold ?? '';
+    this.shield_equip = char?.weapons?.shield ?? '';
+    this.weapon_change = false;
+
+    this.weapon = this.weapon_main;
+    this.second = this.weapon_second;
+    /*
+    wield bow
+    Ты снимаешь красный чекан "Магодробитель".
+    Ты вооружаешься Титаническим луком Стрельца.
+    Титанический лук Стрельца становится частью тебя!
+
+    wear qui
+    Ты снимаешь счастливые кости.
+    Ты берешь в руки колчан.
+
+    shoot e.rab
+    Твоя вторая рука должна быть свободна!
+
+    wield war
+    Ты снимаешь Титанический лук Стрельца.
+    Ты вооружаешься красным чеканом "Магодробитель".
+    Красный чекан "Магодробитель" становится частью тебя!   
+
+    wear luck
+    Ты снимаешь колчан.
+    Ты берешь в руки счастливые кости.
+    */
+
+    this.align = char?.align;
     this.buffs_needs = char==undefined ? {} : char.buffs_needs;
     //[#armed] 0 - без оружия(оружие на земле), 1 - оружие в мешке, 2 - вооружен
     this.armed = false;
@@ -2162,8 +2232,8 @@ function Pchar(name, char, level) {
 
     this.affChanged = true; //проверить бафы
 
-    this.food = char===undefined ? undefined : char.food;
-    this.water = char===undefined ? undefined : char.water;
+    this.food = char?.food;
+    this.water = char?.water;
     this.thirst = 0;
     this.hunger = 0;
     this.lfood = false;
@@ -2460,7 +2530,7 @@ function getSkills(char, level) {
 }
 
 function getSpells(char, level) {
-    let spells = [];//, result = [];
+    let spells = [], result = [];
     if (char!==undefined && char.clan === 'invader') {
         spells.push(['shadow cloak',10]);
         spells.push(['shadowlife',30]);
@@ -2470,6 +2540,9 @@ function getSpells(char, level) {
     if (char!==undefined && char.clan === 'ruler') {
         spells.push(['ruler aura',10]);
         spells.push(['ruler badge',10]);
+    }
+    if (char!==undefined && char.clan === 'hunter') {
+        spells.push(['wolf',20]);spells.push(['detect trap',25]);spells.push(['find object',25]);
     }
     if (char!==undefined && char.class === 'cleric') {
         spells.push(['heal',2]);spells.push(['harm',2]);spells.push(['create water',3]);spells.push(['refresh',7]);spells.push(['create food',8]);spells.push(['observation',10]);spells.push(['cure blindness',11]);spells.push(['detect evil',11]);spells.push(['detect good',11]);spells.push(['shield',12]);spells.push(['blindness',14]);spells.push(['faerie fire',15]);spells.push(['detect magic',15]);spells.push(['fireproof',16]);spells.push(['earthquake',19]);spells.push(['cure disease',19]);spells.push(['armor',20]);spells.push(['bless',20]);spells.push(['continual light',21]);spells.push(['poison',22]);spells.push(['summon',22]);spells.push(['cure poison',23]);spells.push(['weaken',24]);spells.push(['infravision',25]);spells.push(['calm',26]);spells.push(['heating',27]);spells.push(['dispel evil',27]);spells.push(['dispel good',27]);spells.push(['spring',27]);spells.push(['control weather',28]);spells.push(['sanctuary',29]);spells.push(['fly',30]);spells.push(['locate object',30]);spells.push(['enchant armor',30]);spells.push(['awakening',31]);spells.push(['faerie fog',31]);spells.push(['teleport',32]);spells.push(['remove curse',32]);spells.push(['pass door',32]);spells.push(['word of recall',32]);spells.push(['cancellation',32]);spells.push(['curse',33]);spells.push(['plague',33]);spells.push(['enhanced armor',33]);spells.push(['remove fear',34]);spells.push(['frenzy',34]);spells.push(['portal',35]);spells.push(['learning',35]);spells.push(['mental block',35]);spells.push(['gate',35]);spells.push(['mind light',36]);spells.push(['identify',36]);spells.push(['stone skin',36]);spells.push(['ray of truth',37]);spells.push(['bluefire',37]);spells.push(['compound',37]);spells.push(['superior heal',38]);spells.push(['slow',38]);spells.push(['protective shield',38]);spells.push(['protection heat',39]);spells.push(['giant strength',39]);spells.push(['dragon skin',40]);spells.push(['healing light',41]);spells.push(['cursed lands',41]);spells.push(['sanctify lands',41]);spells.push(['flamestrike',42]);spells.push(['energy drain',42]);spells.push(['dispel affects',43]);spells.push(['protection cold',44]);spells.push(['severity force',45]);spells.push(['group defense',45]);spells.push(['improved detect',45]);spells.push(['holy word',48]);spells.push(['inspire',49]);spells.push(['cure corruption',50]);spells.push(['aid',53]);spells.push(['nexus',55]);spells.push(['master healing',58]);spells.push(['desert fist',58]);spells.push(['blade barrier',60]);spells.push(['group heal',65]);spells.push(['restoring light',71]);spells.push(['benediction',80]);//spells.push(['detect invis',17]);
@@ -2528,13 +2601,20 @@ function getSpells(char, level) {
         spells.push(['dispel affects',24]);
         spells.push(['evil spirit',33]);
     }
-    return spells
+    if (char!==undefined && char.class === 'samurai') {
+        spells.push(['cure blindness',20]);spells.push(['refresh',28]);spells.push(['cure poison',35]);spells.push(['calm',60]);
+    }
+    spells = spells
         .filter(function(item, index, array){
             return item[1]<=level;
         })
         .map(function(item, index, array){
             return item[0]
         });
+    for(let spell of spells) {
+        result[spell] = {};
+    }
+    return result;
 }
 
 function getBuffClass(text) {
@@ -2794,6 +2874,9 @@ var buffPatterns = [
     ['berserk', '^Ты уже в состоянии боевой ярости!$', true, true],
     ['berserk', '^Тебе не удается войти в боевую ярость.$', false, true],
     ['berserk', '^Твой пульс замедляется, и боевая ярость пропадает.$', false, false],
+    ['detect trap', '^Теперь ты будешь замечать чужие ловушки\.$', true, true],
+    ['detect trap', '^Ты и так в состоянии отличить бревно от капкана\.$', true, true],
+    ['detect trap', '^Ты теряешь способность замечать чужие ловушки\.$', false, false],
 ];
 var pets = {
     'Легенда': {
@@ -2864,6 +2947,9 @@ var buffs_list = {
     
     //invader:
     'shadow cloak': new Spell('shadow cloak', 'S', 'cln', 'protective'),
+
+    //hunter
+    'detect trap': new Spell('detect trap', 'd', 'cln', 'protective'),
 
     //ruler:
     'ruler aura': new Spell('ruler aura', 'A', 'cln', 'protective',false,false,[],['detect invis', 'detect hide']),
