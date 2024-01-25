@@ -30,10 +30,10 @@ var chars = {
     'Miyamoto': {
         name: 'Miyamoto',
         align: 'e',
-        weapon: 'katana',//'warhammer',//'sword',//'hickey', //'арапник',
+        weapon: 'swiftbird',//lightsaber 'warhammer',//'sword',//'hickey', //'арапник',
         weapons: {
-            weapon_main: { name: 'katana' },//'warhammer'
-            weapon_second: {},
+            weapon_main: { name: 'swiftbird' },
+            weapon_second: { name: 'eyed' },
             range_shoot: { name: 'bow', type: 'bow'}, //type: bow, two-handed
             range_throw: { name: 'spear'},
             hold: 'luck',
@@ -218,24 +218,30 @@ $('.trigger').on('text', function (e, text) {
         }
 
         if(text.match('^См. также справка .*\.$')) {
-            console.log('[slook]:', slook);
-            console.log('my_char['+slook.type+']['+slook.name+']',my_char[slook.type][slook.name]);
+            console.log('[slook]:');console.log(slook);
+            if(my_char[slook.type]==undefined) my_char[slook.type] = {};
+            if(my_char[slook.type][slook.name]==undefined) my_char[slook.type][slook.name] = {};
             Object.assign(my_char[slook.type][slook.name], slook);
+            console.log('my_char['+slook.type+']['+slook.name+']',my_char[slook.type][slook.name]);
             slook = {};
             lSlook = false;
         }
         return;
     }
     //качаем haggle
-    if(text.match("Ты покупаешь свечу за ")){
-        send('sell candle');
+    //if(text.match("Ты покупаешь свечу за ")){
+        //send('sell candle');
+    if(text.match("Ты покупаешь факел за ")){
+            send('sell torch');
     }
-    if(text.match("Ты продаешь свечу за ")){
-        send('buy candle');
+    if(text.match("Ты продаешь факел за ")){
+        send('buy torch');
     }
+    //Ты кросс-блокируешь атаку пикси.
+    //Теперь ты гораздо лучше владеешь искусством 'cross block'!
     match = (/^Ты учишься на своих ошибках, и твое умение ('.*') совершенствуется.$|^Теперь ты гораздо лучше владеешь искусством ('.*')!$/).exec(text);
     if(match){
-        console.log('march',match);
+        console.log('match',match);
         echo('-->[slook '+(match[1]==undefined?match[2]:match[1])+']');
         send('slook '+(match[1]==undefined?match[2]:match[1]));
     }
@@ -429,30 +435,96 @@ $('.trigger').on('text', function (e, text) {
     if (text.match('^Ты надеваешь .* как щит.$')) {
         my_char.shield = true;
     }
+    //-------------------------------------------------------------------------//
     //[#weapon]
-    if (text.match(' у тебя оружие, и оно упало на землю!$')) {
+    //if (text.match(' у тебя оружие, и оно упало на землю!$')) {
+    //Гангстер ВЫБИЛ у тебя световой меч Миямото, и он падает на пол!
+    if (text.match('ВЫБИЛ.? у тебя .*, и он.? пада.?т на .*!')) {
+        console.log('[#weapon]:'+text+'\n');
+        console.log('[#weapon] armed:'+my_char.armed+'\n');
+        console.log('[#weapon] armed_second:'+my_char.armed_second+'\n');
+
         my_char.eqChanged = true;
-        my_char.armed = 0;
-        if(test) console.log('(armed=0)\n');
+        if(!my_char.armed || my_char.armed==2) {
+            my_char.armed = 0;
+            //if(test) 
+            console.log('[#weapon](set armed=0)\n');
+        }
+        if(my_char.armed_second==3){
+            my_char.armed_second = 0;
+           //if(test) 
+           console.log('[#weapon](set armed_second=0)\n');
+        }
     }
     if (text.match(' ВЫБИЛ.? у тебя оружие!$')) {
+        console.log('[#weapon]:'+text+'\n');
+        console.log('[#weapon] armed:'+my_char.armed+'\n');
+        console.log('[#weapon] armed_second:'+my_char.armed_second+'\n');
+
         my_char.eqChanged = true;
         my_char.armed = 1;
-        if(test) console.log('(armed=1)\n');
+        echo('<span style="color:red;">*******NEED FIX*********</span>');
+        //if(test) 
+        console.log('[#weapon](set armed=1)*******NEED FIX*********\n');
     }
-    if (my_char.action.act === '\\get' && my_char.action.command === my_char.weapon.name && text.match('^Ты берешь .*\.$')) {
+    if (my_char.action.act === '\\get' && text.match('^Ты берешь .*\.$')) {
+        console.log('[#weapon]:'+text+'\n');
+        console.log('[#weapon] armed:'+my_char.armed+'\n');
+        console.log('[#weapon] armed_second:'+my_char.armed_second+'\n');
+
         clearAction();
         if (my_char.armed === 0) {
             my_char.armed = 1;
             my_char.eqChanged = true;
+            //if(test) 
+            console.log('[#weapon](set armed=1)\n');
         }
-        if(test) console.log('(armed=1)\n');
+        if (my_char.armed_second === 0) {
+            my_char.armed_second = 1;
+            my_char.eqChanged = true;
+            //if(test) 
+            console.log('[#weapon](set armed_second=1)\n');
+        }
     }
-    if (text.match('^Ты вооружаешься .*\.$')) {
-        if (my_char.action.act === '\\wield' && my_char.action.command === my_char.weapon.name) clearAction();
-        my_char.armed = 2;
-        if(test) console.log('(armed=2)\n');
+
+    //Ты вооружаешься глазастому кинжалу Миямото как основным оружием.
+    //Ты вооружаешься глазастым кинжалом Миямото как вторичным оружием.
+    match = (/^Ты вооружаешься .*?(?<main> как основным оружием)?(?<second> как вторичным оружием)?\.$/).exec(text);
+    if (match) {
+        console.log('[#weapon]:'+text+'\n');
+        console.log('[#weapon] armed:'+my_char.armed+'\n');
+        console.log('[#weapon] armed_second:'+my_char.armed_second+'\n');
+
+        if(match.groups && match.groups.main) {
+            my_char.armed_second = 3;
+            //if(test) 
+            console.log('[#weapon](set armed_second=3)\n');
+            return;
+        }
+        if(match.groups && match.groups.second
+            && my_char.action.act === '\\second' && my_char.action.command === my_char.second.name) {
+            clearAction();
+            my_char.armed_second = 2;
+            //if(test) 
+            console.log('[#weapon](set armed_second=2)\n');
+            return;
+        }
+
+        if (my_char.action.act === '\\wield' && my_char.action.command === my_char.weapon.name) {
+            clearAction();
+            my_char.armed = 2;
+            //if(test) 
+            console.log('[#weapon](set armed=2)\n');
+            if(my_char.armed_second!==false && my_char.armed_second===3)
+                my_char.armed_second=1;
+                //if(test) 
+                console.log('[#weapon](set armed=1)\n');
+                my_char.eqChanged = true;
+            }
     }
+    //[#armed] 0 - без оружия(оружие на земле), 1 - оружие в мешке, 2 - вооружен
+    //[#armed_second] false; 0 - на земле, 1 - инвентарь, 2 - вооружен, 3 - первичное
+    //-------------------------------------------------------------------------//
 
     if (text.match('^Ты не можешь сконцентрироваться.$')
         || text.match('^Увы, никого с таким именем в этой местности обнаружить не удается.$')
@@ -670,7 +742,8 @@ $('.trigger').on('input', function (e, text) {
         }
     }
     //смена оружия
-    command(e, 'weapon', text, function (args) {
+    /* command(e, 'weapon', text, function (args) {
+        if(args[1]==='') return;
         args = args[1].toLowerCase().split(' ');
 
         var weaponSet = new Set(['main', 'shoot', 'throw']);
@@ -682,6 +755,12 @@ $('.trigger').on('input', function (e, text) {
         if(args[0] === 'shoot') {
 
         }
+    }); */
+
+    // Установить оружие (см. тригер выше), например: /weapon меч
+    command(e, '/weapon', text, function (args) {
+        weapon = args[1];
+        echo('>>> Твое оружие теперь ' + weapon + "\n");
     });
 
     //приказать всем
@@ -812,14 +891,7 @@ $('.trigger').on('input', function (e, text) {
         victim = args[1];
         echo('>>> Твоя мишень теперь ' + victim + "\n");
     });
-    
-
-    // Установить оружие (см. тригер выше), например: /weapon меч
-    command(e, '/weapon', text, function (args) {
-        weapon = args[1];
-        echo('>>> Твое оружие теперь ' + weapon + "\n");
-    });
-
+ 
     // Опознать вещь из сумки, например: /iden кольцо
     command(e, '/iden', text, function (args) {
         send('взять ' + args[1] + ' сумка');
@@ -1534,20 +1606,20 @@ function checkBuffv2() {
         console.log("my_char.fullbuff:",my_char.fullbuff);
         console.log("my_char.buffs_needs:",my_char.buffs_needs);
     }
-    console.log(1);
+    //console.log(1);
     //чар чем-то занят - прерываем
     if (my_char.action.act === undefined && ["stand", "sit", "rest", "sleep"].indexOf(mudprompt.p2.pos)!=-1) {
         my_char.affChanged = false;
     } else {
         return;
     }
-    console.log(2);
+    //console.log(2);
     var fb = my_char.fullbuff.target === undefined ? false : true;
     var fb_all = my_char.fullbuff.all === undefined ? false : my_char.fullbuff.all;
     var fb_class = my_char.fullbuff.class;
     var fb_target = my_char.fullbuff.target;
     var targets = [];
-    console.log(3);
+    //console.log(3);
     if(fb_target===undefined || fb_target==='self') {
         targets.push(my_char.name);
     } else if(fb_all) {
@@ -1558,7 +1630,7 @@ function checkBuffv2() {
     } else {
         targets.push(fb_target);
     }
-    console.log(4);
+    //console.log(4);
     /*  
     собирается список всех спелов 
     в случае прокачки спелов - только спелы чара
@@ -1981,6 +2053,12 @@ function checkEquip() {
     if (my_char.armed === 0 && my_char.action.act !== '\\get') {
         doAct('\\get', my_char.weapon.name);
     }
+    if (my_char.armed_second === 0 && my_char.action.act !== '\\get') {
+        doAct('\\get', my_char.second.name);
+    }
+    if (my_char.armed_second === 1 && my_char.armed === 2 && my_char.action.act !== '\\second') {
+        doAct('\\second', my_char.second.name);
+    }
     if (my_char.armed === 1 && my_char.action.act !== '\\wield') {
         doAct('\\wield', my_char.weapon.name);
     }
@@ -2228,6 +2306,8 @@ function Pchar(name, char, level) {
     this.buffs_needs = char==undefined ? {} : char.buffs_needs;
     //[#armed] 0 - без оружия(оружие на земле), 1 - оружие в мешке, 2 - вооружен
     this.armed = false;
+    //[#armed_second] false; 0 - на земле, 1 - инвентарь, 2 - вооружен, 3 - первичное
+    this.armed_second = false;
     this.shield = true;
 
     this.affChanged = true; //проверить бафы
