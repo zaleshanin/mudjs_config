@@ -1493,6 +1493,9 @@ function checking() {
 }
 function checkKach() {
     if(test) console.warn("---->checkKach()");
+    if(counterSkill.attacks>0 
+        && my_char.skills['counter'].progress<100); 
+        echo(`[counter:a=${counterSkill.attacks};c=${counterSkill.counter};i=${counterSkill.improves}]`);
     let result = '[kach]';
 
     if(my_char.action.act != undefined)
@@ -1563,6 +1566,10 @@ function checkKach() {
             return result;
         }
         
+        if(skills[skill].act===null) {
+            result += `[${msg}:${my_char.skills[skill].progress}% passive]`;
+            continue;
+        }
 
         result += `[${msg}:${my_char.skills[skill].progress}%-->run]`;
         doAct(
@@ -3369,6 +3376,10 @@ var skills = {
             act: 'berserk',
         },
         pos: 'fight',
+    },
+    counter: {
+        act: null,
+        post: null
     }
 }
 var position_commands = [
