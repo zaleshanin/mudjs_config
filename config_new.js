@@ -1,4 +1,7 @@
 /*TODO
+- запоминать параметры комнаты:
+    - вода (напиться, набрать контейнер)
+    - места отдыха
 - вынести список говорунов в переменную/массив [#говоруны]
 - вынести #prompt и #battleprompt в chars, на случай если у чаров разный prompt
 
@@ -42,7 +45,9 @@ var chars = {
         class: 'samurai',
         clan: 'hunter',
         water: 'barrel',//'flask',
+        water_container: 'bag',
         food: 'rusk',
+        food_container: 'bag:food',
         buffs_needs: {
             //(всегда, при фулбафе, всегда на члена группы, при фулбафе на члена группы)
             'ruler aura': new Buff_need(true, true, false, false),
@@ -161,6 +166,16 @@ var lSlook = false;
  *-------------------------------------------------------------------------*/
 $('.trigger').on('text', function (e, text) {
     if(text==='') return;
+    //качаем throw spear
+/*     if(kach) {
+        if(text.match('Белый олень прискакал с востока.')) {
+            send('wield spear|e|throw spear west stag|get all.spear');
+        }
+        if(text.match('Белый олень прискакал с запада.')) {
+            send('wield spear|w|throw spear east stag|get all.spear');
+        }
+    }
+ */    
     //качаем lore
     if(text.match('^Ты пытаешься вспомнить хоть что-то из древних преданий про эту вещь, но безуспешно.$|^.* -- это .* [0-9]{1,3} уровня.$')){
         if(test) console.log("[lore detected]");
@@ -439,7 +454,7 @@ $('.trigger').on('text', function (e, text) {
     //[#weapon]
     //if (text.match(' у тебя оружие, и оно упало на землю!$')) {
     //Гангстер ВЫБИЛ у тебя световой меч Миямото, и он падает на пол!
-    if (text.match('ВЫБИЛ.? у тебя .*, и он.? пада.?т на .*!')) {
+    if (text.match('ВЫБИЛ.? у тебя .*, и он.? пада.?т .*!')) {
         console.log('[#weapon]:'+text+'\n');
         console.log('[#weapon] armed:'+my_char.armed+'\n');
         console.log('[#weapon] armed_second:'+my_char.armed_second+'\n');
@@ -595,20 +610,32 @@ $('.trigger').on('text', function (e, text) {
     }
     if (text.match('^Ты взмахиваешь руками, и с неба падает манна небесная.$')
         || text.match('^Волею Дворкина тебе в руки падает манна небесная на пропитание.$')
-        || text.match('^Ты берешь соленый сухарик из пакета сухарей.$')
         || text.match('^Ты прищуриваешься и выращиваешь у себя на ладони магический гриб.$')//Ты взмахиваешь руками и создаешь магический гриб.
     ) {
         my_char.lfood = 1;
         my_char.needsChanged = true;
-        if (my_char.action.command === 'create food'
-            || (my_char.action.act == 'get rusk pack' && my_char.food=="rusk"))
+        if (my_char.action.command === 'create food')
             clearAction();
+    }
+    if(text.match('^Ты берешь .* из .*\.$')) {
+        if(my_char.action.act == 'get ' + my_char.food + ' ' + my_char.food_container) {
+            my_char.lfood = 1;
+            my_char.needsChanged = true;
+            clearAction();
+        }
+        if(my_char.action.act == 'get ' + my_char.water + ' ' + my_char.water_container) {
+            my_char.lwater = 1;
+            my_char.water_location = 'inv';
+            my_char.needsChanged = true;
+            clearAction();
+        }
     }
 
     if (text.match(' родник высыхает.$')) {
         my_char.lwater = false;
     }
-    if (text.match('^Ты не находишь это.$') || text.match('^Здесь пусто.$')) {
+    //Ты не находишь этого.
+    if (text.match('^Ты не находишь это(го)?.$') || text.match('^Здесь пусто.$')) {
         if (my_char.action.act !== undefined)
             if (my_char.action.act === 'drink') {
                 clearAction();
@@ -643,8 +670,16 @@ $('.trigger').on('text', function (e, text) {
     }
     if (text.match('^Ты больше не чувствуешь жажды.$')) {
         my_char.thirst = 0;
-        my_char.lwater = false;
+        //my_char.lwater = false;
         my_char.needsChanged = true;
+    }
+    if(text.match('^Ты кладешь .* в .*.$')) {
+        if(my_char.action.act == 'put ' + my_char.water + ' ' + my_char.water_container) {
+            //TODO: отслеживать жидкость в сосуде. Наполнять если пустой по возможности.
+            my_char.lwater = false;
+            my_char.water_location = my_char.water_container;
+            clearAction();
+        }
     }
 
     //[#else]
@@ -1272,7 +1307,7 @@ function clearAction() {
 function promptRecived(afk) {
     if(test) {
         console.log('prompt(ok)');
-        echo("["+mudprompt.vnum+"]");
+        //echo("["+mudprompt.vnum+"]");
     }
 
     if (!my_char.init || my_char.name != getChar().sees) {
@@ -1303,6 +1338,8 @@ function promptRecived(afk) {
 
 //[#checks] [#проверялки]
 function checking() {
+    let message = '';
+    if(test) message += "["+mudprompt.vnum+"]";
     if(test) console.log(' -->checking()');
     if(test) console.log(' -->status:'
         + (my_char.afk ? '[afk]' : '')
@@ -1337,7 +1374,8 @@ function checking() {
         
         kachPrompt += checkKach();
 
-        echo(kachPrompt);
+        //echo(kachPrompt);
+        message += kachPrompt;
     }
 
     if(my_char.init) echo(my_char.attack_spells.get_prompt());
@@ -1362,7 +1400,8 @@ function checking() {
         echo(azazelStr);
 
     if (my_char.hunger + my_char.thirst > 0)
-        echo(needsStatus);
+        message += needsStatus;
+        //echo(needsStatus);
 
     if(my_char.action.act != undefined) echo('[act:' + my_char.action.act + ' command:'+my_char.action.command+' target:'+my_char.action.target+']');
 
@@ -1373,7 +1412,7 @@ function checking() {
         && (my_char.last_pose || my_char.was_afk))
         restoreStatus();
     
-        
+    if(message!=='') echo(message);
 }
 function checkKach() {
     if(test) console.warn("---->checkKach()");
@@ -1401,7 +1440,8 @@ function checkKach() {
 
         //пропускаем если 100%
         if(my_char.skills[skill].progress >= 100) {
-            result += `[${msg}:${my_char.skills[skill].progress}%]`;
+            //result += `[${msg}:${my_char.skills[skill].progress}%]`;
+            if(test) console.log(`checkKach [${msg}:${my_char.skills[skill].progress}%] skipped`);
             continue;
         }
 
@@ -2069,6 +2109,10 @@ function checkNeeds() {
         + ' thirst:' + my_char.thirst + ' w:' + my_char.lwater + ')');
     if (my_char.hunger + my_char.thirst == 0 && (my_char.ruler_badge===true || my_char.ruler_badge===undefined)) {
         my_char.needsChanged = false;
+        // поели, попили, раскладываем всё по местам (бочку в сумку)
+        if(my_char.water_container!=='' && my_char.water_location!==my_char.water_container) {
+            doAct('put ' + my_char.water + ' ' + my_char.water_container);
+        }
         return;
     }
     if (my_char.action.act !== undefined) {
@@ -2105,11 +2149,10 @@ function checkNeeds() {
                     doAct('cast', 'create food');
                     return;
                 }
-            }
-            if (my_char.food === 'rusk') {
-                if (checkPose('rest')) {
+            } else if (my_char.food !== '') {
+                if (checkPose('rest') && my_char.food_container!='') {
                     my_char.needsChanged = true;
-                    doAct('get rusk pack');
+                    doAct('get ' + my_char.food + ' ' + my_char.food_container);
                     return;
                 }
             }
@@ -2125,8 +2168,8 @@ function checkNeeds() {
     }
     //[#drink]
     if (my_char.thirst) {
-        if(test) console.log("-->хочу пить!(lwater:"+my_char.lwater+")");
-        if (!my_char.lwater && my_char.water !== 'barrel') {
+        if(test) console.log("-->хочу пить!(water:"+my_char.water+" lwater:"+my_char.lwater+" water_location:"+my_char.water_location+")");
+        if (!my_char.lwater) {
             if (my_char.water === 'spring') {
                 if (checkPose('stand')) {
                     my_char.needsChanged = true;
@@ -2134,8 +2177,11 @@ function checkNeeds() {
                     return;
                 }
             }
-            if (my_char.water === 'flask' && my_char.hasSpell("create water")) {
-                if(test) console.log('->(water === flask)');
+            if (my_char.water_container!=='' && my_char.water_location!=='inv') {
+                doAct('get ' + my_char.water + ' ' + my_char.water_container);
+                return;
+            }
+            if (my_char.hasSpell("create water")) {
                 if(test) console.log('-->(create water=' + my_char.spells.indexOf('create water') + ')');
                 if(test) console.log(my_char.spells);
                 if (my_char.spells.indexOf('create water') !== undefined) {
@@ -2146,8 +2192,7 @@ function checkNeeds() {
                         return;
                     }
                 }
-
-            } 
+            }
         } else {
             if (checkPose('rest')) {
                 my_char.needsChanged = true;
@@ -2155,7 +2200,7 @@ function checkNeeds() {
                 return;
             }
         }
-    }
+    } 
     //[#ruler badge]
     if (my_char.ruler_badge===false && my_char.hasSpell("ruler badge")
         && my_char.action.act==undefined) {
@@ -2318,11 +2363,15 @@ function Pchar(name, char, level) {
     this.hunger = 0;
     this.lfood = false;
     this.lwater = false;
+    //сосуд в инвентаре или в конейнере
+    this.water_container = char.water_container;
+    this.water_location = char.water_container===''?'inv':char.water_container;
+    this.food_container = char.food_container===''?'inv':char.food_container;
 
     //[#action] act - команда к выполеннию (н-р: \\get, \\wield, cast)
     //          command - 'acid blast' | target 
     //          target - цель
-    this.action = new Action();
+    this.action = new Action(); 
 
     this.ordersChange = false;
 
