@@ -161,6 +161,12 @@ var timeout = false;
 var herbCooldown = false;
 var slook = {};
 var lSlook = false;
+var counterSkill = {
+    attacks: 0,
+    counter: 0,
+    improves: 0,
+    opp: 100,
+};
 /*--------------------------------------------------------------------------
  * Триггера - автоматические действия как реакция на какую-то строку в мире.
  *-------------------------------------------------------------------------*/
@@ -246,22 +252,26 @@ $('.trigger').on('text', function (e, text) {
     //качаем haggle
     //if(text.match("Ты покупаешь свечу за ")){
         //send('sell candle');
-    if(text.match("Ты покупаешь факел за ")){
+    /* if(text.match("Ты покупаешь факел за ")){
             send('sell torch');
     }
     if(text.match("Ты продаешь факел за ")){
         send('buy torch');
-    }
+    } */
     //Ты кросс-блокируешь атаку пикси.
     //Теперь ты гораздо лучше владеешь искусством 'cross block'!
     match = (/^Ты учишься на своих ошибках, и твое умение ('.*') совершенствуется.$|^Теперь ты гораздо лучше владеешь искусством ('.*')!$/).exec(text);
     if(match){
         console.log('match',match);
-        echo('-->[slook '+(match[1]==undefined?match[2]:match[1])+']');
-        send('slook '+(match[1]==undefined?match[2]:match[1]));
+        let slookSkill = match[1]==undefined?match[2]:match[1];
+        echo('-->[slook '+slookSkill+']');
+        send('slook '+slookSkill);
+        if(kach && slookSkill === "'counter'") {
+            counterSkill.improves++;
+        }
     }
     // *** качаем wand *** //
-    if(text.match("Ты берешь арфу из большого камня.")){
+    /* if(text.match("Ты берешь арфу из большого камня.")){
         hasHarp=true;
         if (my_char.action.act === 'get') {
             clearAction();
@@ -281,7 +291,16 @@ $('.trigger').on('text', function (e, text) {
         if (my_char.action.act === 'use') {
             clearAction();
         }
-    }
+    } */
+    /*  if(text.match("Твоя арфа разваливается на куски.")){
+            echo('-->[new harp]');
+            send('get harp rock|wear harp|use harp');
+        }
+        if(text.match("Ты взмахиваешь арфой на себя.")){
+            echo('-->[s|s|use harp]');
+            send('s|s|use harp');
+        }
+    */
     // *** end wand *** //
 
     if(text.match("Ты садишься отдыхать.|Ты садишься .* и отдыхаешь.")){
@@ -305,15 +324,6 @@ $('.trigger').on('text', function (e, text) {
         herbCooldown=false;
     }
 
-/*  if(text.match("Твоя арфа разваливается на куски.")){
-        echo('-->[new harp]');
-        send('get harp rock|wear harp|use harp');
-    }
-    if(text.match("Ты взмахиваешь арфой на себя.")){
-        echo('-->[s|s|use harp]');
-        send('s|s|use harp');
-    }
-*/
     match = (/^ *сила *([0-9]{1,2}) \(из ([0-9]{1,2})\) *сложение *([0-9]{1,2}) \(из ([0-9]{1,2})\) *ловкость *([0-9]{1,2}) \(из ([0-9]{1,2})\)$/).exec(text);
     if(match) {
         str = Number(match[1]);
@@ -351,8 +361,14 @@ $('.trigger').on('text', function (e, text) {
     //[#prompt] + [#battleprompt] example: <1111/1111 2222/2222 333/333 [time][exits]>[0W0D]
     //промпт тестера  <3084/3084зд 4800/4800ман 756/756шг 3939оп Вых:СВЮЗ>
     //                <3084/3084зд 4309/4800ман 756/756шг 3939оп Вых:СВЮЗ> [100%:90%]
-    match = (/^(<([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) \[(.*)]\[.*]>\[.*](\([0-9]{1,3}%:[0-9]{1,3}%\))?)|(<([0-9]{1,5})\/([0-9]{1,5})зд ([0-9]{1,5})\/([0-9]{1,5})ман ([0-9]{1,5})\/([0-9]{1,5})шг ([0-9]{1,5})оп Вых:.*>( \[[0-9]{1,3}%:[0-9]{1,3}%\])?)$/).exec(text);
+    match = (/^(<([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) \[(.*)]\[.*]>\[.*](\([0-9]{1,3}%:(?<opp>[0-9]{1,3})%\))?)|(<([0-9]{1,5})\/([0-9]{1,5})зд ([0-9]{1,5})\/([0-9]{1,5})ман ([0-9]{1,5})\/([0-9]{1,5})шг ([0-9]{1,5})оп Вых:.*>( \[[0-9]{1,3}%:[0-9]{1,3}%\])?)$/).exec(text);
     if (match) {
+        if(kach && match.groups && match.groups.opp) {
+            counterSkill.opp = match.groups.opp;
+            if(kach && my_char.action.act==undefined) {
+                doAct('flee');
+            }
+        }
         promptRecived(false);
         return;
     }
@@ -450,6 +466,67 @@ $('.trigger').on('text', function (e, text) {
     if (text.match('^Ты надеваешь .* как щит.$')) {
         my_char.shield = true;
     }
+    //-------------------------------------------------------------------------//
+    if(kach) {
+        //[#counter]
+        /*
+            - нападает вор - убегаем
+            - убежали - ждем вора
+            - не получилось убежать - убегаем
+            - уронились - встаём (выносим за кач)
+            - если у вора мало жизни, бежим в северо-западный угол вокруг всей доски
+        */
+        if(test)console.log('kach->counter:' + positions.indexOf(mudprompt.p2.pos));
+        if(text.match("^Ты пронзительно кричишь 'Помогите! На меня напал вор!'$")) {
+            if(test)console.log('kach->counter: attack trigger');
+            counterSkill.attacks++;
+            if(checkPose('fight'))
+                doAct('flee');
+        }
+        if(text.match("^Ты направляешь удар вора против него!$")) {
+            if(test)console.log('kach->counter: counter trigger');
+            counterSkill.counter++;
+        }
+        if(text.match("^Ты убегаешь с поля битвы!$")) {
+            if(test)console.log('kach->counter: flee trigger');
+
+            if(my_char.action.act === 'flee') 
+                clearAction();
+            
+            if(30 > counterSkill.opp) {
+                if(checkPose('stand')) send('run WSENW');
+            }
+        }
+        if(text.match("^Это будет слишком большим позором для тебя!$")) {
+            if(test)console.log('kach->counter: samurai trigger');
+
+            if(my_char.action.act === 'flee') 
+                clearAction();
+
+            if(checkPose('fight'))
+                doAct('flee');
+        }
+        if(text.match("^Ты поднимаешься и встаешь, готовясь атаковать.$")) {
+            if(my_char.action.act === 'stand') 
+                clearAction();
+
+            if(checkPose('fight'))
+                doAct('flee');
+        }
+
+
+        //[/#counter]
+    }
+    if(text.match("^Ты не можешь удержать равновесие и неуклюже валишься на землю.$")) {
+        if(test)console.log('---->: drop trigger');
+        if(my_char.action.act === 'flee') {
+            clearAction();
+            send("\\");
+        }
+
+        doAct('stand');
+    }
+
     //-------------------------------------------------------------------------//
     //[#weapon]
     //if (text.match(' у тебя оружие, и оно упало на землю!$')) {
@@ -1422,6 +1499,7 @@ function checkKach() {
         return '';
 
     for(let skill in my_char.skills) {
+        if(test) console.log('---->',skill);
         //пропускаем если нет парамтров для прокачки
         let msg = skill;
         if(!my_char.skills[skill]) {
@@ -1479,7 +1557,7 @@ function checkKach() {
             return result;
         }
         //проверяем pos
-        if(!checkPose(skills[skill].pos)) {
+        if(skills[skill] && skills[skill].pos && !checkPose(skills[skill].pos)) {
             if(test) console.log("      -->skip: position");
             result += `[${msg}:${my_char.skills[skill].progress}% req:${skills[skill].pos}]`;
             return result;
@@ -2641,6 +2719,7 @@ function getSkills(char, level) {
         askills.push(['herbs', 12]);
         askills.push(['berserk', 20]);
         askills.push(['lore', 22]);
+        askills.push(['counter', 28]);
     }
 
     askills = askills
