@@ -365,7 +365,7 @@ $('.trigger').on('text', function (e, text) {
     if (match) {
         if(kach && match.groups && match.groups.opp) {
             counterSkill.opp = match.groups.opp;
-            if(kach && my_char.action.act==undefined) {
+            if(kach && my_char.action.act === undefined) {
                 doAct('flee');
             }
         }
