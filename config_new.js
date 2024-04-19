@@ -30,9 +30,15 @@ var str, con, dex, wis, int, cha;
 var str_max, con_max, dex_max, wis_max, int_max, cha_max;
 var counter=0, total=0;
 var chars = {
+    // 'Ash': {
+    //     name: 'Ash',
+    //     align: 'e',
+    //     weapon: 'tickler',//'electrum',
+    //     class: 'vampire';
+    // },
     'Miyamoto': {
         name: 'Miyamoto',
-        align: 'e',
+        align: 'n',
         weapon: 'swiftbird',//lightsaber 'warhammer',//'sword',//'hickey', //'арапник',
         weapons: {
             weapon_main: { name: 'swiftbird' },
@@ -493,9 +499,19 @@ $('.trigger').on('text', function (e, text) {
             if(my_char.action.act === 'flee') 
                 clearAction();
             
-            if(30 > counterSkill.opp) {
+            if(mudprompt.vnum===4200) {
+                if(checkPose('stand')) send('run W');
+            }
+
+            if(40 > counterSkill.opp) {
                 if(checkPose('stand')) send('run WSENW');
             }
+
+        }
+        match = (/^Вор сбежал на (?<direction>.*)\.$/).exec(text);
+        if(match && match.groups && match.groups.direction) {
+            if(test) console.log('kach->counter: try to follow thief: ->', match.groups.direction)
+            if(checkPose('stand')) send(match.groups.direction);
         }
         if(text.match("^Это будет слишком большим позором для тебя!$")) {
             if(test)console.log('kach->counter: samurai trigger');
@@ -523,8 +539,8 @@ $('.trigger').on('text', function (e, text) {
             clearAction();
             send("\\");
         }
-
-        doAct('stand');
+        if(my_char.action.act===undefined)
+            doAct('stand');
     }
 
     //-------------------------------------------------------------------------//
