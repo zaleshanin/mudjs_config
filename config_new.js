@@ -39,9 +39,21 @@ var chars = {
     'Miyamoto': {
         name: 'Miyamoto',
         align: 'n',
-        weapon: 'swiftbird',//lightsaber 'warhammer',//'sword',//'hickey', //'арапник',
+        weapon: 'lightsaber',//swiftbird 'warhammer',//'sword',//'hickey', //'арапник',
+        weapon_array: [            
+            {
+                weapon: 'lightsaber',
+                second: 'eyed',
+                type: 'close'
+            },
+            {
+                weapon: 'bow',
+                quiver: 'quiver',
+                type: 'shoot'
+            },
+        ],
         weapons: {
-            weapon_main: { name: 'swiftbird' },
+            weapon_main: { name: 'lightsaber' },
             weapon_second: { name: 'eyed' },
             range_shoot: { name: 'bow', type: 'bow'}, //type: bow, two-handed
             range_throw: { name: 'spear'},
@@ -548,9 +560,8 @@ $('.trigger').on('text', function (e, text) {
     //if (text.match(' у тебя оружие, и оно упало на землю!$')) {
     //Гангстер ВЫБИЛ у тебя световой меч Миямото, и он падает на пол!
     if (text.match('ВЫБИЛ.? у тебя .*, и он.? пада.?т .*!')) {
-        console.log('[#weapon]:'+text+'\n');
-        console.log('[#weapon] armed:'+my_char.armed+'\n');
-        console.log('[#weapon] armed_second:'+my_char.armed_second+'\n');
+        console.log('MATCH:'+text+'\n');
+        if(test)console.log('[#weapon] armed:'+my_char.armed+' armed_second:'+my_char.armed_second+'\n');
 
         my_char.eqChanged = true;
         if(!my_char.armed || my_char.armed==2) {
@@ -565,9 +576,8 @@ $('.trigger').on('text', function (e, text) {
         }
     }
     if (text.match(' ВЫБИЛ.? у тебя оружие!$')) {
-        console.log('[#weapon]:'+text+'\n');
-        console.log('[#weapon] armed:'+my_char.armed+'\n');
-        console.log('[#weapon] armed_second:'+my_char.armed_second+'\n');
+        console.log('MATCH:'+text+'\n');
+        if(test) console.log('[#weapon] armed:'+my_char.armed+' armed_second:'+my_char.armed_second+'\n');
 
         my_char.eqChanged = true;
         my_char.armed = 1;
@@ -576,9 +586,8 @@ $('.trigger').on('text', function (e, text) {
         console.log('[#weapon](set armed=1)*******NEED FIX*********\n');
     }
     if (my_char.action.act === '\\get' && text.match('^Ты берешь .*\.$')) {
-        console.log('[#weapon]:'+text+'\n');
-        console.log('[#weapon] armed:'+my_char.armed+'\n');
-        console.log('[#weapon] armed_second:'+my_char.armed_second+'\n');
+        console.log('MATCH:'+text+'\n');
+        if(test) console.log('[#weapon] armed:'+my_char.armed+' armed_second:'+my_char.armed_second+'\n');
 
         clearAction();
         if (my_char.armed === 0) {
@@ -599,9 +608,8 @@ $('.trigger').on('text', function (e, text) {
     //Ты вооружаешься глазастым кинжалом Миямото как вторичным оружием.
     match = (/^Ты вооружаешься .*?(?<main> как основным оружием)?(?<second> как вторичным оружием)?\.$/).exec(text);
     if (match) {
-        console.log('[#weapon]:'+text+'\n');
-        console.log('[#weapon] armed:'+my_char.armed+'\n');
-        console.log('[#weapon] armed_second:'+my_char.armed_second+'\n');
+        console.log('MATCH:'+text+'\n');
+        if(test) console.log('[#weapon] armed:'+my_char.armed+' armed_second:'+my_char.armed_second+'\n');
 
         if(match.groups && match.groups.main) {
             my_char.armed_second = 3;
@@ -632,6 +640,54 @@ $('.trigger').on('text', function (e, text) {
     }
     //[#armed] 0 - без оружия(оружие на земле), 1 - оружие в мешке, 2 - вооружен
     //[#armed_second] false; 0 - на земле, 1 - инвентарь, 2 - вооружен, 3 - первичное
+    
+    //Ты снимаешь световой меч Миямото.
+    //Ты снимаешь глазастый кинжал Миямото.
+    //Ты снимаешь охотничий лук Миямото.
+    //Ты снимаешь колчан.
+    if(text.match('Ты снимаешь колчан.')) {
+        console.log("MATCH: remove:"+text, my_char.action);
+        my_char.quiver = false;
+        console.log('[#weapon_change][set quiver = false]');
+    }
+    match = (/^Ты снимаешь .*\.$/).exec(text);
+    if(match && my_char.action.act === 'remove') {
+        console.log("MATCH: remove:"+text, my_char.action);
+        if(my_char.action.command === my_char.weapon.name) {
+            console.log('[#weapon_change][set armed = 1]');
+            my_char.armed = 1;
+            my_char.eqChanged = true;
+        }
+
+        if(my_char.action.command === my_char.second.name) {
+            console.log('[#weapon_change][set armed_second = 1]');
+            my_char.armed_second=1;
+            my_char.eqChanged = true;
+        }
+
+        if(my_char.action.command === 'quiver') {
+            console.log('[#weapon_change][set quiver = false]');
+            my_char.quiver=false;
+            my_char.eqChanged = true;
+        }
+
+        if(my_char.eqChanged) {
+            clearAction();
+            return;
+        }
+    }
+    //Ты берешь в руки колчан.
+    if(text.match('Ты берешь в руки колчан.')) {
+        console.log("MATCH:"+text, my_char.action);
+        my_char.quiver = true;
+        console.log('[#weapon_change][set quiver = true]');
+        if(my_char.action.act === 'wear' && my_char.action.command==='quiver') {
+            my_char.eqChanged = true;
+            clearAction();
+            return;          
+        }
+    }
+    
     //-------------------------------------------------------------------------//
 
     if (text.match('^Ты не можешь сконцентрироваться.$')
@@ -884,6 +940,23 @@ $('.trigger').on('input', function (e, text) {
 
         }
     }); */
+    command(e, '[0-9]{1}', text, function (args) {
+        if (my_char.weapon_sets[args[0]]) {
+            if(my_char.weapon_sets[args[0]]!==my_char.weapon_set) {
+                my_char.weapon_set_change = my_char.weapon_sets[args[0]];
+                my_char.eqChanged = true;
+                //if(test) console.log
+                console.log('-->new weapon set ['+my_char.weapon_set+']->['+my_char.weapon_set_change+']');
+                my_char.eqChanged = true;
+                checkEquip();
+                e.stopPropagation();
+            } else {
+                echo('match:'+args[0]+'('+my_char.weapon_sets[args[0]]+') weapon_set:'+my_char.weapon_set);
+            }
+        }
+    });
+    
+
 
     // Установить оружие (см. тригер выше), например: /weapon меч
     command(e, '/weapon', text, function (args) {
@@ -2191,13 +2264,40 @@ function checkEquip() {
     if(test) console.log(' -->checkEquip()');
     my_char.eqChanged = false;
 
+    //перевооружение
+    if (my_char.weapon_set_change && my_char.weapon_set !== my_char.weapon_set_change && my_char.action.act === undefined) {
+        console.log('-->weapon_set_change:',my_char.weapon_set_change);
+        if(my_char.weapon_set==='shoot' && my_char.quiver) {
+            doAct('remove', 'quiver');
+        } else if(my_char.second && my_char.armed_second===2) {
+            doAct('remove', my_char.second.name);
+        } else if(my_char.weapon && my_char.armed===2) {
+            doAct('remove', my_char.weapon.name);
+        } else if(my_char.armed===1 && my_char.armed_second===1) {
+            if(my_char.weapon_set_change==='shoot' && !my_char.quiver) {
+                doAct('wear', 'quiver');
+            } else {
+                my_char.weapon_set = my_char.weapon_set_change;
+                if(my_char.weapon_set=='shoot') {
+                    my_char.weapon = my_char.shoot;
+                    my_char.second = {};
+                } 
+                if(my_char.weapon_set=='main') {
+                    my_char.weapon = my_char.weapon_main;
+                    my_char.second = my_char.weapon_second;
+                }
+            }
+        }
+    }
+
     if (my_char.armed === 0 && my_char.action.act !== '\\get') {
         doAct('\\get', my_char.weapon.name);
     }
     if (my_char.armed_second === 0 && my_char.action.act !== '\\get') {
         doAct('\\get', my_char.second.name);
     }
-    if (my_char.armed_second === 1 && my_char.armed === 2 && my_char.action.act !== '\\second') {
+    if(my_char.action.act !== undefined) return;
+    if (my_char.second.name && my_char.armed_second === 1 && my_char.armed === 2 && my_char.action.act !== '\\second') {
         doAct('\\second', my_char.second.name);
     }
     if (my_char.armed === 1 && my_char.action.act !== '\\wield') {
@@ -2418,13 +2518,24 @@ function Pchar(name, char, level) {
     this.weapon_main = char?.weapons?.weapon_main ?? {name: char?.weapon};
     this.weapon_second = char?.weapons?.weapon_second;
     this.shoot = char?.weapons?.range_shoot ?? {};
-    this.shoot = char?.weapons?.range_throw ?? {};
+    this.throw = char?.weapons?.range_throw ?? {};
     this.hold_equip = char?.weapons?.hold ?? '';
     this.shield_equip = char?.weapons?.shield ?? '';
     this.weapon_change = false;
 
     this.weapon = this.weapon_main;
     this.second = this.weapon_second;
+    this.weapon_set = 'main';
+    this.weapon_sets = [];
+    
+    this.weapon_sets[1] = 'main';
+    if(this.shoot.name!==undefined) {
+        this.weapon_sets[2] = 'shoot';
+        this.quiver = false;
+    }
+    if(this.throw.name!==undefined)
+        this.weapon_sets[3] = 'throw'; 
+    //shoot throw
     /*
     wield bow
     Ты снимаешь красный чекан "Магодробитель".
@@ -2451,9 +2562,9 @@ function Pchar(name, char, level) {
     this.align = char?.align;
     this.buffs_needs = char==undefined ? {} : char.buffs_needs;
     //[#armed] 0 - без оружия(оружие на земле), 1 - оружие в мешке, 2 - вооружен
-    this.armed = false;
+    this.armed = 2;
     //[#armed_second] false; 0 - на земле, 1 - инвентарь, 2 - вооружен, 3 - первичное
-    this.armed_second = false;
+    this.armed_second = 2;
     this.shield = true;
 
     this.affChanged = true; //проверить бафы
