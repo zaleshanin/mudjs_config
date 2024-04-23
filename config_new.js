@@ -1138,9 +1138,18 @@ function scan(where) {
 // Рейнджеры могут стрелять по жертве victim из лука, а маги и клеры - 
 // бить заклинаниями в соседнюю комнату.
 function shoot(where,key) {
-    let spell = my_char.attack_spells.get_spell('range',key);
-    echo("-->[cast '"+spell+"' "+where+"."+victim+"]");
-    send("cast '"+spell+"' "+where+"."+victim);
+    if(!victim) {
+        echo('<span style="color:red;">[NO TARGET]</span>');
+        return;
+    }
+    if(my_char.weapon_set=='shoot') {
+        echo(`-->[shoot ${where} ${victim}]`);
+        send(`shoot ${where} ${victim}`)
+    } else {
+        let spell = my_char.attack_spells.get_spell('range',key);
+        echo("-->[cast '"+spell+"' "+where+"."+victim+"]");
+        send("cast '"+spell+"' "+where+"."+victim);
+    }
 }
 function cast(group,key) {
     let spell = my_char.attack_spells.get_spell(group,key);
