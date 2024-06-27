@@ -1,24 +1,4 @@
-/*TODO
-- запоминать параметры комнаты:
-    - вода (напиться, набрать контейнер)
-    - места отдыха
-- вынести список говорунов в переменную/массив [#говоруны]
-- вынести #prompt и #battleprompt в chars, на случай если у чаров разный prompt
-
-- Тебя останавливают несколько добродушных старушек.
-- Группа закованных в латы людей с суровыми лицами преграждает тебе путь.
-------------------------
-*/
-
-
-//возвращаем серый фон
-$('.terminal').css("background-color", "#2e3436");
-$('.terminal-wrap').css("background-color", "#2e3436");
-$('body').css("background-color", "#353535");
-$('input').css("background-color", "#2e3436");
-$('#cs-subject').css("color","#F8F8F2");
-
-var test = false; //true - для вывода всякой отладочной информации
+var test = true; //true - для вывода всякой отладочной информации
 var kach = false;
 var opDown = false;
 var melt_counter = 0; //противодействие автовыкидыванию
@@ -30,12 +10,12 @@ var str, con, dex, wis, int, cha;
 var str_max, con_max, dex_max, wis_max, int_max, cha_max;
 var counter=0, total=0;
 var chars = {
-    // 'Ash': {
-    //     name: 'Ash',
-    //     align: 'e',
-    //     weapon: 'tickler',//'electrum',
-    //     class: 'vampire';
-    // },
+    'Ash': {
+        name: 'Ash',
+        align: 'e',
+        weapon: 'tickler',//'electrum',
+        class: 'vampire',
+    },
     'Miyamoto': {
         name: 'Miyamoto',
         align: 'n',
@@ -156,6 +136,21 @@ var chars = {
             //skills:thief:
             'detect hide': new Buff_need(true, true, false, false),
         }
+    },
+    'Ochokochi': {
+        name: 'Ochokochi',
+        align: 'n',
+        weapon: 'knife',
+        class: 'thief',
+        water: 'flask',
+        food: 'rusk',
+        buffs_needs: {
+            //(всегда, при фулбафе, всегда на члена группы, при фулбафе на члена группы)
+            //skills:thief:
+            'detect hide': new Buff_need(true, true, false, false),
+            'sneak': new Buff_need(true, true, false, false),
+            'hide': new Buff_need(true, true, false, false),
+        }
     }
 };
 var rest_rooms =  {
@@ -268,14 +263,13 @@ $('.trigger').on('text', function (e, text) {
         return;
     }
     //качаем haggle
-    //if(text.match("Ты покупаешь свечу за ")){
-        //send('sell candle');
-    /* if(text.match("Ты покупаешь факел за ")){
-            send('sell torch');
+    if(text.match("Ты покупаешь свечу за ")){
+        send('sell candle');
     }
-    if(text.match("Ты продаешь факел за ")){
-        send('buy torch');
-    } */
+    if(text.match("Ты продаешь свечу за ")){
+        send('buy candle');
+    }
+
     //Ты кросс-блокируешь атаку пикси.
     //Теперь ты гораздо лучше владеешь искусством 'cross block'!
     match = (/^Ты учишься на своих ошибках, и твое умение ('.*') совершенствуется.$|^Теперь ты гораздо лучше владеешь искусством ('.*')!$/).exec(text);
@@ -1592,6 +1586,7 @@ function checking() {
 function checkKach() {
     if(test) console.warn("---->checkKach()");
     if(counterSkill.attacks>0 
+        && my_char.skills['counter']
         && my_char.skills['counter'].progress<100); 
         echo(`[counter:a=${counterSkill.attacks};c=${counterSkill.counter};i=${counterSkill.improves}]`);
     let result = '[kach]';
@@ -1599,6 +1594,7 @@ function checkKach() {
     if(my_char.action.act != undefined)
         return '';
 
+    if(test) console.warn("---->skills",my_char.skills);
     for(let skill in my_char.skills) {
         if(test) console.log('---->',skill);
         //пропускаем если нет парамтров для прокачки
@@ -1794,6 +1790,9 @@ function setGroupMembersFrom(list) {
     if(test) console.log("-->setGroupMembersFrom("+list.length+")");
 
     for(let member in list) {
+        if(test) console.log("---->menber",member);
+        if(test) console.log(`---->sees${[list[member].sees]}`);
+        if(test) console.log(`---->list${pets[list[member].sees]}`);
         let name = pets[list[member].sees]
             ? pets[list[member].sees].ename
             : list[member].sees;
@@ -2506,7 +2505,7 @@ function MemberSpell(member_name, member_level) {
 
 function Pchar(name, char, level) {
     if (test)
-        console.log(' -->Pchar() (name:' + name + ';weapon:' + (char===undefined?undefined:char.weapons.weapon_main.name) + ')');
+        console.log(' -->Pchar() name:' + name, char);
 
     if( char === undefined ) char = {};
 
@@ -2854,6 +2853,8 @@ function getSkills(char, level) {
 
     if(char.class=== 'thief') {
         askills.push(['detect hide', 5]);
+        askills.push(['sneak', 4]);
+        askills.push(['hide', 4]);
     }
 
     if(char.class=== 'samurai') {
@@ -3221,6 +3222,12 @@ var buffPatterns = [
     ['detect hide', 'Ты пытаешься увидеть скрытое, но у тебя ничего не выходит.', false, true],
     ['detect hide', 'Ты перестаешь замечать скрытые детали в окружающей обстановке.', false, false],
     ['detect hide', '^Теперь ты можешь увидеть скрытое.$', true, true],
+    ['sneak', '^Ты начинаешь двигаться бесшумно.$', true, true],
+    ['sneak', '^Ты чувствуешь, что снова производишь слишком много шума при ходьбе.$', false, false],
+    ['sneak', '^Ты пытаешься двигаться бесшумно, но терпишь неудачу.$', false, true],
+    ['hide', '^Ты тщательно скрываешься, прячась в тенях у стены.$', true, true],
+    ['hide', '^Ты пытаешься скрыться, но терпишь неудачу.$', false, true],
+    ['hide', '^Ты перестаешь скрываться в тенях.$', false, false],
     ['berserk', '^Твой пульс учащается, когда ты входишь в ярость!$', true, true],
     ['berserk', '^Ты уже в состоянии боевой ярости!$', true, true],
     ['berserk', '^Тебе не удается войти в боевую ярость.$', false, true],
@@ -3230,6 +3237,20 @@ var buffPatterns = [
     ['detect trap', '^Ты теряешь способность замечать чужие ловушки\.$', false, false],
 ];
 var pets = {
+    'белый тур': {
+        'spells' : [
+            'armor', 'bless', 'calm', 'continual light', 'control weather', 'create food', 'cure blindness', 'cure disease', 'cure poison', 'detect invis', 'dragon skin', 'enhanced armor', 'faerie fog', 'fly', 'frenzy', 'giant strength', 'heal', 'infravision', 'learning', 'mind light', 'pass door', 'protection evil', 'protection good', 'protection heat', 'protective shield', 'refresh', 'remove curse', 'sanctuary', 'shield', 'spring', 'stone skin', 'word of recall'
+        ],
+        'align' : 'n',
+        'ename' : 'aurochs',
+    },
+    'ослик': {
+        'spells' : [
+            'armor', 'bless', 'calm', 'continual light', 'control weather', 'create food', 'cure blindness', 'cure disease', 'cure poison', 'detect invis', 'dragon skin', 'enhanced armor', 'faerie fog', 'fly', 'frenzy', 'giant strength', 'heal', 'infravision', 'learning', 'mind light', 'pass door', 'protection heat', 'protective shield', 'refresh', 'remove curse', 'remove fear', 'sanctuary', 'shield', 'spring', 'stone skin', 'word of recall'
+        ],
+        'align' : 'g',
+        'ename' : 'donkey',
+    },
     'Легенда': {
         'spells' : ['armor', 'acute vision', 'continual light', 'control weather', 
             'create food', 'create rose', 'spring', 'detect invis', 'dragon skin', 
@@ -3335,7 +3356,10 @@ var buffs_list = {
 
     //skills: thief
     //Spell(name, brief, mgroup, sclass, target, party, aAntogonist, aAlly, grSpell, aligns)
+    //Skill(name, command, brief, mgroup, sclass, target, min_mana, min_move, aAlly)
     'detect hide': new Skill('detect hide', 'detect', 'h', 'det', 'detection', false, 50, 50, ['ruler aura']),
+    'sneak': new Skill('sneak', 'sneak', 's', 'trv', 'enchant', false, 0, 40),
+    'hide': new Skill('hide', 'hide', 'h', 'trv', 'enchant', false, 0, 40),
 
     //skills: samurai
     //Skill(name, command, brief, mgroup, sclass, target, min_mana, min_move, aAlly)
@@ -3516,7 +3540,7 @@ var skills = {
     counter: {
         act: null,
         post: null
-    }
+    },
 }
 var position_commands = [
     "sleep",
@@ -3535,3 +3559,10 @@ var positions = [
     "fight",
     "stand",
 ];
+
+//возвращаем серый фон
+$('.terminal').css("background-color", "#2e3436");
+$('.terminal-wrap').css("background-color", "#2e3436");
+$('body').css("background-color", "#353535");
+$('input').css("background-color", "#2e3436");
+$('#cs-subject').css("color","#F8F8F2");
