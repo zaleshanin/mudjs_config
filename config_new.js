@@ -143,7 +143,9 @@ var chars = {
         weapon: 'knife',
         class: 'thief',
         water: 'flask',
+        water_container: 'rock',
         food: 'rusk',
+        food_container: 'rock',
         buffs_needs: {
             //(всегда, при фулбафе, всегда на члена группы, при фулбафе на члена группы)
             //skills:thief:
@@ -202,6 +204,13 @@ $('.trigger').on('text', function (e, text) {
             clearAction();
         }
         return;
+    }
+    if(text.match('^Ты перестаешь скрываться в тенях.$') ||
+        text.match('^Ты чувствуешь, что снова производишь слишком много шума при ходьбе.$')) {
+            if(test) console.log("[vis detected]");
+        if (my_char.action.act === 'vis') {
+            clearAction();
+        }
     }
     //slook
     /*
@@ -1673,6 +1682,20 @@ function checkKach() {
         );
         break;
     }
+
+    if(mudprompt.move===mudprompt.max_move && chars[my_char.name].class=='thief') {
+        console.log(`====>${chars[my_char.name].class} moves: ${mudprompt.moves}/${mudprompt.max_moves}`);
+        //проверяем на АФК
+        if (my_char.afk) {
+            changeAFK();
+            my_char.needsChanged = true;
+            result += `[${msg}:${my_char.skills[skill].progress}%:afk]`
+            return result;
+        }
+        doAct('vis');
+    }
+    setTimeout(() => send(""), 30*1000);
+
     /* if(my_char.hasSkill('lore')) {
         if(test) console.log("      check lore");
 
