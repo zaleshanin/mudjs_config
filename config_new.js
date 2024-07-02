@@ -142,7 +142,7 @@ var chars = {
         align: 'n',
         weapon: 'knife',
         class: 'thief',
-        water: 'flask',
+        water: 'barrel',
         water_container: 'rock',
         food: 'rusk',
         food_container: 'rock',
@@ -286,10 +286,11 @@ $('.trigger').on('text', function (e, text) {
         console.log('match',match);
         let slookSkill = match[1]==undefined?match[2]:match[1];
         echo('-->[slook '+slookSkill+']');
-        send('slook '+slookSkill);
+        doAct('slook', slookSkill);
         if(kach && slookSkill === "'counter'") {
             counterSkill.improves++;
         }
+        return;
     }
     // *** качаем wand *** //
     /* if(text.match("Ты берешь арфу из большого камня.")){
@@ -1593,15 +1594,16 @@ function checking() {
     if(message!=='') echo(message);
 }
 function checkKach() {
-    if(test) console.warn("---->checkKach()");
+    if(test) console.warn("---->checkKach()", my_char.skills['counter'], my_char.skills['counter']?.progress);
     if(counterSkill.attacks>0 
-        && my_char.skills['counter']
+        && my_char.skills['counter']?.progress!=undefined
         && my_char.skills['counter'].progress<100); 
         echo(`[counter:a=${counterSkill.attacks};c=${counterSkill.counter};i=${counterSkill.improves}]`);
     let result = '[kach]';
 
     if(my_char.action.act != undefined)
         return '';
+    else if(test) console.warn("---->act", my_char.action);
 
     if(test) console.warn("---->skills",my_char.skills);
     for(let skill in my_char.skills) {
@@ -1680,7 +1682,7 @@ function checkKach() {
             skills[skill].act.command, 
             skills[skill].act.target
         );
-        break;
+        return result;
     }
 
     if(mudprompt.move===mudprompt.max_move && chars[my_char.name].class=='thief') {
@@ -1693,6 +1695,7 @@ function checkKach() {
             return result;
         }
         doAct('vis');
+        return result;
     }
     setTimeout(() => send(""), 30*1000);
 
