@@ -1,20 +1,27 @@
 var test = true; //true - для вывода всякой отладочной информации
 var kach = false;
 var opDown = false;
-var melt_counter = 0; //противодействие автовыкидыванию
+
+//противодействие автовыкидыванию
+var melt_counter = 0; 
+var commandCounter = {
+    command: '',
+    count: 0
+};
 
 //номер панели заклинаний
 var numpad_set = 0;
 var panel_set = 0;
 var str, con, dex, wis, int, cha;
 var str_max, con_max, dex_max, wis_max, int_max, cha_max;
-var counter=0, total=0;
+var count=0, total=0;
 var chars = {
     'Ash': {
         name: 'Ash',
         align: 'e',
         weapon: 'tickler',//'electrum',
         class: 'vampire',
+        buffs_needs: {}
     },
     'Miyamoto': {
         name: 'Miyamoto',
@@ -149,9 +156,9 @@ var chars = {
         buffs_needs: {
             //(всегда, при фулбафе, всегда на члена группы, при фулбафе на члена группы)
             //skills:thief:
-            'detect hide': new Buff_need(true, true, false, false),
-            'sneak': new Buff_need(true, true, false, false),
-            'hide': new Buff_need(true, true, false, false),
+            //'detect hide': new Buff_need(false, true, false, false),
+            //'sneak': new Buff_need(true, true, false, false),
+            //'hide': new Buff_need(true, true, false, false),
         }
     }
 };
@@ -198,19 +205,12 @@ $('.trigger').on('text', function (e, text) {
     }
  */    
     //качаем lore
-    if(text.match('^Ты пытаешься вспомнить хоть что-то из древних преданий про эту вещь, но безуспешно.$|^.* -- это .* [0-9]{1,3} уровня.$')){
+    if(text.match('^Ты пытаешься вспомнить хоть что-то из древних преданий про эту вещь, но безуспешно.$|^.* -- это .* [0-9]{1,3} уровня. ')){
         if(test) console.log("[lore detected]");
         if (my_char.action.act === 'lore') {
             clearAction();
         }
         return;
-    }
-    if(text.match('^Ты перестаешь скрываться в тенях.$') ||
-        text.match('^Ты чувствуешь, что снова производишь слишком много шума при ходьбе.$')) {
-            if(test) console.log("[vis detected]");
-        if (my_char.action.act === 'vis') {
-            clearAction();
-        }
     }
     //slook
     /*
@@ -234,6 +234,14 @@ $('.trigger').on('text', function (e, text) {
 
         См. также справка benediction.
     */
+    if(text.match('^Ты перестаешь скрываться в тенях.$') ||
+        text.match('^Ты чувствуешь, что снова производишь слишком много шума при ходьбе.$')) {
+            if(test) console.log("[vis detected]");
+        if (my_char.action.act === 'vis') {
+            clearAction();
+        }
+    }
+
     match = (/^(?<type>Умение|Заклинание) '(?<name>.*?)' или '(?<runame>.*?)', входит в групп(?:у|ы) .*\.$/).exec(text);
     if(match){
         lSlook = true;
@@ -372,8 +380,8 @@ $('.trigger').on('text', function (e, text) {
         ) {
             echo("("+total+")?("+(int+15+18+wis_max+dex_max+con_max-3)+") "+"YES: "+(wis+dex+int)+" >= "+(wis_max+dex_max+int_max-3)+ "("+int+"int)");
         }else{
-            counter++;
-            if(counter>20) {send("sca s");counter=0;}
+            count++;
+            if(count>20) {send("sca s");count=0;}
             echo("("+total+")?("+(int+15+18+wis_max+dex_max+con_max-3)+") "+"NO: "+(wis+dex+con)+" >= "+(wis_max+dex_max+con_max-3) + "("+str+"str)" + "("+cha+"cha)"+ "("+int+"int)");
             send("гов лекарь нет");
         }
@@ -1453,6 +1461,18 @@ function doOrder() {
 }
 function doAct(act, comm, tag) {
     if(test) console.log('-->doAct(action:' + act + ', command:' + comm + ', target:' + tag + ')');
+    //melt
+    if(commandCounter.command===act) {
+        commandCounter.count += 1;
+        if(commandCounter.count >= 20) {
+            send('who');
+            commandCounter.count = 0;
+        }
+    } else {
+        commandCounter.command = act;
+        commandCounter.count = 1;
+    }
+
     my_char.action = new Action(act, comm, tag);
 
     var result = '';
@@ -1595,10 +1615,10 @@ function checking() {
 }
 function checkKach() {
     if(test) console.warn("---->checkKach()", my_char.skills['counter'], my_char.skills['counter']?.progress);
-    if(counterSkill.attacks>0 
-        && my_char.skills['counter']?.progress!=undefined
-        && my_char.skills['counter'].progress<100); 
-        echo(`[counter:a=${counterSkill.attacks};c=${counterSkill.counter};i=${counterSkill.improves}]`);
+    if(my_char.skills['counter']!=undefined && counterSkill.attacks>0 
+        && my_char.skills['counter'].progress!=undefined
+        && my_char.skills['counter'].progress<100) 
+            echo(`[counter:a=${counterSkill.attacks};c=${counterSkill.counter};i=${counterSkill.improves}]`);
     let result = '[kach]';
 
     if(my_char.action.act != undefined)
@@ -1699,7 +1719,7 @@ function checkKach() {
     }
     setTimeout(() => send(""), 30*1000);
 
-    /* if(my_char.hasSkill('lore')) {
+    if(my_char.hasSkill('lore')) {
         if(test) console.log("      check lore");
 
         if(!my_char.kach_skills['lore']) {
@@ -1720,11 +1740,11 @@ function checkKach() {
                         return;
                     }
                     result += '[-->lore:'+(my_char.kach_skills['lore'].progress)+'%]'
-                    doAct('lore', 'warhammer');
+                    doAct('lore', 'tickler');
                 }
             }
         }
-    } */
+    }
 
     /* if(my_char.hasSkill('herbs')) {
         console.log("      check herbs:");
@@ -2882,6 +2902,9 @@ function getSkills(char, level) {
         askills.push(['sneak', 4]);
         askills.push(['hide', 4]);
     }
+    if(char.class=== 'vampire') {
+        askills.push(['lore', 20]);
+    }
 
     if(char.class=== 'samurai') {
         askills.push(['kick', 2]);
@@ -3553,7 +3576,7 @@ var skills = {
     lore: {
         act: {
             act: 'lore',
-            command: 'warhammer',
+            command: 'tickler',
         },
         pos: "rest",
     },
@@ -3567,7 +3590,19 @@ var skills = {
         act: null,
         post: null
     },
-}
+/*     sneak: {
+        act: {
+            act: 'sneak',
+        },
+        pos: "rest",
+    },
+    hide: {
+        act: {
+            act: 'hide',
+        },
+        post: 'stand',
+    },
+ */}
 var position_commands = [
     "sleep",
     "rest",
