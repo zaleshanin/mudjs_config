@@ -147,7 +147,7 @@ var chars = {
     'Ochokochi': {
         name: 'Ochokochi',
         align: 'n',
-        weapon: 'knife',
+        weapon: 'scalpel',
         class: 'thief',
         water: 'barrel',
         water_container: 'rock',
@@ -167,7 +167,8 @@ var rest_rooms =  {
     9706:   'mat',      // Кабинет помощника мэра Нового Талоса
     3054:   'chair',    // Храм Лео
     40032:  'mat',      // Мачта галеона   
-    580: 'gold'         // Наемники
+    580: 'gold',        // Наемники
+    10320: 'sill',      // Утеха
 };
 var match;
 
@@ -205,7 +206,7 @@ $('.trigger').on('text', function (e, text) {
     }
  */    
     //качаем lore
-    if(text.match('^Ты пытаешься вспомнить хоть что-то из древних преданий про эту вещь, но безуспешно.$|^.* -- это .* [0-9]{1,3} уровня. ')){
+    if(text.match('^Ты пытаешься вспомнить хоть что-то из древних преданий про эту вещь, но безуспешно.$|^.* -- это .* [0-9]{1,3} уровня.')){
         if(test) console.log("[lore detected]");
         if (my_char.action.act === 'lore') {
             clearAction();
@@ -244,6 +245,7 @@ $('.trigger').on('text', function (e, text) {
 
     match = (/^(?<type>Умение|Заклинание) '(?<name>.*?)' или '(?<runame>.*?)', входит в групп(?:у|ы) .*\.$/).exec(text);
     if(match){
+        if(test) console.log("TRIGGER: slook detected!");
         lSlook = true;
         slook.name = match.groups.name;
         slook.runame = match.groups.runame;
@@ -258,22 +260,33 @@ $('.trigger').on('text', function (e, text) {
         //Доступно тебе с уровня 20, изучено на 49%, работает на 48%.
         match = (/\* Доступно тебе с уровня [0-9]{1,3}, изучено на ([0-9]{1,3})%(?:, работает на [0-9]{1,3}%)?\./).exec(text);
         if(match) {
+            if(test) console.log("TRIGGER: slook progress detected!");
             slook.progress = match[1];
             return;
         }
         match = (/\* Расход (?:маны (?<mana>[0-9]{1,4}))?(?:, )?(?:шагов (?<moves>[0-9]{1,4}))?\./).exec(text);
         if(match) {
+            if(test) console.log("TRIGGER: slook cost detected!");
             slook.mana = match.groups.mana ? match.groups.mana : 0;
             slook.moves = match.groups.moves ? match.groups.moves : 0;
             return;
         }
 
-        if(text.match('^См. также справка .*\.$')) {
-            console.log('[slook]:');console.log(slook);
+        if(text.match('^См. также (справка|help) .*\.$')) {
+            if(test) {
+                console.log("TRIGGER: slook finish detected!");
+            }
+            console.log('TRIGGER [slook result]:');console.log(slook);
+            let skillName;
+            if(my_char[slook.type][slook.name]==undefined)
+                skillName = slook.runame;
+            if(my_char[slook.type][slook.runame]==undefined)
+                skillName = slook.name;
+
             if(my_char[slook.type]==undefined) my_char[slook.type] = {};
-            if(my_char[slook.type][slook.name]==undefined) my_char[slook.type][slook.name] = {};
-            Object.assign(my_char[slook.type][slook.name], slook);
-            console.log('my_char['+slook.type+']['+slook.name+']',my_char[slook.type][slook.name]);
+            if(my_char[slook.type][skillName]==undefined) my_char[slook.type][skillName] = {};
+            Object.assign(my_char[slook.type][skillName], slook);
+            console.log('my_char['+slook.type+']['+skillName+']',my_char[slook.type][skillName]);
             slook = {};
             lSlook = false;
         }
@@ -506,7 +519,7 @@ $('.trigger').on('text', function (e, text) {
             - уронились - встаём (выносим за кач)
             - если у вора мало жизни, бежим в северо-западный угол вокруг всей доски
         */
-        if(test)console.log('kach->counter:' + positions.indexOf(mudprompt.p2.pos));
+        if(test) console.log('kach->check counter triggers.');
         if(text.match("^Ты пронзительно кричишь 'Помогите! На меня напал вор!'$")) {
             if(test)console.log('kach->counter: attack trigger');
             counterSkill.attacks++;
@@ -1623,22 +1636,22 @@ function checkKach() {
 
     if(my_char.action.act != undefined)
         return '';
-    else if(test) console.warn("---->act", my_char.action);
+    else if(test) console.warn("---->act:", my_char.action);
 
-    if(test) console.warn("---->skills",my_char.skills);
+    if(test) console.warn("---->skills:",my_char.skills);
     for(let skill in my_char.skills) {
-        if(test) console.log('---->',skill);
+        if(test) console.log('---->skill:', skill, my_char.skills[skill]);
         //пропускаем если нет парамтров для прокачки
         let msg = skill;
-        if(!my_char.skills[skill]) {
+        if(my_char.skills[skill]===undefined || my_char.skills[skill].act===undefined) {
             if(test) console.log(`  -->[${msg}:no act]`);
             //result += `[${msg}:no command]`;
             continue;
         }
 
         //определяем процент разученности
-        if(!my_char.skills[skill].progress) {
-            if(test) console.log(`  -->[${msg}:no skills.${skill} --> slook ${skill}`);
+        if(my_char.skills[skill].progress===undefined) {
+            if(test) console.log(`[${my_char.skills[skill].progress}]  -->[${msg}:no skills.${skill} --> slook ${skill}`);
             doAct('slook', skill);
             result += `[${msg}:slook]`;
             return result;
@@ -1685,7 +1698,7 @@ function checkKach() {
             return result;
         }
         //проверяем pos
-        if(skills[skill] && skills[skill].pos && !checkPose(skills[skill].pos)) {
+        if(skills[skill]!=undefined && skills[skill].pos!=undefined && !checkPose(skills[skill].pos)) {
             if(test) console.log("      -->skip: position");
             result += `[${msg}:${my_char.skills[skill].progress}% req:${skills[skill].pos}]`;
             return result;
@@ -1719,10 +1732,10 @@ function checkKach() {
     }
     setTimeout(() => send(""), 30*1000);
 
-    if(my_char.hasSkill('lore')) {
+    /* if(my_char.hasSkill('lore')) {
         if(test) console.log("      check lore");
 
-        if(!my_char.kach_skills['lore']) {
+        if(my_char.skills['lore']===unefined) {
             if(test) console.log("      no kach_skills.lore --> slook lore");
             doAct('slook', 'lore');
             return;
@@ -1744,7 +1757,7 @@ function checkKach() {
                 }
             }
         }
-    }
+    } */
 
     /* if(my_char.hasSkill('herbs')) {
         console.log("      check herbs:");
@@ -2315,7 +2328,7 @@ function buffChange(sBuff, lStatus, lActionDone, action) {
 }
 
 function checkEquip() {
-    if(test) console.log(' -->checkEquip()');
+    if(test) console.log(' -->checkEquip() my_char:', my_char);
     my_char.eqChanged = false;
 
     //перевооружение
@@ -2323,7 +2336,7 @@ function checkEquip() {
         console.log('-->weapon_set_change:',my_char.weapon_set_change);
         if(my_char.weapon_set==='shoot' && my_char.quiver) {
             doAct('remove', 'quiver');
-        } else if(my_char.second && my_char.armed_second===2) {
+        } else if(my_char.second!=undefined && my_char.armed_second===2) {
             doAct('remove', my_char.second.name);
         } else if(my_char.weapon && my_char.armed===2) {
             doAct('remove', my_char.weapon.name);
@@ -2351,7 +2364,7 @@ function checkEquip() {
         doAct('\\get', my_char.second.name);
     }
     if(my_char.action.act !== undefined) return;
-    if (my_char.second.name && my_char.armed_second === 1 && my_char.armed === 2 && my_char.action.act !== '\\second') {
+    if (my_char.second!=undefined && my_char.second.name && my_char.armed_second === 1 && my_char.armed === 2 && my_char.action.act !== '\\second') {
         doAct('\\second', my_char.second.name);
     }
     if (my_char.armed === 1 && my_char.action.act !== '\\wield') {
@@ -2476,7 +2489,17 @@ function checkPose(need_pose) {
         console.log('  -->current', current_index, mudprompt.p2.pos);
     }
 
-    if(need_index <= current_index) return true;
+    if(need_index === current_index) return true;
+
+    if(need_index < current_index) {
+        if(kach) {
+            if(test) console.log("    -->kach:down");
+            let command =  rest_rooms[mudprompt.vnum] ?? '';
+            doAct(need_pose, command);
+            return false;
+        } else
+            return true;
+    }
     
     if(need_index > current_index || position_commands.indexOf(need_pose)===-1) {
         for(let i=need_index; i < positions.length; i++) {
@@ -2489,9 +2512,6 @@ function checkPose(need_pose) {
 
     if (need_pose == mudprompt.p2.pos)
         return true;
-
-/*     if (need_pose == 'rest' && mudprompt.p2.pos !== 'sleep')
-        return true;*/
 
     if(!my_char.last_pose) my_char.last_pose = mudprompt.p2.pos;
 
@@ -2901,6 +2921,7 @@ function getSkills(char, level) {
         askills.push(['detect hide', 5]);
         askills.push(['sneak', 4]);
         askills.push(['hide', 4]);
+        askills.push(['lore', 13]);
     }
     if(char.class=== 'vampire') {
         askills.push(['lore', 20]);
@@ -3576,7 +3597,7 @@ var skills = {
     lore: {
         act: {
             act: 'lore',
-            command: 'tickler',
+            command: 'jar',
         },
         pos: "rest",
     },
@@ -3590,19 +3611,25 @@ var skills = {
         act: null,
         post: null
     },
-/*     sneak: {
+    'detect hide': {
+        act: {
+            act: 'detect',
+        },
+        pos: "rest",
+    },
+    sneak: {
         act: {
             act: 'sneak',
         },
-        pos: "rest",
+        pos: "stand",
     },
     hide: {
         act: {
             act: 'hide',
         },
-        post: 'stand',
+        post: 'rest',
     },
- */}
+}
 var position_commands = [
     "sleep",
     "rest",
