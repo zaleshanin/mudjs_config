@@ -1,4 +1,4 @@
-var test = true; //true - для вывода всякой отладочной информации
+var test = false; //true - для вывода всякой отладочной информации
 var kach = false;
 var opDown = false;
 
