@@ -16,13 +16,6 @@ var str, con, dex, wis, int, cha;
 var str_max, con_max, dex_max, wis_max, int_max, cha_max;
 var count=0, total=0;
 var chars = {
-    'Ash': {
-        name: 'Ash',
-        align: 'e',
-        weapon: 'tickler',//'electrum',
-        class: 'vampire',
-        buffs_needs: {}
-    },
     'Miyamoto': {
         name: 'Miyamoto',
         align: 'n',
@@ -87,6 +80,13 @@ var chars = {
             'dragon skin': new Buff_need(false, true, false, true),
             'frenzy': new Buff_need(false, false, false, true),
         }
+    },
+    'Ash': {
+        name: 'Ash',
+        align: 'e',
+        weapon: 'tickler',//'electrum',
+        class: 'vampire',
+        buffs_needs: {}
     },
     'Uesugi': {
         name: 'Uesugi',
@@ -209,6 +209,14 @@ $('.trigger').on('text', function (e, text) {
     if(text.match('^Ты пытаешься вспомнить хоть что-то из древних преданий про эту вещь, но безуспешно.$|^.* -- это .* [0-9]{1,3} уровня.')){
         if(test) console.log("[lore detected]");
         if (my_char.action.act === 'lore') {
+            clearAction();
+        }
+        return;
+    }
+    
+    if(text.match('^.male wyvern, большого размера. виверн в прекрасном состоянии\.$')){
+        if(test) console.log("[look detected]");
+        if (my_char.action.act === 'look') {
             clearAction();
         }
         return;
@@ -1732,33 +1740,6 @@ function checkKach() {
     }
     setTimeout(() => send(""), 30*1000);
 
-    /* if(my_char.hasSkill('lore')) {
-        if(test) console.log("      check lore");
-
-        if(my_char.skills['lore']===unefined) {
-            if(test) console.log("      no kach_skills.lore --> slook lore");
-            doAct('slook', 'lore');
-            return;
-        }
-
-        if(my_char.kach_skills['lore'].progress<100) {
-            if(mudprompt.p2.pos==='fight') {
-                if(test) console.log("      -->skip: fight");
-            } else {
-                if(mudprompt.move > (my_char.kach_skills['lore'].moves ?? 10)  
-                    && mudprompt.mana > (my_char.kach_skills['lore'].mana ?? 40)) {
-                    if (my_char.afk) {
-                        changeAFK();
-                        my_char.needsChanged = true;
-                        return;
-                    }
-                    result += '[-->lore:'+(my_char.kach_skills['lore'].progress)+'%]'
-                    doAct('lore', 'tickler');
-                }
-            }
-        }
-    } */
-
     /* if(my_char.hasSkill('herbs')) {
         console.log("      check herbs:");
         if(mudprompt.p2.pos==='fight') {
@@ -2919,6 +2900,7 @@ function getSkills(char, level) {
 
     if(char.class=== 'thief') {
         askills.push(['detect hide', 5]);
+        askills.push(['peek', 2]);        
         askills.push(['sneak', 4]);
         askills.push(['hide', 4]);
         askills.push(['lore', 13]);
@@ -3598,6 +3580,13 @@ var skills = {
         act: {
             act: 'lore',
             command: 'jar',
+        },
+        pos: "rest",
+    },
+    peek: {
+        act: {
+            act: 'look',
+            command: 'wyvern',
         },
         pos: "rest",
     },
