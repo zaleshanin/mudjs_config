@@ -280,7 +280,7 @@ $('.trigger').on('text', function (e, text) {
             return;
         }
 
-        if(text.match('^См. также (справка|help) .*\.$')) {
+        if(text.match('(^См. также (справка|help) .*\.$)|(^Формат: .*$)')) {
             if(test) {
                 console.log("TRIGGER: slook finish detected!");
             }
@@ -2900,9 +2900,9 @@ function getSkills(char, level) {
 
     if(char.class=== 'thief') {
         askills.push(['detect hide', 5]);
-        askills.push(['peek', 2]);        
         askills.push(['sneak', 4]);
         askills.push(['hide', 4]);
+        askills.push(['peek', 2]);        
         askills.push(['lore', 13]);
     }
     if(char.class=== 'vampire') {
@@ -3007,6 +3007,8 @@ function getSpells(char, level) {
     }
     if (char!==undefined && char.class === 'samurai') {
         spells.push(['cure blindness',20]);spells.push(['refresh',28]);spells.push(['cure poison',35]);spells.push(['calm',60]);
+    }
+    if (char!==undefined && char.class === 'vampire') {
     }
     spells = spells
         .filter(function(item, index, array){
