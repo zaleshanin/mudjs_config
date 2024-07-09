@@ -1486,7 +1486,7 @@ function doAct(act, comm, tag) {
     if(commandCounter.command===act) {
         commandCounter.count += 1;
         if(commandCounter.count >= 20) {
-            send('who');
+            send('where');
             commandCounter.count = 0;
         }
     } else {
