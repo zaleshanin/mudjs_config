@@ -1,5 +1,6 @@
 var test = false; //true - для вывода всякой отладочной информации
 var kach = false;
+var envenom = false;
 var opDown = false;
 
 //противодействие автовыкидыванию
@@ -20,25 +21,13 @@ var chars = {
         name: 'Miyamoto',
         align: 'n',
         weapon: 'lightsaber',//swiftbird 'warhammer',//'sword',//'hickey', //'арапник',
-        weapon_array: [            
-            {
-                weapon: 'lightsaber',
-                second: 'eyed',
-                type: 'close'
-            },
-            {
-                weapon: 'bow',
-                quiver: 'quiver',
-                type: 'shoot'
-            },
-        ],
         weapons: {
             weapon_main: { name: 'lightsaber' },
             weapon_second: { name: 'eyed' },
             range_shoot: { name: 'bow', type: 'bow'}, //type: bow, two-handed
             range_throw: { name: 'spear'},
             hold: 'luck',
-            shield: 'shield',
+            shield: {name: 'shield'},
         },
         class: 'samurai',
         clan: 'hunter',
@@ -84,7 +73,11 @@ var chars = {
     'Ash': {
         name: 'Ash',
         align: 'e',
-        weapon: 'tickler',//'electrum',
+        weapon: 'whip',//'electrum',
+        weapons: {
+            weapon_main: { name: 'snake', pattern: 'Кнут с Двумя Головами Змей'},
+            shield: { name: 'shield', pattern: 'опасный щит с шипами'},
+        },
         class: 'vampire',
         buffs_needs: {}
     },
@@ -153,6 +146,10 @@ var chars = {
         water_container: 'rock',
         food: 'rusk',
         food_container: 'rock',
+        weapons: {
+            weapon_main: { name: 'sting', pattern: 'короткий меч "Жало"'},
+            shield: { name: 'крышка', pattern: 'крышка от мусорного бака'},
+        },
         buffs_needs: {
             //(всегда, при фулбафе, всегда на члена группы, при фулбафе на члена группы)
             //skills:thief:
@@ -195,6 +192,10 @@ var counterSkill = {
  *-------------------------------------------------------------------------*/
 $('.trigger').on('text', function (e, text) {
     if(text==='') return;
+    if(test.match('^Входящие команды очищены\.$') && my_char.action.act) {
+        clearAction();
+        return;
+    }
     //качаем throw spear
 /*     if(kach) {
         if(text.match('Белый олень прискакал с востока.')) {
@@ -221,6 +222,35 @@ $('.trigger').on('text', function (e, text) {
         }
         return;
     }
+    if(text.match('^Яд, отравлявший .*, испаряется и высыхает\.$')) {
+        envenom = false;
+        return;
+    }
+    if(text.match('^Прикосновение .* наполняется смертельным ядом\.$')) {
+        envenom = true;
+        if (my_char.action.act === 'envenom') {
+            clearAction();
+        }
+        return;
+    }
+    if(text.match('^Прикосновение .* уже напоено ядом\.$')) {
+        envenom = true;
+        if (my_char.action.act === 'envenom') {
+            clearAction();
+        }
+        return;
+    }
+    if(text.match('^Твоя попытка отравления закончилась неудачей$')) {
+        envenom = false;
+        if (my_char.action.act === 'envenom') {
+            clearAction();
+        }
+        return;
+    }
+
+    
+
+
     //slook
     /*
         Умение 'lore' или 'легенды', входит в группы 'detection', 'adventure'.
@@ -359,6 +389,11 @@ $('.trigger').on('text', function (e, text) {
             clearAction();
         }
     }
+    if(text.match("$Ты ложишься спать|Ты засыпаешь.")){
+        if (my_char.action.act === 'sleep') {
+            clearAction();
+        }
+    }
     if(text.match("Ты ищешь целебные травы, но ничего не находишь.")) {
         if (my_char.action.act === 'herb') {
             clearAction();
@@ -412,6 +447,9 @@ $('.trigger').on('text', function (e, text) {
     //[#prompt] + [#battleprompt] example: <1111/1111 2222/2222 333/333 [time][exits]>[0W0D]
     //промпт тестера  <3084/3084зд 4800/4800ман 756/756шг 3939оп Вых:СВЮЗ>
     //                <3084/3084зд 4309/4800ман 756/756шг 3939оп Вых:СВЮЗ> [100%:90%]
+    //Miyamoto, Ash
+    // prompt: [%r] %S||%L%c<{r%h{x/%H {b%m{x/%M %v/%V [%T][{y%e{x]>[%W]
+    // battleprompt: <{r%h{x/%H {b%m{x/%M %v/%V [%T][{y%e{x]>[%W]({r%y{x:{Y%o{x)
     match = (/^(<([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) \[(.*)]\[.*]>\[.*](\([0-9]{1,3}%:(?<opp>[0-9]{1,3})%\))?)|(<([0-9]{1,5})\/([0-9]{1,5})зд ([0-9]{1,5})\/([0-9]{1,5})ман ([0-9]{1,5})\/([0-9]{1,5})шг ([0-9]{1,5})оп Вых:.*>( \[[0-9]{1,3}%:[0-9]{1,3}%\])?)$/).exec(text);
     if (match) {
         if(kach && match.groups && match.groups.opp) {
@@ -506,17 +544,7 @@ $('.trigger').on('text', function (e, text) {
     if (text.match('^Стражник тролль наконец поднимается и встает, готовясь атаковать.$')) {
         opDown = false;
     }
-    //[#shield]
-    if (text.match('^От боли ты роняешь .*!$') 
-    || text.match('^.* превращается в труху и опилки.$')
-    || text.match('^.* раскалывается на куски.$')
-    || text.match('^.* распадается на части.$')) {
-        my_char.shield = false;
-        if(kach) send('nsh');
-    }
-    if (text.match('^Ты надеваешь .* как щит.$')) {
-        my_char.shield = true;
-    }
+
     //-------------------------------------------------------------------------//
     if(kach) {
         //[#counter]
@@ -635,6 +663,37 @@ $('.trigger').on('text', function (e, text) {
             //if(test) 
             console.log('[#weapon](set armed_second=1)\n');
         }
+    }
+    match = (/^От боли ты роняешь (.*)!$/).exec(text);
+    if (match) {
+        my_char.eqChanged = true;
+        if(my_char.shield_equip?.pattern 
+            && match[1].match(my_char.shield_equip.pattern)) {
+            my_char.shield = false;
+            if(kach) send('nsh');
+            return;
+        } else if(my_char.weapon?.pattern 
+            && match[1].match(my_char.weapon.pattern)) {
+            my_char.armed = 0;
+            console.log('[#weapon](set armed=0)\n');
+            return;
+        } else if(my_char.second?.pattern 
+            && match[1].match(my_char.second.pattern)) {
+            my_char.armed_second = 0;
+            console.log('[#weapon](set armed_second=0)\n');
+            return;
+        } 
+        echo('<span style="color:red;">*******УРОНЕННОЕ НЕ ОБРАБОТАНО*********</span>');
+    }
+    //[#shield]
+    if (text.match('^.* превращается в труху и опилки.$')
+    || text.match('^.* раскалывается на куски.$')
+    || text.match('^.* распадается на части.$')) {
+        my_char.shield = false;
+        if(kach) send('nsh');
+    }
+    if (text.match('^Ты надеваешь .* как щит.$')) {
+        my_char.shield = true;
     }
 
     //Ты вооружаешься глазастому кинжалу Миямото как основным оружием.
@@ -988,8 +1047,6 @@ $('.trigger').on('input', function (e, text) {
             }
         }
     });
-    
-
 
     // Установить оружие (см. тригер выше), например: /weapon меч
     command(e, '/weapon', text, function (args) {
@@ -2338,18 +2395,25 @@ function checkEquip() {
         }
     }
 
-    if (my_char.armed === 0 && my_char.action.act !== '\\get') {
-        doAct('\\get', my_char.weapon.name);
+    if(my_char.action.act && (my_char.action.act !== 'get' || my_char.action.act !== 'wield' || my_char.action.act !== 'second')) {
+        clearAction();
     }
-    if (my_char.armed_second === 0 && my_char.action.act !== '\\get') {
-        doAct('\\get', my_char.second.name);
+    send("\\");
+
+    if (my_char.armed === 0 && my_char.action.act !== 'get') {
+        doAct('get', my_char.weapon.name);
     }
+    if (my_char.armed_second === 0 && my_char.action.act !== 'get') {
+        doAct('get', my_char.second.name);
+    }
+
     if(my_char.action.act !== undefined) return;
-    if (my_char.second!=undefined && my_char.second.name && my_char.armed_second === 1 && my_char.armed === 2 && my_char.action.act !== '\\second') {
-        doAct('\\second', my_char.second.name);
+
+    if (my_char.second!=undefined && my_char.second.name && my_char.armed_second === 1 && my_char.armed === 2 && my_char.action.act !== 'second') {
+        doAct('second', my_char.second.name);
     }
-    if (my_char.armed === 1 && my_char.action.act !== '\\wield') {
-        doAct('\\wield', my_char.weapon.name);
+    if (my_char.armed === 1 && my_char.action.act !== 'wield') {
+        doAct('wield', my_char.weapon.name);
     }
 }
 
@@ -2575,7 +2639,7 @@ function Pchar(name, char, level) {
     this.shoot = char?.weapons?.range_shoot ?? {};
     this.throw = char?.weapons?.range_throw ?? {};
     this.hold_equip = char?.weapons?.hold ?? '';
-    this.shield_equip = char?.weapons?.shield ?? '';
+    this.shield_equip = char?.weapons?.shield ?? {};
     this.weapon_change = false;
 
     this.weapon = this.weapon_main;
@@ -2653,6 +2717,7 @@ function Pchar(name, char, level) {
     //this.kach_skills = {};
 
     this.hasBuff = function(cast){
+        if(cast==="envenom") return envenom;
         if((mudprompt[buffs_list[cast].mgroup]!==undefined && mudprompt[buffs_list[cast].mgroup]!=='none') && mudprompt[buffs_list[cast].mgroup].a.indexOf(buffs_list[cast].mbrief)!==-1){
             if(test) console.log("------>Pchar->hasBuff("+cast+")->have one in mudprompt!");
             return true;
@@ -2900,6 +2965,7 @@ function getSkills(char, level) {
 
     if(char.class=== 'thief') {
         askills.push(['detect hide', 5]);
+        askills.push(['envenom', 16]);
         askills.push(['sneak', 4]);
         askills.push(['hide', 4]);
         askills.push(['peek', 2]);        
@@ -3414,6 +3480,7 @@ var buffs_list = {
     'detect hide': new Skill('detect hide', 'detect', 'h', 'det', 'detection', false, 50, 50, ['ruler aura']),
     'sneak': new Skill('sneak', 'sneak', 's', 'trv', 'enchant', false, 0, 40),
     'hide': new Skill('hide', 'hide', 'h', 'trv', 'enchant', false, 0, 40),
+    'envenom': new Skill('envenom', 'envenom'),
 
     //skills: samurai
     //Skill(name, command, brief, mgroup, sclass, target, min_mana, min_move, aAlly)
@@ -3578,6 +3645,13 @@ function Words(name, str) {
 };
 /****************SKILLS FOR KACH **************/
 var skills = {
+    envenom: {
+        act: {
+            act: 'envenom',
+            command: 'scalpel',
+        },
+        pos: "rest",
+    },
     lore: {
         act: {
             act: 'lore',
