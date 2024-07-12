@@ -192,7 +192,7 @@ var counterSkill = {
  *-------------------------------------------------------------------------*/
 $('.trigger').on('text', function (e, text) {
     if(text==='') return;
-    if(test.match('^Входящие команды очищены\.$') && my_char.action.act) {
+    if(text.match('^Входящие команды очищены\.$') && my_char.action.act) {
         clearAction();
         return;
     }
