@@ -193,7 +193,6 @@ var counterSkill = {
 $('.trigger').on('text', function (e, text) {
     if(text==='') return;
     if(text.match('^Входящие команды очищены\.$') && my_char.action.act) {
-        clearAction();
         return;
     }
     //качаем throw spear
@@ -606,7 +605,7 @@ $('.trigger').on('text', function (e, text) {
 
         //[/#counter]
     }
-    if(text.match("^Ты не можешь удержать равновесие и неуклюже валишься на землю.$")) {
+    if(text.match("^Ты не можешь удержать равновесие и неуклюже валишься на землю.$|^Ты падаешь навзничь!$")) {
         if(test)console.log('---->: drop trigger');
         if(my_char.action.act === 'flee') {
             clearAction();
@@ -646,7 +645,14 @@ $('.trigger').on('text', function (e, text) {
         //if(test) 
         console.log('[#weapon](set armed=1)*******NEED FIX*********\n');
     }
-    if (my_char.action.act === '\\get' && text.match('^Ты берешь .*\.$')) {
+    if(text.match('^Ты берешь .*\.$')) {
+        console.warn("MATCH GET", my_char);
+        if(my_char.action.act === 'get')
+            console.warn("ACT === get");
+        else
+            console.warn("ACT !== get");
+    }
+    if (my_char.action.act === 'get' && text.match('^Ты берешь .*\.$')) {
         console.log('MATCH:'+text+'\n');
         if(test) console.log('[#weapon] armed:'+my_char.armed+' armed_second:'+my_char.armed_second+'\n');
 
@@ -710,7 +716,7 @@ $('.trigger').on('text', function (e, text) {
             return;
         }
         if(match.groups && match.groups.second
-            && my_char.action.act === '\\second' && my_char.action.command === my_char.second.name) {
+            && my_char.action.act === 'second' && my_char.action.command === my_char.second.name) {
             clearAction();
             my_char.armed_second = 2;
             //if(test) 
@@ -718,7 +724,7 @@ $('.trigger').on('text', function (e, text) {
             return;
         }
 
-        if (my_char.action.act === '\\wield' && my_char.action.command === my_char.weapon.name) {
+        if (my_char.action.act === 'wield' && my_char.action.command === my_char.weapon.name) {
             clearAction();
             my_char.armed = 2;
             //if(test) 
@@ -2699,7 +2705,7 @@ function Pchar(name, char, level) {
     this.water_location = char.water_container===''?'inv':char.water_container;
     this.food_container = char.food_container===''?'inv':char.food_container;
 
-    //[#action] act - команда к выполеннию (н-р: \\get, \\wield, cast)
+    //[#action] act - команда к выполеннию (н-р: get, wield, cast)
     //          command - 'acid blast' | target 
     //          target - цель
     this.action = new Action(); 
