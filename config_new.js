@@ -153,7 +153,7 @@ var chars = {
         buffs_needs: {
             //(всегда, при фулбафе, всегда на члена группы, при фулбафе на члена группы)
             //skills:thief:
-            //'detect hide': new Buff_need(false, true, false, false),
+            'detect hide': new Buff_need(false, true, false, false),
             //'sneak': new Buff_need(true, true, false, false),
             //'hide': new Buff_need(true, true, false, false),
         }
@@ -247,31 +247,6 @@ $('.trigger').on('text', function (e, text) {
         return;
     }
 
-    
-
-
-    //slook
-    /*
-        Умение 'lore' или 'легенды', входит в группы 'detection', 'adventure'.
-        * Задержка при выполнении 4 секунды. 
-        * Расход маны 40, шагов 10. 
-        * Доступно тебе с уровня 22, изучено на 59%.
-        * Это умение можно выучить в твоей гильдии.
-        * Доступно классам: анти-паладин, ниндзя, паладин, рейнджер, самурай, вор, вампир, воин
-        * Бонус для рас: кендеры, свирфнебли, гномы
-
-        См. также справка lore.
-
-        Заклинание 'benediction' или 'благость', входит в группу 'benedictions'.
-        * Задержка при выполнении 6 секунд. 
-        * Расход маны 150. 
-        * Тип заклинания защитная молитва. 
-        * Целью служит персонаж рядом. 
-        * Досталось тебе разученное до 100%.
-        * Доступно классам: анти-паладин, клерик, паладин
-
-        См. также справка benediction.
-    */
     if(text.match('^Ты перестаешь скрываться в тенях.$') ||
         text.match('^Ты чувствуешь, что снова производишь слишком много шума при ходьбе.$')) {
             if(test) console.log("[vis detected]");
@@ -337,8 +312,6 @@ $('.trigger').on('text', function (e, text) {
         send('buy candle');
     }
 
-    //Ты кросс-блокируешь атаку пикси.
-    //Теперь ты гораздо лучше владеешь искусством 'cross block'!
     match = (/^Ты учишься на своих ошибках, и твое умение ('.*') совершенствуется.$|^Теперь ты гораздо лучше владеешь искусством ('.*')!$/).exec(text);
     if(match){
         console.log('match',match);
@@ -443,12 +416,14 @@ $('.trigger').on('text', function (e, text) {
         return;
     }
 
-    //[#prompt] + [#battleprompt] example: <1111/1111 2222/2222 333/333 [time][exits]>[0W0D]
-    //промпт тестера  <3084/3084зд 4800/4800ман 756/756шг 3939оп Вых:СВЮЗ>
-    //                <3084/3084зд 4309/4800ман 756/756шг 3939оп Вых:СВЮЗ> [100%:90%]
-    //Miyamoto, Ash
-    // prompt: [%r] %S||%L%c<{r%h{x/%H {b%m{x/%M %v/%V [%T][{y%e{x]>[%W]
-    // battleprompt: <{r%h{x/%H {b%m{x/%M %v/%V [%T][{y%e{x]>[%W]({r%y{x:{Y%o{x)
+    /* [#prompt] + [#battleprompt] example: <1111/1111 2222/2222 333/333 [time][exits]>[0W0D]
+     * промпт по умолчанию   
+     *      <3084/3084зд 4800/4800ман 756/756шг 3939оп Вых:СВЮЗ>
+     *      <3084/3084зд 4309/4800ман 756/756шг 3939оп Вых:СВЮЗ> [100%:90%]
+     * Miyamoto, Ash
+     *      prompt: [%r] %S||%L%c<{r%h{x/%H {b%m{x/%M %v/%V [%T][{y%e{x]>[%W]
+     *      battleprompt: <{r%h{x/%H {b%m{x/%M %v/%V [%T][{y%e{x]>[%W]({r%y{x:{Y%o{x) 
+     * */
     match = (/^(<([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) \[(.*)]\[.*]>\[.*](\([0-9]{1,3}%:(?<opp>[0-9]{1,3})%\))?)|(<([0-9]{1,5})\/([0-9]{1,5})зд ([0-9]{1,5})\/([0-9]{1,5})ман ([0-9]{1,5})\/([0-9]{1,5})шг ([0-9]{1,5})оп Вых:.*>( \[[0-9]{1,3}%:[0-9]{1,3}%\])?)$/).exec(text);
     if (match) {
         if(kach && match.groups && match.groups.opp) {
@@ -490,14 +465,6 @@ $('.trigger').on('text', function (e, text) {
         echo('[melt:' + melt_counter + ']');
 
     }
-    /*Драш Азазеля загорается загорается багровым пламенем!
-
-    В твоей голове звучат торжественные слова на тайном наречии Азазеля:
-        lulshafan anigeron, netilat yadaim, sefer yetsirah
-
-    Чтобы воззвать к Азазелю, произнеси его имя и добавь тайные слова -- 
-    например, сказать azazel sefer yetsirah. Используй их вовремя и с умом,
-    ибо безжалостный Азазель не прощает ошибок. */
 
     if (text.match('В твоей голове звучат торжественные слова на тайном наречии Азазеля:')) {
         if(test) console.log("[wait for Azazel words]");
@@ -601,8 +568,6 @@ $('.trigger').on('text', function (e, text) {
             if(checkPose('fight'))
                 doAct('flee');
         }
-
-
         //[/#counter]
     }
     if(text.match("^Ты не можешь удержать равновесие и неуклюже валишься на землю.$|^Ты падаешь навзничь!$")) {
@@ -617,8 +582,6 @@ $('.trigger').on('text', function (e, text) {
 
     //-------------------------------------------------------------------------//
     //[#weapon]
-    //if (text.match(' у тебя оружие, и оно упало на землю!$')) {
-    //Гангстер ВЫБИЛ у тебя световой меч Миямото, и он падает на пол!
     if (text.match('ВЫБИЛ.? у тебя .*, и он.? пада.?т .*!')) {
         console.log('MATCH:'+text+'\n');
         if(test)console.log('[#weapon] armed:'+my_char.armed+' armed_second:'+my_char.armed_second+'\n');
@@ -702,8 +665,6 @@ $('.trigger').on('text', function (e, text) {
         my_char.shield = true;
     }
 
-    //Ты вооружаешься глазастому кинжалу Миямото как основным оружием.
-    //Ты вооружаешься глазастым кинжалом Миямото как вторичным оружием.
     match = (/^Ты вооружаешься .*?(?<main> как основным оружием)?(?<second> как вторичным оружием)?\.$/).exec(text);
     if (match) {
         console.log('MATCH:'+text+'\n');
@@ -774,8 +735,7 @@ $('.trigger').on('text', function (e, text) {
             return;
         }
     }
-    //Ты берешь в руки колчан.
-    if(text.match('Ты берешь в руки колчан.')) {
+     if(text.match('Ты берешь в руки колчан.')) {
         console.log("MATCH:"+text, my_char.action);
         my_char.quiver = true;
         console.log('[#weapon_change][set quiver = true]');
@@ -813,8 +773,6 @@ $('.trigger').on('text', function (e, text) {
     	}
     }
     //[#ruler badge]
-    //Ты надеваешь символ Хранителя Закона!
-    //Но у тебя уже что-то надето на шею.
     if (text.match('^Серебряный символ Хранителя Закона превращается в пыль.$')) {
         //if(test)
         echo("[ruler badge expire triger]");
@@ -1024,21 +982,7 @@ $('.trigger').on('input', function (e, text) {
         }
     }
     //смена оружия
-    /* command(e, 'weapon', text, function (args) {
-        if(args[1]==='') return;
-        args = args[1].toLowerCase().split(' ');
-
-        var weaponSet = new Set(['main', 'shoot', 'throw']);
-        if(!weaponSet.has(args[0])) {
-            var newCommand = 'weapon ' + args.join(' ');
-            //echo(`-->${newCommand}`);
-            send(newCommand);
-        }
-        if(args[0] === 'shoot') {
-
-        }
-    }); */
-    command(e, '[0-9]{1}', text, function (args) {
+     command(e, '[0-9]{1}', text, function (args) {
         if (my_char.weapon_sets[args[0]]) {
             if(my_char.weapon_sets[args[0]]!==my_char.weapon_set) {
                 my_char.weapon_set_change = my_char.weapon_sets[args[0]];
