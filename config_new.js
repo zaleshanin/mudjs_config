@@ -421,8 +421,8 @@ $('.trigger').on('text', function (e, text) {
      *      <3084/3084зд 4800/4800ман 756/756шг 3939оп Вых:СВЮЗ>
      *      <3084/3084зд 4309/4800ман 756/756шг 3939оп Вых:СВЮЗ> [100%:90%]
      * Miyamoto, Ash
-     *      prompt: [%r] %S||%L%c<{r%h{x/%H {b%m{x/%M %v/%V [%T][{y%e{x]>[%W]
-     *      battleprompt: <{r%h{x/%H {b%m{x/%M %v/%V [%T][{y%e{x]>[%W]({r%y{x:{Y%o{x) 
+     *      prompt [%r] %S||%L%c<{r%h{x/%H {b%m{x/%M %v/%V [%T][{y%e{x]>[%W]
+     *      battleprompt <{r%h{x/%H {b%m{x/%M %v/%V [%T][{y%e{x]>[%W]({r%y{x:{Y%o{x) 
      * */
     match = (/^(<([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) \[(.*)]\[.*]>\[.*](\([0-9]{1,3}%:(?<opp>[0-9]{1,3})%\))?)|(<([0-9]{1,5})\/([0-9]{1,5})зд ([0-9]{1,5})\/([0-9]{1,5})ман ([0-9]{1,5})\/([0-9]{1,5})шг ([0-9]{1,5})оп Вых:.*>( \[[0-9]{1,3}%:[0-9]{1,3}%\])?)$/).exec(text);
     if (match) {
@@ -1493,7 +1493,10 @@ function doAct(act, comm, tag) {
     if(commandCounter.command===act) {
         commandCounter.count += 1;
         if(commandCounter.count >= 20) {
-            send('where');
+            if(kach)
+                send('replay all');
+            else
+                send('where');
             commandCounter.count = 0;
         }
     } else {
@@ -1684,7 +1687,7 @@ function checkKach() {
             if(test)console.log('  -->buff_check', buffs_list[skill]);
 
             if(my_char.hasBuff(skill)) {
-                result += `[${msg}:${my_char.skills[skill].progress}% have one]`;
+                result += `[${msg}:${my_char.skills[skill].progress}% active]`;
                 continue;
             }
         }
@@ -1733,8 +1736,10 @@ function checkKach() {
         return result;
     }
 
-    if(mudprompt.move===mudprompt.max_move && chars[my_char.name].class=='thief') {
-        console.log(`====>${chars[my_char.name].class} moves: ${mudprompt.moves}/${mudprompt.max_moves}`);
+    if((my_char.hasSkill("sneak")&&my_char.skills['sneak'].progress!==100&&my_char.hasBuff('sneak'))
+        || (my_char.hasSkill("hide")&&my_char.skills['hide'].progress!==100&&my_char.hasBuff('hide'))
+        || (my_char.hasSpell("invisibility")&&my_char.spell['invisibility'].progress!==100&&my_char.hasBuff('invisibility'))
+        || (my_char.hasSpell("improved invis")&&my_char.spell['improved invis'].progress!==100&&my_char.hasBuff('improved invis'))) {
         //проверяем на АФК
         if (my_char.afk) {
             changeAFK();
@@ -1742,7 +1747,7 @@ function checkKach() {
             result += `[${msg}:${my_char.skills[skill].progress}%:afk]`
             return result;
         }
-        doAct('vis');
+        doAct('visible');
         return result;
     }
     setTimeout(() => send(""), 30*1000);
@@ -3423,6 +3428,8 @@ var buffs_list = {
     'bless': new Spell('bless', 'b', 'enh', 'protective', true),
     'dragon skin': new Spell('dragon skin', 'D', 'pro', 'protective'),
     'frenzy': new Spell('frenzy', 'f', 'enh', 'protective', true, false, ['holy word'],[],undefined,'ng'),
+    'invisibility': new Spell('invisibility', 'i', 'trv', 'protective', true, false),
+    'improved invis': new Spell('improved invis', 'I', 'trv', 'protective', true, false),
 
     //skills: thief
     //Spell(name, brief, mgroup, sclass, target, party, aAntogonist, aAlly, grSpell, aligns)
