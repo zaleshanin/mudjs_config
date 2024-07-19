@@ -250,7 +250,7 @@ $('.trigger').on('text', function (e, text) {
     if(text.match('^Ты перестаешь скрываться в тенях.$') ||
         text.match('^Ты чувствуешь, что снова производишь слишком много шума при ходьбе.$')) {
             if(test) console.log("[vis detected]");
-        if (my_char.action.act === 'vis') {
+        if (my_char.action.act === 'visible') {
             clearAction();
         }
     }
