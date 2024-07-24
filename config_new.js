@@ -1,6 +1,8 @@
 var test = false; //true - для вывода всякой отладочной информации
+var fight = false;
 var kach = false;
 var envenom = false;
+var skill_active = {};
 var opDown = false;
 
 //противодействие автовыкидыванию
@@ -254,6 +256,42 @@ $('.trigger').on('text', function (e, text) {
             clearAction();
         }
     }
+    //dirt
+    if(text.match('^Твой бросок грязью ')) {
+        if(my_char.action.act === 'dirt') {
+            clearAction();
+        }
+    }
+    if(text.match('^Ты метко швыряешь горсть пыли прямо в глаза .*, ослепляя его!$|^.* уже ничего не видит\.$')) {
+        skill_active['dirt kicking']=true;
+        if(my_char.action.act === 'dirt') {
+            clearAction();
+        }
+    }
+    if(text.match('^.* наконец протирает глаза от попавшей туда грязи\.$')) {
+        skill_active['dirt kicking']=false;
+        if(my_char.action.act === 'dirt') {
+            clearAction();
+        }
+    }
+    //trip
+    if(text.match('^Твоя подножка ')) {
+        if(my_char.action.act === 'trip') {
+            clearAction();
+        }
+    }
+    if(text.match('^.* падает навзничь!$|^.* уже лежит\.$')) {
+        skill_active['trip']=true;
+        if(my_char.action.act === 'trip') {
+            clearAction();
+        }
+    }
+    if(text.match('^.* поднимается и встает, готовясь атаковать\.$')) {
+        skill_active['trip']=false;
+        if(my_char.action.act === 'trip') {
+            clearAction();
+        }
+    }
 
     match = (/^(?<type>Умение|Заклинание) '(?<name>.*?)' или '(?<runame>.*?)', входит в групп(?:у|ы) .*\.$/).exec(text);
     if(match){
@@ -426,9 +464,13 @@ $('.trigger').on('text', function (e, text) {
      * */
     match = (/^(<([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) \[(.*)]\[.*]>\[.*](\([0-9]{1,3}%:(?<opp>[0-9]{1,3})%\))?)|(<([0-9]{1,5})\/([0-9]{1,5})зд ([0-9]{1,5})\/([0-9]{1,5})ман ([0-9]{1,5})\/([0-9]{1,5})шг ([0-9]{1,5})оп Вых:.*>( \[[0-9]{1,3}%:[0-9]{1,3}%\])?)$/).exec(text);
     if (match) {
+        if(match?.groups?.opp) fight = true;
+        else fight = false;
+
         if(kach && match.groups && match.groups.opp) {
             counterSkill.opp = match.groups.opp;
-            if(kach && my_char.action.act === undefined) {
+            if(kach && my_char.hasSkill("counter") && my_char.action.act === undefined) {
+                echo("<span style='color:red;'>prompt flee</span>");
                 doAct('flee');
             }
         }
@@ -521,11 +563,10 @@ $('.trigger').on('text', function (e, text) {
             - уронились - встаём (выносим за кач)
             - если у вора мало жизни, бежим в северо-западный угол вокруг всей доски
         */
-        if(test) console.log('kach->check counter triggers.');
         if(text.match("^Ты пронзительно кричишь 'Помогите! На меня напал вор!'$")) {
             if(test)console.log('kach->counter: attack trigger');
             counterSkill.attacks++;
-            if(checkPose('fight'))
+            if(checkPose('fight') && my_char.hasSkill("counter"))
                 doAct('flee');
         }
         if(text.match("^Ты направляешь удар вора против него!$")) {
@@ -558,21 +599,21 @@ $('.trigger').on('text', function (e, text) {
             if(my_char.action.act === 'flee') 
                 clearAction();
 
-            if(checkPose('fight'))
+            if(my_char.hasSkill("counter") && checkPose('fight'))
                 doAct('flee');
         }
         if(text.match("^Ты поднимаешься и встаешь, готовясь атаковать.$")) {
             if(my_char.action.act === 'stand') 
                 clearAction();
 
-            if(checkPose('fight'))
+            if(my_char.hasSkill("counter") && checkPose('fight'))
                 doAct('flee');
         }
         //[/#counter]
     }
     if(text.match("^Ты не можешь удержать равновесие и неуклюже валишься на землю.$|^Ты падаешь навзничь!$")) {
         if(test)console.log('---->: drop trigger');
-        if(my_char.action.act === 'flee') {
+        if(my_char.action.act === 'flee' || my_char.action.act === 'trip' || my_char.action.act === 'dirt') {
             clearAction();
             send("\\");
         }
@@ -1666,6 +1707,13 @@ function checkKach() {
             //result += `[${msg}:no command]`;
             continue;
         }
+        //в бою пропускаем не боевые
+        if(test) console.log('---->pos:', mudprompt.p2.pos, (my_char.skills[skill].pos!=="fight"), fight);
+        if(my_char.skills[skill].pos!=="fight" && fight) {
+            if(test) console.log(`  -->[${msg}: fight: no fight skill]`);
+            continue;
+        }
+        
 
         //определяем процент разученности
         if(my_char.skills[skill].progress===undefined) {
@@ -1682,6 +1730,13 @@ function checkKach() {
             continue;
         }
 
+        //пропускаем уже активные
+        if(test) console.log('---->active:', skill_active[skill]);
+        if(skill_active[skill]) {
+            if(test) console.log(`  -->[${msg}: skill active]`);
+            result += `[${msg}:${my_char.skills[skill].progress}% active]`;
+            continue;
+        }
         //проверка на бафф
         if(buffs_list[skill]) {
             if(test)console.log('  -->buff_check', buffs_list[skill]);
@@ -1750,8 +1805,10 @@ function checkKach() {
         doAct('visible');
         return result;
     }
-    setTimeout(() => send(""), 30*1000);
-
+    if(!timeout) {
+        timeout = true;
+        setTimeout(() => {timeout=false;send("");}, 30*1000);
+    }
     /* if(my_char.hasSkill('herbs')) {
         console.log("      check herbs:");
         if(mudprompt.p2.pos==='fight') {
@@ -2489,16 +2546,20 @@ function checkPose(need_pose) {
         console.log('  -->current', current_index, mudprompt.p2.pos);
     }
 
+    //if(need_index === 7 && fight) return true;
+
     if(need_index === current_index) return true;
 
     if(need_index < current_index) {
         if(kach) {
             if(test) console.log("    -->kach:down");
             let command =  rest_rooms[mudprompt.vnum] ?? '';
-            doAct(need_pose, command);
-            return false;
-        } else
-            return true;
+            if(position_commands.indexOf(need_pose)!==-1) {
+                doAct(need_pose, command);
+                return false;
+            } 
+        }
+        return true;
     }
     
     if(need_index > current_index || position_commands.indexOf(need_pose)===-1) {
@@ -2535,7 +2596,7 @@ function restoreStatus() {
         doAct('fade');
         return;
     }
-    if (my_char.last_pose && my_char.last_pose != mudprompt.p2.pos) {
+    if (my_char.last_pose && my_char.last_pose != mudprompt.p2.pos && !fight) {
         let command =  rest_rooms[mudprompt.vnum] ?? '';
         doAct(my_char.last_pose, command);
         my_char.last_pose = null;
@@ -2925,6 +2986,9 @@ function getSkills(char, level) {
         askills.push(['hide', 4]);
         askills.push(['peek', 2]);        
         askills.push(['lore', 13]);
+        askills.push(['dirt kicking', 3]);
+        askills.push(['trip', 3]);
+        askills.push(['kick', 5]);  
     }
     if(char.class=== 'vampire') {
         askills.push(['lore', 20]);
@@ -3619,7 +3683,7 @@ var skills = {
     peek: {
         act: {
             act: 'look',
-            command: 'wyvern',
+            command: 'cleric',
         },
         pos: "rest",
     },
@@ -3638,6 +3702,24 @@ var skills = {
             act: 'detect',
         },
         pos: "rest",
+    },
+    'dirt kicking': {
+        act: {
+            act: 'dirt',
+        },
+        pos: "fight",
+    },
+    trip: {
+        act: {
+            act: 'trip',
+        },
+        pos: "fight",
+    },
+    kick: {
+        act: {
+            act: 'kick',
+        },
+        pos: "fight",
     },
     sneak: {
         act: {
