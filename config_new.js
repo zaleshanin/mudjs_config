@@ -262,7 +262,7 @@ $('.trigger').on('text', function (e, text) {
             clearAction();
         }
     }
-    if(text.match('^Ты метко швыряешь горсть пыли прямо в глаза .*, ослепляя его!$|^.* уже ничего не видит\.$')) {
+    if(text.match('^Ты метко швыряешь .* прямо в глаза .*, ослепляя его!$|^.* уже ничего не видит\.$')) {
         skill_active['dirt kicking']=true;
         if(my_char.action.act === 'dirt') {
             clearAction();
@@ -554,7 +554,7 @@ $('.trigger').on('text', function (e, text) {
     }
 
     //-------------------------------------------------------------------------//
-    if(kach) {
+    if(kach && my_char.hasSkill("counter")) {
         //[#counter]
         /*
             - нападает вор - убегаем
@@ -611,14 +611,20 @@ $('.trigger').on('text', function (e, text) {
         }
         //[/#counter]
     }
-    if(text.match("^Ты не можешь удержать равновесие и неуклюже валишься на землю.$|^Ты падаешь навзничь!$")) {
+    if(text.match("^Ты не можешь удержать равновесие и неуклюже валишься на .*\.$|^Ты падаешь навзничь!$")) {
         if(test)console.log('---->: drop trigger');
-        if(my_char.action.act === 'flee' || my_char.action.act === 'trip' || my_char.action.act === 'dirt') {
+        my_char.needsChanged = true;
+        /* if(my_char.action.act === 'flee' || my_char.action.act === 'trip' || my_char.action.act === 'dirt') {
             clearAction();
             send("\\");
         }
         if(my_char.action.act===undefined)
-            doAct('stand');
+            doAct('stand'); */
+    }
+    if(text.match("^Ты поднимаешься и встаешь, готовясь атаковать\.$|^Ты встаешь\.$")) {
+        if(my_char.action.act === 'stand') 
+            clearAction();
+        my_char.needsChanged = true;
     }
 
     //-------------------------------------------------------------------------//
@@ -1655,7 +1661,8 @@ function checking() {
     if (my_char.needsChanged)
         needsStatus = ''
             + (my_char.hunger ? '[h:' + my_char.hunger + ']' : '')
-            + (my_char.thirst ? '[t:' + my_char.thirst + ']' : '');
+            + (my_char.thirst ? '[t:' + my_char.thirst + ']' : '')
+            + (fight && positions.indexOf('fight') > positions.indexOf(mudprompt.p2.pos) ? '[<span style="color:red">down</span>]' : '');
 
     let group_length = 0;
     if(mudprompt.group.pc!==undefined)
@@ -2432,7 +2439,9 @@ function checkEquip() {
 function checkNeeds() {
     if(test) console.log('->checkNeeds(hunger:' + my_char.hunger + ' f:' + my_char.lfood
         + ' thirst:' + my_char.thirst + ' w:' + my_char.lwater + ')');
-    if (my_char.hunger + my_char.thirst == 0 && (my_char.ruler_badge===true || my_char.ruler_badge===undefined)) {
+    if (my_char.hunger + my_char.thirst == 0 
+        && (my_char.ruler_badge===true || my_char.ruler_badge===undefined)
+        && (fight && positions.indexOf('fight') <= positions.indexOf(mudprompt.p2.pos))) {
         my_char.needsChanged = false;
         // поели, попили, раскладываем всё по местам (бочку в сумку)
         if(my_char.water_container!=='' && my_char.water_location!==my_char.water_container) {
@@ -2441,6 +2450,11 @@ function checkNeeds() {
         return;
     }
     if (my_char.action.act !== undefined) {
+        return;
+    }
+    if (fight && positions.indexOf('fight') > positions.indexOf(mudprompt.p2.pos)) {
+        my_char.needsChanged = true;
+        doAct('stand');
         return;
     }
 
