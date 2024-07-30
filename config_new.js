@@ -1732,7 +1732,7 @@ function checkKach() {
         if(skills[skill]!=undefined && skills[skill].pos!=undefined && !checkPose(skills[skill].pos)) {
             if(test) console.log("      -->skip: position");
             result += `[${msg}:${my_char.skills[skill].progress}% req:${skills[skill].pos}]`;
-            return result;
+            break;
         }
         
         if(skills[skill].act===null) {
