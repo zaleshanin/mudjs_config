@@ -151,6 +151,7 @@ var chars = {
         weapons: {
             weapon_main: { name: 'sting', pattern: 'короткий меч "Жало"'},
             shield: { name: 'крышка', pattern: 'крышка от мусорного бака'},
+            range_throw: { name: 'awl'},
         },
         buffs_needs: {
             //(всегда, при фулбафе, всегда на члена группы, при фулбафе на члена группы)
@@ -210,87 +211,62 @@ $('.trigger').on('text', function (e, text) {
     //качаем lore
     if(text.match('^Ты пытаешься вспомнить хоть что-то из древних преданий про эту вещь, но безуспешно.$|^.* -- это .* [0-9]{1,3} уровня.')){
         if(test) console.log("[lore detected]");
-        if (my_char.action.act === 'lore') {
-            clearAction();
-        }
+        clearAction('lore');
         return;
     }
     
-    if(text.match('^.male wyvern, большого размера. виверн в прекрасном состоянии\.$')){
+    if(text.match(' в прекрасном состоянии\.$')){
         if(test) console.log("[look detected]");
-        if (my_char.action.act === 'look') {
-            clearAction();
-        }
+        clearAction('look');
         return;
     }
     if(text.match('^Яд, отравлявший .*, испаряется и высыхает\.$')) {
         envenom = false;
         return;
     }
-    if(text.match('^Прикосновение .* наполняется смертельным ядом\.$')) {
+    if(text.match('^Прикосновение .* наполняется смертельным ядом\.$|^Прикосновение .* уже напоено ядом\.$')) {
         envenom = true;
-        if (my_char.action.act === 'envenom') {
-            clearAction();
-        }
-        return;
-    }
-    if(text.match('^Прикосновение .* уже напоено ядом\.$')) {
-        envenom = true;
-        if (my_char.action.act === 'envenom') {
-            clearAction();
-        }
+        clearAction('envenom');
         return;
     }
     if(text.match('^Твоя попытка отравления закончилась неудачей$')) {
         envenom = false;
-        if (my_char.action.act === 'envenom') {
-            clearAction();
-        }
+        clearAction('envenom');
         return;
     }
 
     if(text.match('^Ты перестаешь скрываться в тенях.$') ||
         text.match('^Ты чувствуешь, что снова производишь слишком много шума при ходьбе.$')) {
             if(test) console.log("[vis detected]");
-        if (my_char.action.act === 'visible') {
-            clearAction();
-        }
+        clearAction('visible');
     }
     //dirt
     if(text.match('^Твой бросок грязью ')) {
-        if(my_char.action.act === 'dirt') {
-            clearAction();
-        }
+        clearAction('dirt');
     }
     if(text.match('^Ты метко швыряешь .* прямо в глаза .*, ослепляя его!$|^.* уже ничего не видит\.$')) {
         skill_active['dirt kicking']=true;
-        if(my_char.action.act === 'dirt') {
-            clearAction();
-        }
+        clearAction('dirt');
     }
     if(text.match('^.* наконец протирает глаза от попавшей туда грязи\.$')) {
         skill_active['dirt kicking']=false;
-        if(my_char.action.act === 'dirt') {
-            clearAction();
-        }
+        clearAction('dirt');
+    }
+    //kick
+    if(text.match('^Твой пинок ')) {
+        clearAction('kick');
     }
     //trip
     if(text.match('^Твоя подножка ')) {
-        if(my_char.action.act === 'trip') {
-            clearAction();
-        }
+        clearAction('trip');
     }
     if(text.match('^.* падает навзничь!$|^.* уже лежит\.$')) {
         skill_active['trip']=true;
-        if(my_char.action.act === 'trip') {
-            clearAction();
-        }
+        clearAction('trip');
     }
     if(text.match('^.* поднимается и встает, готовясь атаковать\.$')) {
         skill_active['trip']=false;
-        if(my_char.action.act === 'trip') {
-            clearAction();
-        }
+        clearAction('trip');
     }
 
     match = (/^(?<type>Умение|Заклинание) '(?<name>.*?)' или '(?<runame>.*?)', входит в групп(?:у|ы) .*\.$/).exec(text);
@@ -301,9 +277,7 @@ $('.trigger').on('text', function (e, text) {
         slook.runame = match.groups.runame;
         slook.type = match.groups.type==='Умение'?'skills':'spells';
 
-        if (my_char.action.act === 'slook') {
-            clearAction();
-        }
+        clearAction('slook');
         return;
     }
     if(lSlook) {
@@ -364,24 +338,18 @@ $('.trigger').on('text', function (e, text) {
     // *** качаем wand *** //
     /* if(text.match("Ты берешь арфу из большого камня.")){
         hasHarp=true;
-        if (my_char.action.act === 'get') {
-            clearAction();
-        }
+        clearAction('get');
     }
     if(text.match("Ты берешь в руки арфу.")){
         isHarp=true;
-        if (my_char.action.act === 'hold') {
-            clearAction();
-        }
+        clearAction('hold');
     }
     if(text.match("Твоя арфа разваливается на куски.")){
         hasHarp=false;
         isHarp=false;
     }
     if(text.match("Ты взмахиваешь арфой на себя.")){
-        if (my_char.action.act === 'use') {
-            clearAction();
-        }
+        clearAction('use');
     } */
     /*  if(text.match("Твоя арфа разваливается на куски.")){
             echo('-->[new harp]');
@@ -395,26 +363,18 @@ $('.trigger').on('text', function (e, text) {
     // *** end wand *** //
 
     if(text.match("Ты садишься отдыхать.|Ты садишься .* и отдыхаешь.")){
-        if (my_char.action.act === 'rest') {
-            clearAction();
-        }
+        clearAction('rest');
     }
     if(text.match("$Ты ложишься спать|Ты засыпаешь.")){
-        if (my_char.action.act === 'sleep') {
-            clearAction();
-        }
+        clearAction('sleep');
     }
     if(text.match("Ты ищешь целебные травы, но ничего не находишь.")) {
-        if (my_char.action.act === 'herb') {
-            clearAction();
-        }
+        clearAction('herb');
     } 
     if(text.match("Ты собираешь ароматные травы на окрестных холмах.")
     || text.match("Ты пока не можешь искать травы, подожди немного.")){
         herbCooldown = true;
-        if (my_char.action.act === 'herb') {
-            clearAction();
-        }
+        clearAction('herb');
     }
     if(text.match("Ты чувствуешь, что вновь настало удачное время для сбора лечебных трав.")){
         herbCooldown=false;
@@ -487,16 +447,12 @@ $('.trigger').on('text', function (e, text) {
     match = (/^Режим AFK в(ы)?ключен.$/).exec(text);
     if (match) {
         if(test) console.log("[AFK trigger]");
-        if (my_char.action.act === 'afk') {
-            clearAction();
-        }
+        clearAction('afk');
     }
     if (text.match('^Ты прячешься в тенях.$')) {
         if(test) console.log("[Fade trigger]");
         my_char.was_fade = null;
-        if (my_char.action.act === 'fade') {
-            clearAction();
-        }
+        clearAction('fade');
     }
 
     if (text.match('^Ты растворяешься в воздухе.$')) {
@@ -576,9 +532,7 @@ $('.trigger').on('text', function (e, text) {
         if(text.match("^Ты убегаешь с поля битвы!$")) {
             if(test)console.log('kach->counter: flee trigger');
 
-            if(my_char.action.act === 'flee') 
-                clearAction();
-            
+            clearAction('flee');            
             if(mudprompt.vnum===4200) {
                 if(checkPose('stand')) send('run W');
             }
@@ -596,20 +550,20 @@ $('.trigger').on('text', function (e, text) {
         if(text.match("^Это будет слишком большим позором для тебя!$")) {
             if(test)console.log('kach->counter: samurai trigger');
 
-            if(my_char.action.act === 'flee') 
-                clearAction();
-
+            clearAction('flee');
             if(my_char.hasSkill("counter") && checkPose('fight'))
                 doAct('flee');
         }
         if(text.match("^Ты поднимаешься и встаешь, готовясь атаковать.$")) {
-            if(my_char.action.act === 'stand') 
-                clearAction();
-
+            clearAction('stand');
             if(my_char.hasSkill("counter") && checkPose('fight'))
                 doAct('flee');
         }
         //[/#counter]
+    }
+    if(text.match("^Уфф\.\.\. Но ведь ты отдыхаешь\.\.\.$")) {
+        if(my_char.action.act!==undefined) clearAction();
+        my_char.needsChanged = true;
     }
     if(text.match("^Ты не можешь удержать равновесие и неуклюже валишься на .*\.$|^Ты падаешь навзничь!$")) {
         if(test)console.log('---->: drop trigger');
@@ -622,8 +576,7 @@ $('.trigger').on('text', function (e, text) {
             doAct('stand'); */
     }
     if(text.match("^Ты поднимаешься и встаешь, готовясь атаковать\.$|^Ты встаешь\.$")) {
-        if(my_char.action.act === 'stand') 
-            clearAction();
+        clearAction('stand');        
         my_char.needsChanged = true;
     }
 
@@ -842,9 +795,7 @@ $('.trigger').on('text', function (e, text) {
     //[#food][#drink]
     if (text.match('^Ты ешь .*\.$') || text.match('^У тебя нет этого.$') || text.match('^Это несъедобно.$')) {
         if (my_char.action.act !== undefined) {
-            if (my_char.action.act === 'eat') {
-                clearAction();
-            }
+            clearAction('eat');
             my_char.lfood = false;
         }
     }
@@ -888,10 +839,7 @@ $('.trigger').on('text', function (e, text) {
     }
     //Ты не находишь этого.
     if (text.match('^Ты не находишь это(го)?.$') || text.match('^Здесь пусто.$')) {
-        if (my_char.action.act !== undefined)
-            if (my_char.action.act === 'drink') {
-                clearAction();
-            }
+        clearAction('drink');
         my_char.lwater = false;
     }
     if (text.match('^Ты хочешь пить.$')) {
@@ -1574,8 +1522,11 @@ function doAct(act, comm, tag) {
     } else
         echo('\ndoAct(' + act + ',' + comm + ',' + tag + '): ERROR\n');
 }
-function clearAction() {
-    if(test) console.log(' -->clearAction()\n');
+function clearAction(act) {
+    if(act!==undefined && my_char.action.act !== act) 
+        return;
+    if(test) console.log(` -->clearAction(${act?act:''})==>action(${my_char.action.act?my_char.action.act:''})\n`);
+
     for (var key in my_char.action) {
         my_char.action[key] = undefined;
     }
@@ -1766,7 +1717,7 @@ function checkKach() {
                     mudprompt.mana
                 );
             }
-            continue;
+            return result;
         } else {
             if(test) console.log("  -->mana/moves check ok!")
         }
@@ -3697,7 +3648,7 @@ var skills = {
     peek: {
         act: {
             act: 'look',
-            command: 'cleric',
+            command: 'healer',
         },
         pos: "rest",
     },
