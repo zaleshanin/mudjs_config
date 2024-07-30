@@ -1764,8 +1764,9 @@ function checkKach() {
         return result;
     }
     if(!timeout) {
+        echo('<span style="color:red;">TIMEOUT SET</span>');
         timeout = true;
-        setTimeout(() => {timeout=false;send("");}, 30*1000);
+        setTimeout(() => { echo('<span style="color:red;">TIMEOUT</span>');timeout=false; send(""); }, 30*1000);
     }
     /* if(my_char.hasSkill('herbs')) {
         console.log("      check herbs:");
@@ -3648,7 +3649,7 @@ var skills = {
     peek: {
         act: {
             act: 'look',
-            command: 'healer',
+            command: 'whore',
         },
         pos: "rest",
     },
