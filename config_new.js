@@ -240,6 +240,10 @@ $('.trigger').on('text', function (e, text) {
             if(test) console.log("[vis detected]");
         clearAction('visible');
     }
+    if(text.match('^Без указания цели это умение можно применять только в бою\.$')){
+        if(my_char.action.act==='trip' || my_char.action.act==='dirt' )
+            clearAction();
+    }
     //dirt
     if(text.match('^Твой бросок грязью ')) {
         clearAction('dirt');
@@ -1665,13 +1669,13 @@ function checkKach() {
             //result += `[${msg}:no command]`;
             continue;
         }
-        //в бою пропускаем не боевые
+        //в бою пропускаем не боевые и наоборот
         if(test) console.log('---->pos:', mudprompt.p2.pos, (my_char.skills[skill].pos!=="fight"), fight);
-        if(my_char.skills[skill].pos!=="fight" && fight) {
-            if(test) console.log(`  -->[${msg}: fight: no fight skill]`);
+        if((my_char.skills[skill].pos!=="fight" && fight)
+            || (my_char.skills[skill].pos==="fight" && !fight)) {
+            if(test) console.log(`  -->[${msg}: ${fight?'':'no '}fight: ${my_char.skills[skill].pos==="fight"?'':'no '} fight skill]`);
             continue;
         }
-        
 
         //определяем процент разученности
         if(my_char.skills[skill].progress===undefined) {
@@ -1717,7 +1721,7 @@ function checkKach() {
                     mudprompt.mana
                 );
             }
-            return result;
+            continue;
         } else {
             if(test) console.log("  -->mana/moves check ok!")
         }
@@ -1763,7 +1767,10 @@ function checkKach() {
         doAct('visible');
         return result;
     }
-    if(!timeout) {
+    
+    if(!checkPose('rest')) return result;
+
+    if(!timeout && my_char.action.act === undefined) {
         echo('<span style="color:red;">TIMEOUT SET</span>');
         timeout = true;
         setTimeout(() => { echo('<span style="color:red;">TIMEOUT</span>');timeout=false; send(""); }, 30*1000);
