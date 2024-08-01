@@ -323,15 +323,15 @@ $('.trigger').on('text', function (e, text) {
     }
     //качаем haggle
     if(text.match("Ты покупаешь свечу за ")){
-        if(!my_char.skills?.['haggle']?.progress)
+        if(my_char.skills?.['haggle']?.progress===undefined)
             doAct('slook', 'haggle')
-        if(my_char.skills?.['haggle']?.progress!==100)
+        if(my_char.skills?.['haggle']?.progress!=100)
             send('sell candle');
     }
     if(text.match("Ты продаешь свечу за ")){
-        if(!my_char.skills?.['haggle']?.progress)
+        if(my_char.skills?.['haggle']?.progress===undefined)
             doAct('slook', 'haggle')
-        if(my_char.skills?.['haggle']?.progress!==100)
+        if(my_char.skills?.['haggle']?.progress!=100)
             send('buy candle');
     }
 
@@ -1606,7 +1606,7 @@ function checking() {
 
     if (my_char.needsChanged)
         checkNeeds();
-
+    
     if(kach) {
         let kachPrompt = '';
         if(opDown)
@@ -1679,24 +1679,18 @@ function checkKach() {
     if(test) console.warn("---->skills:",my_char.skills);
     for(let skill in my_char.skills) {
         if(test) console.log('---->skill:', skill, my_char.skills[skill]);
-        //пропускаем если нет парамтров для прокачки
         let msg = skill;
-        if(my_char.skills[skill]===undefined || my_char.skills[skill].act===undefined) {
-            if(test) console.log(`  -->[${msg}:no act]`);
-            //result += `[${msg}:no command]`;
-            continue;
-        }
         //в бою пропускаем не боевые и наоборот
-        if(test) console.log('---->pos:', mudprompt.p2.pos, (my_char.skills[skill].pos!=="fight"), fight);
-        if((my_char.skills[skill].pos!=="fight" && fight)
-            || (my_char.skills[skill].pos==="fight" && !fight)) {
+        if(test) console.log('---->pos:', mudprompt.p2.pos, (my_char.skills[skill]?.pos!=="fight"), fight);
+        if((fight && my_char.skills[skill]?.pos!=="fight")
+            || (!fight && my_char.skills[skill]?.pos==="fight")) {
             if(test) console.log(`  -->[${msg}: ${fight?'':'no '}fight: ${my_char.skills[skill].pos==="fight"?'':'no '} fight skill]`);
             continue;
         }
 
         //определяем процент разученности
-        if(my_char.skills[skill].progress===undefined) {
-            if(test) console.log(`[${my_char.skills[skill].progress}]  -->[${msg}:no skills.${skill} --> slook ${skill}`);
+        if(my_char.skills?.[skill]?.progress===undefined) {
+            if(test) console.log(`[${my_char.skills?.[skill]?.progress}]  -->[${msg}:no skills.${skill} --> slook ${skill}`);
             doAct('slook', skill);
             result += `[${msg}:slook]`;
             return result;
@@ -1706,6 +1700,13 @@ function checkKach() {
         if(my_char.skills[skill].progress >= 100) {
             //result += `[${msg}:${my_char.skills[skill].progress}%]`;
             if(test) console.log(`checkKach [${msg}:${my_char.skills[skill].progress}%] skipped`);
+            continue;
+        }
+        //пропускаем если нет парамтров для прокачки
+        if(my_char.skills?.[skill]?.act===undefined) {
+            if(test) console.log(`  -->[${msg}:no act]`);
+            result += `[${msg}:${my_char.skills[skill].progress}%]`;
+            //result += `[${msg}:no command]`;
             continue;
         }
 
@@ -2974,6 +2975,8 @@ function getSkills(char, level) {
 
     if(char.class=== 'thief') {
         askills.push(['detect hide', 5]);
+        askills.push(['haggle', 6]);
+        askills.push(['mace', 6]);
         askills.push(['envenom', 16]);
         askills.push(['sneak', 4]);
         askills.push(['hide', 4]);
