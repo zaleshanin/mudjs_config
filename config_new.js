@@ -1791,7 +1791,7 @@ function checkKach() {
     if(!fight && !timeout && my_char.action.act === undefined) {
         echo('<span style="color:red;">TIMEOUT SET</span>');
         timeout = true;
-        setTimeout(() => { echo('<span style="color:red;">TIMEOUT</span>');timeout=false; send(""); }, 30*1000);
+        setTimeout(() => { echo('<span style="color:red;">TIMEOUT</span>');timeout=false; send(""); }, 10*1000);
     }
     /* if(my_char.hasSkill('herbs')) {
         console.log("      check herbs:");
