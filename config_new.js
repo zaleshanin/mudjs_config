@@ -149,7 +149,8 @@ var chars = {
         food: 'rusk',
         food_container: 'rock',
         weapons: {
-            weapon_main: { name: 'sting', pattern: 'короткий меч "Жало"'},
+            //weapon_main: { name: 'sting', pattern: 'короткий меч "Жало"'},
+            weapon_main: { name: 'sap', pattern: 'короткий меч "Жало"'},
             shield: { name: 'крышка', pattern: 'крышка от мусорного бака'},
             range_throw: { name: 'awl'},
         },
@@ -322,10 +323,16 @@ $('.trigger').on('text', function (e, text) {
     }
     //качаем haggle
     if(text.match("Ты покупаешь свечу за ")){
-        send('sell candle');
+        if(!my_char.skills?.['haggle']?.progress)
+            doAct('slook', 'haggle')
+        if(my_char.skills?.['haggle']?.progress!==100)
+            send('sell candle');
     }
     if(text.match("Ты продаешь свечу за ")){
-        send('buy candle');
+        if(!my_char.skills?.['haggle']?.progress)
+            doAct('slook', 'haggle')
+        if(my_char.skills?.['haggle']?.progress!==100)
+            send('buy candle');
     }
 
     match = (/^Ты учишься на своих ошибках, и твое умение ('.*') совершенствуется.$|^Теперь ты гораздо лучше владеешь искусством ('.*')!$/).exec(text);
@@ -424,12 +431,15 @@ $('.trigger').on('text', function (e, text) {
      *      <3084/3084зд 4309/4800ман 756/756шг 3939оп Вых:СВЮЗ> [100%:90%]
      * Miyamoto, Ash
      *      prompt [%r] %S||%L%c<{r%h{x/%H {b%m{x/%M %v/%V [%T][{y%e{x]>[%W]
-     *      battleprompt <{r%h{x/%H {b%m{x/%M %v/%V [%T][{y%e{x]>[%W]({r%y{x:{Y%o{x) 
+     *      battleprompt [%r] %S||%L%c<{r%h{x/%H {b%m{x/%M %v/%V [%T][{y%e{x]>[%W]({r%y{x:{Y%o{x) 
      * */
     match = (/^(<([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) ([0-9]{1,5})\/([0-9]{1,5}) \[(.*)]\[.*]>\[.*](\([0-9]{1,3}%:(?<opp>[0-9]{1,3})%\))?)|(<([0-9]{1,5})\/([0-9]{1,5})зд ([0-9]{1,5})\/([0-9]{1,5})ман ([0-9]{1,5})\/([0-9]{1,5})шг ([0-9]{1,5})оп Вых:.*>( \[[0-9]{1,3}%:[0-9]{1,3}%\])?)$/).exec(text);
     if (match) {
         if(match?.groups?.opp) fight = true;
-        else fight = false;
+        else {
+            fight = false;
+            skill_active = {};
+        }
 
         if(kach && match.groups && match.groups.opp) {
             counterSkill.opp = match.groups.opp;
@@ -1645,6 +1655,13 @@ function checking() {
         && (my_char.last_pose || my_char.was_afk))
         restoreStatus();
     
+    if(fight) {
+        if(my_char.hasSkill('dirt kicking')) {
+            if(skill_active['dirt kicking']===true) {
+                message += '<span style="color:green;">[blind]</span>';
+            }
+        } 
+    }
     if(message!=='') echo(message);
 }
 function checkKach() {
@@ -1770,7 +1787,7 @@ function checkKach() {
     
     if(!fight && !checkPose('rest')) return result;
 
-    if(!timeout && !fight && my_char.action.act === undefined) {
+    if(!fight && !timeout && my_char.action.act === undefined) {
         echo('<span style="color:red;">TIMEOUT SET</span>');
         timeout = true;
         setTimeout(() => { echo('<span style="color:red;">TIMEOUT</span>');timeout=false; send(""); }, 30*1000);
@@ -2397,10 +2414,12 @@ function checkEquip() {
 
 function checkNeeds() {
     if(test) console.log('->checkNeeds(hunger:' + my_char.hunger + ' f:' + my_char.lfood
-        + ' thirst:' + my_char.thirst + ' w:' + my_char.lwater + ')');
+        + ' thirst:' + my_char.thirst + ' w:' + my_char.lwater + ')' +
+    `(fight:${fight} ${positions.indexOf('fight')}<= ${positions.indexOf(mudprompt.p2.pos)})`);
+    
     if (my_char.hunger + my_char.thirst == 0 
         && (my_char.ruler_badge===true || my_char.ruler_badge===undefined)
-        && (fight && positions.indexOf('fight') <= positions.indexOf(mudprompt.p2.pos))) {
+        && (!fight || positions.indexOf('fight') <= positions.indexOf(mudprompt.p2.pos))) {
         my_char.needsChanged = false;
         // поели, попили, раскладываем всё по местам (бочку в сумку)
         if(my_char.water_container!=='' && my_char.water_location!==my_char.water_container) {
@@ -2431,6 +2450,7 @@ function checkNeeds() {
     }
 
     if (my_char.afk) {
+        if(test) console.log('---->my_char.afk');
         changeAFK();
         my_char.needsChanged = true;
         return;
