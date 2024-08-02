@@ -1677,6 +1677,7 @@ function checkKach() {
     else if(test) console.warn("---->act:", my_char.action);
 
     if(test) console.warn("---->skills:",my_char.skills);
+    let notEnoughManaMove = false;
     for(let skill in my_char.skills) {
         if(test) console.log('---->skill:', skill, my_char.skills[skill]);
         let msg = skill;
@@ -1739,6 +1740,7 @@ function checkKach() {
                     mudprompt.mana
                 );
             }
+            notEnoughManaMove = true;
             continue;
         } else {
             if(test) console.log("  -->mana/moves check ok!")
@@ -1788,7 +1790,7 @@ function checkKach() {
     
     if(!fight && !checkPose('rest')) return result;
 
-    if(!fight && !timeout && my_char.action.act === undefined) {
+    if(notEnoughManaMove && !fight && !timeout && my_char.action.act === undefined) {
         echo('<span style="color:red;">TIMEOUT SET</span>');
         timeout = true;
         setTimeout(() => { echo('<span style="color:red;">TIMEOUT</span>');timeout=false; send(""); }, 10*1000);
@@ -2977,6 +2979,7 @@ function getSkills(char, level) {
         askills.push(['detect hide', 5]);
         askills.push(['haggle', 6]);
         askills.push(['mace', 6]);
+        askills.push(['circle', 7]);
         askills.push(['envenom', 16]);
         askills.push(['sneak', 4]);
         askills.push(['hide', 4]);
