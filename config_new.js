@@ -1428,6 +1428,8 @@ keydown = function (e) {
 function charInit() {
     if(test) console.log(' -->charInit()');
 
+    kach = false;
+
     let char_obj = getChar();
 
     if(test) console.log(' -->charname=' + char_obj.sees);
@@ -1676,6 +1678,7 @@ function checkKach() {
         return '';
     else if(test) console.warn("---->act:", my_char.action);
 
+    let notEnoughManaMove = false;
     if(test) console.warn("---->skills:",my_char.skills);
     for(let skill in my_char.skills) {
         if(test) console.log('---->skill:', skill, my_char.skills[skill]);
@@ -1739,6 +1742,7 @@ function checkKach() {
                     mudprompt.mana
                 );
             }
+            notEnoughManaMove = true;
             continue;
         } else {
             if(test) console.log("  -->mana/moves check ok!")
@@ -1788,7 +1792,7 @@ function checkKach() {
     
     if(!fight && !checkPose('rest')) return result;
 
-    if(!fight && !timeout && my_char.action.act === undefined) {
+    if(notEnoughManaMove && !fight && !timeout && my_char.action.act === undefined) {
         echo('<span style="color:red;">TIMEOUT SET</span>');
         timeout = true;
         setTimeout(() => { echo('<span style="color:red;">TIMEOUT</span>');timeout=false; send(""); }, 10*1000);
