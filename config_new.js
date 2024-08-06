@@ -1680,7 +1680,6 @@ function checkKach() {
 
     let notEnoughManaMove = false;
     if(test) console.warn("---->skills:",my_char.skills);
-    let notEnoughManaMove = false;
     for(let skill in my_char.skills) {
         if(test) console.log('---->skill:', skill, my_char.skills[skill]);
         let msg = skill;
