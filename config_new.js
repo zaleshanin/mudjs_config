@@ -1680,6 +1680,7 @@ function checkKach() {
 
     let notEnoughManaMove = false;
     if(test) console.warn("---->skills:",my_char.skills);
+    let notEnoughManaMove = false;
     for(let skill in my_char.skills) {
         if(test) console.log('---->skill:', skill, my_char.skills[skill]);
         let msg = skill;
@@ -2981,6 +2982,7 @@ function getSkills(char, level) {
         askills.push(['detect hide', 5]);
         askills.push(['haggle', 6]);
         askills.push(['mace', 6]);
+        askills.push(['circle', 7]);
         askills.push(['envenom', 16]);
         askills.push(['sneak', 4]);
         askills.push(['hide', 4]);
