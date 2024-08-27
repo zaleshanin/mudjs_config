@@ -4,6 +4,7 @@ var kach = false;
 var envenom = false;
 var skill_active = {};
 var opDown = false;
+var fromRoom = null;
 
 //противодействие автовыкидыванию
 var melt_counter = 0; 
@@ -19,6 +20,29 @@ var str, con, dex, wis, int, cha;
 var str_max, con_max, dex_max, wis_max, int_max, cha_max;
 var count=0, total=0;
 var chars = {
+    'Ochokochi': {
+        name: 'Ochokochi',
+        align: 'n',
+        weapon: 'scalpel',
+        class: 'thief',
+        water: 'barrel',
+        water_container: 'bag:food',
+        food: 'rusk',
+        food_container: 'bag:food',
+        weapons: {
+            //weapon_main: { name: 'sting', pattern: 'короткий меч "Жало"'},
+            weapon_main: { name: 'club', pattern: 'дубинка Тэйна'},
+            shield: { name: 'крышка', pattern: 'крышка от мусорного бака'},
+            range_throw: { name: 'dagger'},
+        },
+        buffs_needs: {
+            //(всегда, при фулбафе, всегда на члена группы, при фулбафе на члена группы)
+            //skills:thief:
+            'detect hide': new Buff_need(true, true, false, false),
+            //'sneak': new Buff_need(true, true, false, false),
+            //'hide': new Buff_need(true, true, false, false),
+        }
+    },
     'Miyamoto': {
         name: 'Miyamoto',
         align: 'n',
@@ -139,29 +163,6 @@ var chars = {
             'detect hide': new Buff_need(true, true, false, false),
         }
     },
-    'Ochokochi': {
-        name: 'Ochokochi',
-        align: 'n',
-        weapon: 'scalpel',
-        class: 'thief',
-        water: 'barrel',
-        water_container: 'rock',
-        food: 'rusk',
-        food_container: 'rock',
-        weapons: {
-            //weapon_main: { name: 'sting', pattern: 'короткий меч "Жало"'},
-            weapon_main: { name: 'sap', pattern: 'короткий меч "Жало"'},
-            shield: { name: 'крышка', pattern: 'крышка от мусорного бака'},
-            range_throw: { name: 'awl'},
-        },
-        buffs_needs: {
-            //(всегда, при фулбафе, всегда на члена группы, при фулбафе на члена группы)
-            //skills:thief:
-            'detect hide': new Buff_need(false, true, false, false),
-            //'sneak': new Buff_need(true, true, false, false),
-            //'hide': new Buff_need(true, true, false, false),
-        }
-    }
 };
 var rest_rooms =  {
     9510:   'lawn',     // Общ.площадь Нового Талоса
@@ -191,6 +192,20 @@ var counterSkill = {
     improves: 0,
     opp: 100,
 };
+var kachThrowingWeapon = {
+    status: false,
+    target: "stag",
+    targetName: "Белый олень",
+    missile: "dagger",
+    container: 'bag:throwing',
+    missilePattern: 'Бронзовый кинжал .* оставлен здесь\.$',
+    missileName: 'бронзовый кинжал',
+    missileOnFloor: false,
+    missileOnInventory: false,
+    targetHere: false,
+    targetDirection: '',
+    missileWield: false,
+};
 /*--------------------------------------------------------------------------
  * Триггера - автоматические действия как реакция на какую-то строку в мире.
  *-------------------------------------------------------------------------*/
@@ -199,16 +214,62 @@ $('.trigger').on('text', function (e, text) {
     if(text.match('^Входящие команды очищены\.$') && my_char.action.act) {
         return;
     }
-    //качаем throw spear
-/*     if(kach) {
-        if(text.match('Белый олень прискакал с востока.')) {
-            send('wield spear|e|throw spear west stag|get all.spear');
+    //качаем throwing weapon
+    if(kach){ 
+        //TODO Ты слишком устал для этого.
+        if(text.match('Ты прицеливаешься и мечешь .* на .*\.$')) {
+            //echo('<span style="color:red;">ПИУ!!!</span>');
+            kachThrowingWeapon.status=true;
+            kachThrowingWeapon.missileWield=false;
+            if(my_char.action.act==='throw')
+                clearAction();
         }
-        if(text.match('Белый олень прискакал с запада.')) {
-            send('wield spear|w|throw spear east stag|get all.spear');
+        if(text.match(kachThrowingWeapon.targetName+' стоит слишком близко для броска\.$')) {
+            //echo('<span style="color:red;">Клиент на месте!!!</span>');
+            kachThrowingWeapon.targetHere=true;
+            if(my_char.action.act==='throw')
+                clearAction();
+        }
+
+        if(text.match('Ты не видишь ничего подобного в .*\.$')) {
+            kachThrowingWeapon.status=false;
+            //echo('<span style="color:red;">ЗАКОНЧИЛИСЬ ПАТРОНЫ!!!</span>');
+            if(my_char.action.act==='get')
+                clearAction();
+        }
+        if(text.match(kachThrowingWeapon.missilePattern)) {
+            //echo('<span style="color:red;">о! ножичек!!!</span>');
+            kachThrowingWeapon.missileOnFloor=true;
+        }
+        if(text.match('Ты берешь '+kachThrowingWeapon.missileName+'\.$')) {
+            //echo('<span style="color:red;">моё!!!</span>');
+            kachThrowingWeapon.missileOnFloor=false;
+            kachThrowingWeapon.missileOnInventory=true;
+            if(my_char.action.act==='get')
+                clearAction();
+        }
+
+        if(text.match('Ты берешь '+kachThrowingWeapon.missileName+' из .*\.$')) {
+            //echo('<span style="color:red;">перезарядка!!!</span>');
+            kachThrowingWeapon.missileOnInventory=true;
+            if(my_char.action.act==='get')
+                clearAction();
+        }
+
+        if(text.match('Ты вооружаешься ')) {
+            //echo('<span style="color:red;">READY!!!</span>');
+            kachThrowingWeapon.missileOnInventory=false;
+            kachThrowingWeapon.missileWield=true;
+            if(my_char.action.act==='wield')
+                clearAction();
+        }
+
+        if(text.match(kachThrowingWeapon.targetName+' прискакал ')) {
+            //echo('<span style="color:red;">добрый вечер!!!</span>');
+            kachThrowingWeapon.targetHere=true;
         }
     }
- */    
+
     //качаем lore
     if(text.match('^Ты пытаешься вспомнить хоть что-то из древних преданий про эту вещь, но безуспешно.$|^.* -- это .* [0-9]{1,3} уровня.')){
         if(test) console.log("[lore detected]");
@@ -1576,6 +1637,16 @@ function promptRecived(afk) {
             clearAction();
     }
 
+    if(fromRoom!=mudprompt.vnum) {
+        fromRoom==null;
+        if(['north','south','west','east','down','up'].indexOf(my_char.action.act)!=-1) {
+            clearAction();
+            kachThrowingWeapon.targetHere = false;
+            echo('<span style="color:red;">когда переехал не помню...</span>');
+        }
+    }
+
+
     checking();
 
 }
@@ -1676,9 +1747,66 @@ function checkKach() {
 
     if(my_char.action.act != undefined)
         return '';
+    
     else if(test) console.warn("---->act:", my_char.action);
 
     let notEnoughManaMove = false;
+    if(kachThrowingWeapon.status) {
+        let throwing_weapon_progress = `throwing weapon:${my_char.skills['throwing weapon'].progress}%`;
+
+        if(my_char.skills['throwing weapon'].progress>=100) {
+            echo('<span style="color:red;">-->DONE!!!</span>');
+            kachThrowingWeapon.status = false;
+
+            return result+`[${throwing_weapon_progress}]`;
+        }
+        if(!checkPose('stand')) {
+            echo('<span style="color:red;">-->ПОДЪЕМ!!!</span>');
+            return result+`[${throwing_weapon_progress}->stand]`
+        }
+
+        if(mudprompt.move < (my_char.skills['throwing weapon'].moves ?? 0)) {
+            echo('<span style="color:red;">-->устал!!!</span>');
+            notEnoughManaMove = true;
+            return result + `[${throwing_weapon_progress} ${mudprompt.move}/${my_char.skills['throwing weapon'].moves}mv]`;
+        }
+
+        let throwing_weapon_direction = mudprompt.vnum == 4247 ? 'south' : 'north';
+
+        if([4247, 4255].indexOf(mudprompt.vnum)==-1) {
+            echo('<span style="color:red;">-->потерялася я!!!</span>');
+            return result+`[${throwing_weapon_progress}->LOST]`;
+        }
+        if(kachThrowingWeapon.targetHere) {
+            echo('<span style="color:red;">-->MOVE!!!</span>');
+            kachThrowingWeapon.missileOnFloor = false;
+            fromRoom=mudprompt.vnum;
+            doAct(throwing_weapon_direction);
+            return result+`[${throwing_weapon_progress}->${throwing_weapon_direction}]`;
+        }
+
+        if(kachThrowingWeapon.missileWield) {
+            echo('<span style="color:red;">-->ФАЯЯЯЯЯЯЯ!!!</span>');
+            doAct("throw",` ${kachThrowingWeapon.missile} ${throwing_weapon_direction} ${kachThrowingWeapon.target}`);
+            return result+`[${throwing_weapon_progress}->throwing]`;
+        }
+        if(kachThrowingWeapon.missileOnInventory) {
+            echo('<span style="color:red;">-->RELOAD!!!</span>');
+            doAct('wield', 'dagger');
+            return result+`[${throwing_weapon_progress}->missile on inventory]`;
+        }
+        if(kachThrowingWeapon.missileOnFloor) {
+            echo('<span style="color:red;">-->АПОРТ!!!</span>');
+            doAct('get', 'dagger');
+            return result+`[${throwing_weapon_progress}->missile on floor]`;
+        } else if(!kachThrowingWeapon.missileOnInventory && !kachThrowingWeapon.missileWield) {
+            echo('<span style="color:red;">-->ПАТРОНОВ!!!</span>');
+            doAct("get",` ${kachThrowingWeapon.missile} ${kachThrowingWeapon.container}`);
+            return result+`[${throwing_weapon_progress}->missile in container]`;
+        }
+        
+    }
+
     if(test) console.warn("---->skills:",my_char.skills);
     for(let skill in my_char.skills) {
         if(test) console.log('---->skill:', skill, my_char.skills[skill]);
@@ -2976,6 +3104,8 @@ function getSkills(char, level) {
     let askills = [];
 
     if(char===undefined) return askills;
+
+    askills.push(['throwing weapon', 1]);
 
     if(char.class=== 'thief') {
         askills.push(['detect hide', 5]);
