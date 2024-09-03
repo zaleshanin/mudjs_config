@@ -1,5 +1,6 @@
 var test = false; //true - для вывода всякой отладочной информации
 var fight = false;
+var opponent = null;
 var kach = false;
 var envenom = false;
 var skill_active = {};
@@ -211,6 +212,8 @@ var kachThrowingWeapon = {
  *-------------------------------------------------------------------------*/
 $('.trigger').on('text', function (e, text) {
     if(text==='') return;
+    if(text.match('^no parse:')) return;
+    if(text.match('^[kach]')) return;
     if(text.match('^Входящие команды очищены\.$') && my_char.action.act) {
         return;
     }
@@ -277,11 +280,11 @@ $('.trigger').on('text', function (e, text) {
         return;
     }
     
-    if(text.match(' в прекрасном состоянии\.$')){
+    /* if(text.match(' в прекрасном состоянии\.$')){
         if(test) console.log("[look detected]");
         clearAction('look');
         return;
-    }
+    } */
     if(text.match('^Яд, отравлявший .*, испаряется и высыхает\.$')) {
         envenom = false;
         return;
@@ -310,7 +313,7 @@ $('.trigger').on('text', function (e, text) {
     if(text.match('^Твой бросок грязью ')) {
         clearAction('dirt');
     }
-    if(text.match('^Ты метко швыряешь .* прямо в глаза .*, ослепляя его!$|^.* уже ничего не видит\.$')) {
+    if(text.match('^У .* глаза на стебельках -- их засыпать грязью не получится\.$|^У .* нет глаз -- на нее это умение не подействует\.$|^Ты метко швыряешь .* прямо в глаза .*, ослепляя .*!$|^.* уже ничего не вид.*\.$')) {
         skill_active['dirt kicking']=true;
         clearAction('dirt');
     }
@@ -326,7 +329,7 @@ $('.trigger').on('text', function (e, text) {
     if(text.match('^Твоя подножка ')) {
         clearAction('trip');
     }
-    if(text.match('^.* падает навзничь!$|^.* уже лежит\.$')) {
+    if(text.match('^Твоя подсечка не сможет навредить летучему противнику\.$|^У .* нет ног, подсекать тут нечего\.$|^.* падает навзничь!$|^.* уже лежит\.$')) {
         skill_active['trip']=true;
         clearAction('trip');
     }
@@ -500,6 +503,7 @@ $('.trigger').on('text', function (e, text) {
         if(match?.groups?.opp) fight = true;
         else {
             fight = false;
+            opponent = null;
             skill_active = {};
         }
 
@@ -519,6 +523,11 @@ $('.trigger').on('text', function (e, text) {
         return;
     }
     if (!my_char.init) return;
+    if(fight) {
+        match = (/(.*) ((в прекрасном состоянии)|(име.* несколько царапин)|(име.* несколько небольших синяков и царапин)|(име.* довольно много ран)|(име.* несколько больших, опасных ран и царапин)|(выгляд.* сильно поврежденн.*)|(в ужасном состоянии))\./).exec(text);
+        if(match)
+            opponent = match[1];
+    }
 
     match = (/^Режим AFK в(ы)?ключен.$/).exec(text);
     if (match) {
@@ -1358,6 +1367,9 @@ keydown = function (e) {
         case KP_3:
             dir('down', e);
             break;
+        case KP_1:
+            dir('down', e);
+            break;
         case KP_2:
             dir('south', e);
             break;
@@ -1813,7 +1825,7 @@ function checkKach() {
         if(test) console.log('---->skill:', skill, my_char.skills[skill]);
         let msg = skill;
         //в бою пропускаем не боевые и наоборот
-        if(test) console.log('---->pos:', mudprompt.p2.pos, (my_char.skills[skill]?.pos!=="fight"), fight);
+        if(test) console.log(`---->pos: current:${mudprompt.p2.pos}, skill:${my_char.skills[skill]?.pos}, fight:${fight}`);
         if((fight && my_char.skills[skill]?.pos!=="fight")
             || (!fight && my_char.skills[skill]?.pos==="fight")) {
             if(test) console.log(`  -->[${msg}: ${fight?'':'no '}fight: ${my_char.skills[skill].pos==="fight"?'':'no '} fight skill]`);
@@ -1891,7 +1903,7 @@ function checkKach() {
         }
         
         if(skills[skill].act===null) {
-            result += `[${msg}:${my_char.skills[skill].progress}% passive]`;
+            result += `[${msg}:${my_char.skills[skill].progress}%]`;
             continue;
         }
 
@@ -3109,6 +3121,9 @@ function getSkills(char, level) {
     askills.push(['throwing weapon', 1]);
 
     if(char.class=== 'thief') {
+        askills.push(['dodge', 1]);
+        askills.push(['dagger', 1]);
+        askills.push(['sword', 1]);
         askills.push(['detect hide', 5]);
         askills.push(['haggle', 6]);
         askills.push(['mace', 6]);
@@ -3798,6 +3813,18 @@ function Words(name, str) {
 };
 /****************SKILLS FOR KACH **************/
 var skills = {
+    dodge: {
+        act: null,
+        pos: "fight",
+    },
+    dagger: {
+        act: null,
+        pos: "fight",
+    },
+    sword: {
+        act: null,
+        pos: "fight",
+    },
     envenom: {
         act: {
             act: 'envenom',
