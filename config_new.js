@@ -32,7 +32,7 @@ var chars = {
         food_container: 'bag:food',
         weapons: {
             //weapon_main: { name: 'sting', pattern: 'короткий меч "Жало"'},
-            weapon_main: { name: 'club', pattern: 'дубинка Тэйна'},
+            weapon_main: { name: 'knife', pattern: 'резак'},
             shield: { name: 'крышка', pattern: 'крышка от мусорного бака'},
             range_throw: { name: 'dagger'},
         },
@@ -285,6 +285,11 @@ $('.trigger').on('text', function (e, text) {
         clearAction('look');
         return;
     } */
+    if(my_char.action.act=="look" && text.match("^\\(.*, .* размера\\) .*\.$")){
+        if(test) console.log("[look detected]");
+        clearAction('look');
+        return;
+    }
     if(text.match('^Яд, отравлявший .*, испаряется и высыхает\.$')) {
         envenom = false;
         return;
@@ -770,17 +775,17 @@ $('.trigger').on('text', function (e, text) {
             return;
         }
 
-        if (my_char.action.act === 'wield' && my_char.action.command === my_char.weapon.name) {
-            clearAction();
-            my_char.armed = 2;
+        
+        clearAction("wield");
+        my_char.armed = 2;
+        //if(test) 
+        console.log('[#weapon](set armed=2)\n');
+        if(my_char.armed_second!==false && my_char.armed_second===3) {
+            my_char.armed_second=1;
             //if(test) 
-            console.log('[#weapon](set armed=2)\n');
-            if(my_char.armed_second!==false && my_char.armed_second===3)
-                my_char.armed_second=1;
-                //if(test) 
-                console.log('[#weapon](set armed=1)\n');
-                my_char.eqChanged = true;
-            }
+            console.log('[#weapon](set armed=1)\n');
+            my_char.eqChanged = true;
+        }
     }
     //[#armed] 0 - без оружия(оружие на земле), 1 - оружие в мешке, 2 - вооружен
     //[#armed_second] false; 0 - на земле, 1 - инвентарь, 2 - вооружен, 3 - первичное
@@ -2677,6 +2682,9 @@ function checkNeeds() {
 
 }
 function checkPose(need_pose) {
+    if(my_char.action.act != undefined) {
+        return;
+    }
     let need_index = positions.indexOf(need_pose),
         current_index = positions.indexOf(mudprompt.p2.pos);
     if(test) {
@@ -3842,7 +3850,7 @@ var skills = {
     peek: {
         act: {
             act: 'look',
-            command: 'whore',
+            command: 'snail',
         },
         pos: "rest",
     },
