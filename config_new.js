@@ -675,23 +675,23 @@ $('.trigger').on('text', function (e, text) {
     //-------------------------------------------------------------------------//
     //[#weapon]
     if (text.match('ВЫБИЛ.? у тебя .*, и он.? пада.?т .*!')) {
-        console.log('MATCH:'+text+'\n');
+        //console.log('MATCH:'+text+'\n');
         if(test)console.log('[#weapon] armed:'+my_char.armed+' armed_second:'+my_char.armed_second+'\n');
 
         my_char.eqChanged = true;
         if(!my_char.armed || my_char.armed==2) {
             my_char.armed = 0;
             //if(test) 
-            console.log('[#weapon](set armed=0)\n');
+            console.log('[#weapon](set armed=0) ['+text+']');
         }
         if(my_char.armed_second==3){
             my_char.armed_second = 0;
            //if(test) 
-           console.log('[#weapon](set armed_second=0)\n');
+           console.log('[#weapon](set armed_second=0) ['+text+']');
         }
     }
     if (text.match(' ВЫБИЛ.? у тебя оружие!$')) {
-        console.log('MATCH:'+text+'\n');
+        //console.log('MATCH:'+text+'\n');
         if(test) console.log('[#weapon] armed:'+my_char.armed+' armed_second:'+my_char.armed_second+'\n');
 
         my_char.eqChanged = true;
@@ -701,7 +701,7 @@ $('.trigger').on('text', function (e, text) {
         console.log('[#weapon](set armed=1)*******NEED FIX*********\n');
     }
     if (my_char.action.act === 'get' && text.match('^Ты берешь .*\.$')) {
-        console.log('MATCH:'+text+'\n');
+        //console.log('MATCH:'+text+'\n');
         if(test) console.log('[#weapon] armed:'+my_char.armed+' armed_second:'+my_char.armed_second+'\n');
 
         clearAction();
@@ -709,13 +709,13 @@ $('.trigger').on('text', function (e, text) {
             my_char.armed = 1;
             my_char.eqChanged = true;
             //if(test) 
-            console.log('[#weapon](set armed=1)\n');
+            console.log('[#weapon](set armed=1) ['+text+']');
         }
         if (my_char.armed_second === 0) {
             my_char.armed_second = 1;
             my_char.eqChanged = true;
             //if(test) 
-            console.log('[#weapon](set armed_second=1)\n');
+            console.log('[#weapon](set armed_second=1) ['+text+']');
         }
     }
     match = (/^От боли ты роняешь (.*)!$/).exec(text);
@@ -729,15 +729,16 @@ $('.trigger').on('text', function (e, text) {
         } else if(my_char.weapon?.pattern 
             && match[1].match(my_char.weapon.pattern)) {
             my_char.armed = 0;
-            console.log('[#weapon](set armed=0)\n');
+            console.log('[#weapon](set armed=0) ['+text+']');
             return;
         } else if(my_char.second?.pattern 
             && match[1].match(my_char.second.pattern)) {
             my_char.armed_second = 0;
-            console.log('[#weapon](set armed_second=0)\n');
+            console.log('[#weapon](set armed_second=0) ['+text+']');
             return;
         } 
         echo('<span style="color:red;">*******УРОНЕННОЕ НЕ ОБРАБОТАНО*********</span>');
+        console.warn(`НЕ ОТРАБОТАЛО УРОНЕННОЕ: [${text}]`);
     }
     //[#shield]
     if (text.match('^.* превращается в труху и опилки.$')
@@ -752,13 +753,13 @@ $('.trigger').on('text', function (e, text) {
 
     match = (/^Ты вооружаешься .*?(?<main> как основным оружием)?(?<second> как вторичным оружием)?\.$/).exec(text);
     if (match) {
-        console.log('MATCH:'+text+'\n');
+        //console.log('MATCH:'+text+'\n');
         if(test) console.log('[#weapon] armed:'+my_char.armed+' armed_second:'+my_char.armed_second+'\n');
 
         if(match.groups && match.groups.main) {
             my_char.armed_second = 3;
             //if(test) 
-            console.log('[#weapon](set armed_second=3)\n');
+            console.log('[#weapon](set armed_second=3) ['+text+']');
             return;
         }
         if(match.groups && match.groups.second
@@ -766,7 +767,7 @@ $('.trigger').on('text', function (e, text) {
             clearAction();
             my_char.armed_second = 2;
             //if(test) 
-            console.log('[#weapon](set armed_second=2)\n');
+            console.log('[#weapon](set armed_second=2) ['+text+']');
             return;
         }
 
@@ -774,11 +775,11 @@ $('.trigger').on('text', function (e, text) {
         clearAction("wield");
         my_char.armed = 2;
         //if(test) 
-        console.log('[#weapon](set armed=2)\n');
+        console.log('[#weapon](set armed=2) ['+text+']');
         if(my_char.armed_second!==false && my_char.armed_second===3) {
             my_char.armed_second=1;
             //if(test) 
-            console.log('[#weapon](set armed=1)\n');
+            console.log('[#weapon](set armed=1) ['+text+']');
             my_char.eqChanged = true;
         }
     }
@@ -796,21 +797,21 @@ $('.trigger').on('text', function (e, text) {
     }
     match = (/^Ты снимаешь .*\.$/).exec(text);
     if(match && my_char.action.act === 'remove') {
-        console.log("MATCH: remove:"+text, my_char.action);
+        //console.log("MATCH: remove:"+text, my_char.action);
         if(my_char.action.command === my_char.weapon.name) {
-            console.log('[#weapon_change][set armed = 1]');
+            console.log('[#weapon_change][set armed = 1] ['+text+']');
             my_char.armed = 1;
             my_char.eqChanged = true;
         }
 
         if(my_char.action.command === my_char.second.name) {
-            console.log('[#weapon_change][set armed_second = 1]');
+            console.log('[#weapon_change][set armed_second = 1] ['+text+']');
             my_char.armed_second=1;
             my_char.eqChanged = true;
         }
 
         if(my_char.action.command === 'quiver') {
-            console.log('[#weapon_change][set quiver = false]');
+            console.log('[#weapon_change][set quiver = false] ['+text+']');
             my_char.quiver=false;
             my_char.eqChanged = true;
         }
@@ -823,7 +824,7 @@ $('.trigger').on('text', function (e, text) {
      if(text.match('Ты берешь в руки колчан.')) {
         console.log("MATCH:"+text, my_char.action);
         my_char.quiver = true;
-        console.log('[#weapon_change][set quiver = true]');
+        console.log('[#weapon_change][set quiver = true] ['+text+']');
         if(my_char.action.act === 'wear' && my_char.action.command==='quiver') {
             my_char.eqChanged = true;
             clearAction();
