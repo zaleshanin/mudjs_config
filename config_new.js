@@ -379,8 +379,9 @@ $('.trigger').on('text', function (e, text) {
         if(text.match('(^См. также (справка|help) .*\.$)|(^Формат: .*$)')) {
             if(test) {
                 console.log("TRIGGER: slook finish detected!");
+                console.log('TRIGGER [slook result]:');console.log(slook);
             }
-            console.log('TRIGGER [slook result]:');console.log(slook);
+            console.log(`-->${slook.name}: ${slook.progress}%`);
             let skillName;
             if(my_char[slook.type][slook.name]==undefined)
                 skillName = slook.runame;
@@ -390,7 +391,7 @@ $('.trigger').on('text', function (e, text) {
             if(my_char[slook.type]==undefined) my_char[slook.type] = {};
             if(my_char[slook.type][skillName]==undefined) my_char[slook.type][skillName] = {};
             Object.assign(my_char[slook.type][skillName], slook);
-            console.log('my_char['+slook.type+']['+skillName+']',my_char[slook.type][skillName]);
+            //console.log('my_char['+slook.type+']['+skillName+']',my_char[slook.type][skillName]);
             slook = {};
             lSlook = false;
         }
@@ -408,9 +409,9 @@ $('.trigger').on('text', function (e, text) {
 
     match = (/^Ты учишься на своих ошибках, и твое умение ('.*') совершенствуется.$|^Теперь ты гораздо лучше владеешь искусством ('.*')!$/).exec(text);
     if(match){
-        console.log('match',match);
+        if(test)console.log('match',match);
         let slookSkill = match[1]==undefined?match[2]:match[1];
-        echo('-->[slook '+slookSkill+']');
+        //echo('-->[slook '+slookSkill+']');
         doAct('slook', slookSkill);
         if(kach && slookSkill === "'counter'") {
             counterSkill.improves++;
@@ -698,13 +699,6 @@ $('.trigger').on('text', function (e, text) {
         echo('<span style="color:red;">*******NEED FIX*********</span>');
         //if(test) 
         console.log('[#weapon](set armed=1)*******NEED FIX*********\n');
-    }
-    if(text.match('^Ты берешь .*\.$')) {
-        console.warn("MATCH GET", my_char);
-        if(my_char.action.act === 'get')
-            console.warn("ACT === get");
-        else
-            console.warn("ACT !== get");
     }
     if (my_char.action.act === 'get' && text.match('^Ты берешь .*\.$')) {
         console.log('MATCH:'+text+'\n');
@@ -1008,16 +1002,17 @@ $('.trigger').on('text', function (e, text) {
     // к стандартным уведомлениям добавлен хрустальный шар и поздравлялки. Убраны уведомления от некоторых мобов. [#говоруны]
     if (!text.match('^Валькирия |^Русалка |^The Ofcol cityguard |^Стражник |^Водяной |^The weaponsmith |^Архивариус |^Мальчик |^Булочник |^Колдун |^Ювелир |^Хассан |^Охранник султана |^Продавец доспехов |^Оружейник |^Бакалейщик ')
         && (
-            text.match('^\\[ic\\] ') ||
-            text.match('^\\[ooc\\] ') ||
+            //text.match('^\\[ic\\] ') ||
+            //text.match('^\\[ooc\\] ') ||
             text.match(' говорит тебе \'.*\'$') ||
-            text.match(' произносит \'.*\'$') ||
-            text.match('^\\[RULER\\].*$') ||
-            text.match('^\\Тихий голос из хрустального шара:\\ .*$') ||
-            text.match('\\ поздравляет \'.*\'$')
+            text.match(' произносит \'.*\'$') // ||
+            //text.match('^\\[RULER\\].*$') ||
+            //text.match('^\\Тихий голос из хрустального шара:\\ .*$') ||
+            //text.match('\\ поздравляет \'.*\'$')
         )
     ) {
-        notify(text);
+        //notify(text);
+        console.log(text);
     }
 
 });
@@ -1506,7 +1501,7 @@ keydown = function (e) {
 };
 
 function charInit() {
-    if(test) console.log(' -->charInit()');
+    if(test) console.log('charInit()');
 
     kach = false;
 
@@ -1519,7 +1514,7 @@ function charInit() {
     } else {
         if(test) console.log(' -->chars[' + char_obj.sees + '] == undefined');
     }
-    if (test) console.log(' -->charInit().my_char', my_char);
+    console.log(`charInit(): `, my_char.name);
 }
 
 function getChar() {
@@ -3854,6 +3849,10 @@ var skills = {
         pos: "fight",
     },
     sword: {
+        act: null,
+        pos: "fight",
+    },
+    mace: {
         act: null,
         pos: "fight",
     },
