@@ -193,6 +193,11 @@ var counterSkill = {
     improves: 0,
     opp: 100,
 };
+var haggleSkill = {
+    rooms: [{vnum: 9628, obj: 'candle', pattern: 'свечу'}],
+    room: {},
+    has: false,
+};
 var kachThrowingWeapon = {
     status: false,
     target: "stag",
@@ -392,17 +397,13 @@ $('.trigger').on('text', function (e, text) {
         return;
     }
     //качаем haggle
-    if(text.match("Ты покупаешь свечу за ")){
-        if(my_char.skills?.['haggle']?.progress===undefined)
-            doAct('slook', 'haggle')
-        if(my_char.skills?.['haggle']?.progress!=100)
-            send('sell candle');
+    if(text.match(`Ты покупаешь ${haggleSkill?.room?.pattern ?? 'свечу'} за `)){
+        haggleSkill.has = true;
+        clearAction("buy");
     }
-    if(text.match("Ты продаешь свечу за ")){
-        if(my_char.skills?.['haggle']?.progress===undefined)
-            doAct('slook', 'haggle')
-        if(my_char.skills?.['haggle']?.progress!=100)
-            send('buy candle');
+    if(text.match(`Ты продаешь ${haggleSkill?.room?.pattern ?? 'свечу'} за `)){
+        haggleSkill.has = false;
+        clearAction("sell");
     }
 
     match = (/^Ты учишься на своих ошибках, и твое умение ('.*') совершенствуется.$|^Теперь ты гораздо лучше владеешь искусством ('.*')!$/).exec(text);
@@ -1937,6 +1938,25 @@ function checkKach() {
     }
     
     if(!fight && !checkPose('rest')) return result;
+
+    //haggle
+    if(my_char.hasSkill("haggle")&&my_char.skills['haggle'].proggress!==100) {
+        haggleSkill.room = {};
+        for(let room of haggleSkill.rooms) {
+            if(mudprompt.vnum==room.vnum) {
+                haggleSkill.room = room;
+                break;
+            }
+        }
+        if(haggleSkill.room.vnum!=undefined) {
+            if(!haggleSkill.has)
+                doAct('buy',haggleSkill.room.obj);
+            else
+                doAct('sell',haggleSkill.room.obj);
+
+            return result;
+        }
+    }
 
     if(notEnoughManaMove && !fight && !timeout && my_char.action.act === undefined) {
         echo('<span style="color:red;">TIMEOUT SET</span>');
