@@ -1936,11 +1936,11 @@ function checkKach() {
         doAct('visible');
         return result;
     }
-    
+
     if(!fight && !checkPose('rest')) return result;
 
     //haggle
-    if(my_char.hasSkill("haggle")&&my_char.skills['haggle'].proggress!==100) {
+    if(my_char.hasSkill("haggle") && my_char.skills['haggle'].progress!==100) {
         haggleSkill.room = {};
         for(let room of haggleSkill.rooms) {
             if(mudprompt.vnum==room.vnum) {
@@ -3841,6 +3841,10 @@ function Words(name, str) {
 };
 /****************SKILLS FOR KACH **************/
 var skills = {
+    haggle: {
+        act: null,
+        pos: "rest",
+    },
     dodge: {
         act: null,
         pos: "fight",
