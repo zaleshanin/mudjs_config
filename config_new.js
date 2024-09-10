@@ -33,7 +33,8 @@ var chars = {
         weapons: {
             //weapon_main: { name: 'sting', pattern: 'короткий меч "Жало"'},
             //weapon_main: { name: 'knife', pattern: 'резак'},
-            weapon_main: { name: 'sap', pattern: 'мешочек ворюги'},
+            //weapon_main: { name: 'sap', pattern: 'мешочек ворюги'},
+            weapon_main: { name: 'awl', pattern: 'старое шило'},
             //shield: { name: 'крышка', pattern: 'крышка от мусорного бака'},
             shield: { name: 'shield', pattern: 'покрытый металлом щит с шипами'},
             range_throw: { name: 'dagger'},
