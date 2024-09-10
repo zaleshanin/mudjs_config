@@ -386,7 +386,7 @@ $('.trigger').on('text', function (e, text) {
                 console.log("TRIGGER: slook finish detected!");
                 console.log('TRIGGER [slook result]:');console.log(slook);
             }
-            console.log(`-->${slook.name}: ${slook.progress}%`);
+            logWithDate(`-->${slook.name}: ${slook.progress}%`);
             let skillName;
             if(my_char[slook.type][slook.name]==undefined)
                 skillName = slook.runame;
@@ -1018,7 +1018,10 @@ $('.trigger').on('text', function (e, text) {
         )
     ) {
         //notify(text);
-        console.log(text);
+        logWithDate(text);
+    }
+    if(text.match('^Ты говоришь .* \'.*\'$')){
+        logWithDate(text);
     }
 
 });
@@ -3840,6 +3843,10 @@ function Words(name, str) {
             return '[a'+this.name.substring(0,1)+']';
         }
     };
+};
+function logWithDate(str) {
+    let date = new Date();
+    console.log(`${date.toLocaleString()} ${str}`);
 };
 /****************SKILLS FOR KACH **************/
 var skills = {
