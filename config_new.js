@@ -32,8 +32,10 @@ var chars = {
         food_container: 'bag:food',
         weapons: {
             //weapon_main: { name: 'sting', pattern: 'короткий меч "Жало"'},
-            weapon_main: { name: 'knife', pattern: 'резак'},
-            shield: { name: 'крышка', pattern: 'крышка от мусорного бака'},
+            //weapon_main: { name: 'knife', pattern: 'резак'},
+            weapon_main: { name: 'sap', pattern: 'мешочек ворюги'},
+            //shield: { name: 'крышка', pattern: 'крышка от мусорного бака'},
+            shield: { name: 'shield', pattern: 'покрытый металлом щит с шипами'},
             range_throw: { name: 'dagger'},
         },
         buffs_needs: {
@@ -185,7 +187,7 @@ var hasHarp = false;
 var isHarp = false;
 var timeout = false;
 var herbCooldown = false;
-var slook = {};
+var slook = {progress:0};
 var lSlook = false;
 var counterSkill = {
     attacks: 0,
@@ -221,6 +223,9 @@ $('.trigger').on('text', function (e, text) {
     if(text.match('^[kach]')) return;
     if(text.match('^Входящие команды очищены\.$') && my_char.action.act) {
         return;
+    }
+    if(text.match('$.* наносит повреждения .*\.$')) {
+        console.log(`>>>${text}<<<`);
     }
     //качаем throwing weapon
     if(kach){ 
@@ -392,7 +397,7 @@ $('.trigger').on('text', function (e, text) {
             if(my_char[slook.type][skillName]==undefined) my_char[slook.type][skillName] = {};
             Object.assign(my_char[slook.type][skillName], slook);
             //console.log('my_char['+slook.type+']['+skillName+']',my_char[slook.type][skillName]);
-            slook = {};
+            slook = {progress:0};
             lSlook = false;
         }
         return;
@@ -3146,6 +3151,7 @@ function getSkills(char, level) {
 
     if(char.class=== 'thief') {
         askills.push(['dodge', 1]);
+        askills.push(['shield block', 7]);
         askills.push(['dagger', 1]);
         askills.push(['sword', 1]);
         askills.push(['detect hide', 5]);
@@ -3842,6 +3848,10 @@ var skills = {
         pos: "rest",
     },
     dodge: {
+        act: null,
+        pos: "fight",
+    },
+    'shield block': {
         act: null,
         pos: "fight",
     },
