@@ -34,7 +34,9 @@ var chars = {
             //weapon_main: { name: 'sting', pattern: 'короткий меч "Жало"'},
             //weapon_main: { name: 'knife', pattern: 'резак'},
             //weapon_main: { name: 'sap', pattern: 'мешочек ворюги'},
-            weapon_main: { name: 'awl', pattern: 'старое шило'},
+            //weapon_main: { name: 'awl', pattern: 'старое шило'},
+            //weapon_main: { name: 'sword', pattern: 'жестяная сабля'},
+            weapon_main: { name: 'scalpel', pattern: 'скальпель владельца Цирка'},
             //shield: { name: 'крышка', pattern: 'крышка от мусорного бака'},
             shield: { name: 'shield', pattern: 'покрытый металлом щит с шипами'},
             range_throw: { name: 'dagger'},
@@ -225,8 +227,12 @@ $('.trigger').on('text', function (e, text) {
     if(text.match('^Входящие команды очищены\.$') && my_char.action.act) {
         return;
     }
-    if(text.match('$.* наносит повреждения .*\.$')) {
+    if(text.match('^.* наносит повреждения .*\.$')) {
         console.log(`>>>${text}<<<`);
+    }
+    match = (/^Полночь. Начинается день (.*)\./).exec(text);
+    if(match) {
+        logWithDate(`[${mudprompt.date.d} (${match[1]}) ${mudprompt.date.m} ${mudprompt.date.y}]`);
     }
     //качаем throwing weapon
     if(kach){ 
@@ -1021,7 +1027,7 @@ $('.trigger').on('text', function (e, text) {
         //notify(text);
         logWithDate(text);
     }
-    if(text.match('^Ты говоришь .* \'.*\'$')){
+    if(text.match('^Ты говоришь .* \'.*\'$') || text.match('^Ты произносишь \'.*\'$')){
         logWithDate(text);
     }
 
@@ -3156,6 +3162,7 @@ function getSkills(char, level) {
     if(char.class=== 'thief') {
         askills.push(['dodge', 1]);
         askills.push(['shield block', 7]);
+        askills.push(['hand to hand', 1]);
         askills.push(['dagger', 1]);
         askills.push(['sword', 1]);
         askills.push(['detect hide', 5]);
@@ -3864,6 +3871,10 @@ var skills = {
         pos: "fight",
     },
     dagger: {
+        act: null,
+        pos: "fight",
+    },
+    "hand to hand": {
         act: null,
         pos: "fight",
     },
