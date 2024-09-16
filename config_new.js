@@ -971,6 +971,11 @@ $('.trigger').on('text', function (e, text) {
         //my_char.lwater = false;
         my_char.needsChanged = true;
     }
+    if (text.match('^В ю*, похоже, пусто\.$')) {
+        if (my_char.action.act == 'drink')
+            console.log(`!!! ${text} [${my_char.action.act} ${my_char.action.command}]`);
+    }
+    
     if(text.match('^Ты кладешь .* в .*.$')) {
         if(my_char.action.act == 'put ' + my_char.water + ' ' + my_char.water_container) {
             //TODO: отслеживать жидкость в сосуде. Наполнять если пустой по возможности.
