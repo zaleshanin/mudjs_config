@@ -337,10 +337,13 @@ $('.trigger').on('text', function (e, text) {
     }
     if(text.match('^У .* глаза на стебельках -- их засыпать грязью не получится\.$|^У .* нет глаз -- на нее это умение не подействует\.$|^Ты метко швыряешь .* прямо в глаза .*, ослепляя .*!$|^.* уже ничего не вид.*\.$')) {
         skill_active['dirt kicking']=true;
+        /* if(skill_active['dirt kicking']===undefined)skill_active['dirt kicking']=0 
+        skill_active['dirt kicking'] = skill_active['dirt kicking']+1; */
         clearAction('dirt');
     }
     if(text.match('^.* наконец протирает глаза от попавшей туда грязи\.$')) {
         skill_active['dirt kicking']=false;
+        //skill_active['dirt kicking'] = 0;
         clearAction('dirt');
     }
     //kick
@@ -1765,7 +1768,7 @@ function checking() {
     
     if(fight) {
         if(my_char.hasSkill('dirt kicking')) {
-            if(skill_active['dirt kicking']===true) {
+            if(skill_active['dirt kicking']) {
                 message += '<span style="color:green;">[blind]</span>';
             }
         } 
@@ -1880,7 +1883,8 @@ function checkKach() {
         if(test) console.log('---->active:', skill_active[skill]);
         if(skill_active[skill]) {
             if(test) console.log(`  -->[${msg}: skill active]`);
-            result += `[${msg}:${my_char.skills[skill].progress}% active]`;
+            result += `[${msg}:${my_char.skills[skill].progress}% ${skill_active[skill]===true?'active':skill_active[skill]}]`;
+            //if(skill!=='dirt kicking' || skill_active[skill]>=6)
             continue;
         }
         //проверка на бафф
@@ -1930,11 +1934,18 @@ function checkKach() {
         }
 
         result += `[${msg}:${my_char.skills[skill].progress}%-->run]`;
-        doAct(
-            skills[skill].act.act, 
-            skills[skill].act.command, 
-            skills[skill].act.target
-        );
+        /* if(skill==='dirt kicking')
+            doAct(
+                skills[skill].act.act, 
+                skills[skill].act.command, 
+                `${skill_active[skill]?skill_active[skill]+1:1}.troll`
+            );
+        else */
+            doAct(
+                skills[skill].act.act, 
+                skills[skill].act.command, 
+                skills[skill].act.target
+            );
         return result;
     }
 
