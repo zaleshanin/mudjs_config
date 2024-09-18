@@ -208,8 +208,8 @@ var kachThrowingWeapon = {
     targetName: "Белый олень",
     missile: "dagger",
     container: 'bag:throwing',
-    missilePattern: 'Бронзовый кинжал .* оставлен здесь\.$',
-    missileName: 'бронзовый кинжал',
+    missilePattern: 'Бронзовый кинжал .* оставлен здесь\.$|Кинжальчик .* для ударов в спину лежит здесь\.',
+    missileName: 'бронзовый кинжал|кинжальчик',
     missileOnFloor: false,
     missileOnInventory: false,
     targetHere: false,
@@ -260,7 +260,7 @@ $('.trigger').on('text', function (e, text) {
             //echo('<span style="color:red;">о! ножичек!!!</span>');
             kachThrowingWeapon.missileOnFloor=true;
         }
-        if(text.match('Ты берешь '+kachThrowingWeapon.missileName+'\.$')) {
+        if(text.match('Ты берешь ('+kachThrowingWeapon.missileName+')\.$')) {
             //echo('<span style="color:red;">моё!!!</span>');
             kachThrowingWeapon.missileOnFloor=false;
             kachThrowingWeapon.missileOnInventory=true;
@@ -268,7 +268,7 @@ $('.trigger').on('text', function (e, text) {
                 clearAction();
         }
 
-        if(text.match('Ты берешь '+kachThrowingWeapon.missileName+' из .*\.$')) {
+        if(text.match('Ты берешь ('+kachThrowingWeapon.missileName+') из .*\.$')) {
             //echo('<span style="color:red;">перезарядка!!!</span>');
             kachThrowingWeapon.missileOnInventory=true;
             if(my_char.action.act==='get')
