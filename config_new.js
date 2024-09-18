@@ -45,6 +45,7 @@ var chars = {
             //(всегда, при фулбафе, всегда на члена группы, при фулбафе на члена группы)
             //skills:thief:
             'detect hide': new Buff_need(true, true, false, false),
+            //'garble': new Buff_need(true, true, false, false),
             //'sneak': new Buff_need(true, true, false, false),
             //'hide': new Buff_need(true, true, false, false),
         }
@@ -62,7 +63,6 @@ var chars = {
             shield: {name: 'shield'},
         },
         class: 'samurai',
-        clan: 'hunter',
         water: 'barrel',//'flask',
         water_container: 'bag',
         food: 'rusk',
@@ -118,7 +118,6 @@ var chars = {
         align: 'e',
         weapon: 'warhammer',//'hickey', //'арапник',
         class: 'warrior',
-        clan: '',
         water: 'juice',//'flask',
         food: 'rusk',
         buffs_needs: {
@@ -363,7 +362,7 @@ $('.trigger').on('text', function (e, text) {
         clearAction('trip');
     }
 
-    match = (/^(?<type>Умение|Заклинание) '(?<name>.*?)' или '(?<runame>.*?)', входит в групп(?:у|ы) .*\.$/).exec(text);
+    match = (/^(?<type>Умение|Заклинание) '(?<name>.*?)' или '(?<runame>.*?)', (входит в групп(?:у|ы) .*|навык .*)\.$/).exec(text);
     if(match){
         if(test) console.log("TRIGGER: slook detected!");
         lSlook = true;
@@ -1553,6 +1552,25 @@ function getChar() {
     }
     return result;
 }
+function getClanName(name) {
+    let clans = {
+        n: 'none',
+        c: 'chaos',
+        r: 'ruler',
+        i: 'invader',
+        s: 'shalafi',
+        b: 'battlerager',
+        k: 'knight',
+        h: 'hunter',
+        l: 'lion',
+        f: 'flower',
+        g: 'ghost',
+    };
+    for(let ch of mudprompt.who.p) {
+        if(ch.n === name)
+            return clans[ch.cn];
+    }
+}
 
 function isEqualChar(ch) {
     if (ch.hit == mudprompt.hit && ch.max_hit == mudprompt.max_hit)
@@ -2160,12 +2178,12 @@ function checkBuffv2() {
     for(let spell of spellsAndSkills) {
         if(test) console.log('-->spell/skill:',spell);
         //х.з. что с этим спелом дальше делать!
-        if(my_char.buffs_needs[spell]==undefined) {
+        if(!kach && my_char.buffs_needs[spell]==undefined) {
             if(test) console.log('-->not in buffs_needs', my_char.buffs_needs);
             continue;
         }
 
-        if((my_char.buffs_needs[spell].always
+        if(!kach && (my_char.buffs_needs[spell].always
             || my_char.buffs_needs[spell].gm_always
             || my_char.buffs_needs[spell].fullbuff
             || my_char.buffs_needs[spell].gm_fullbuff)==false) {
@@ -2174,7 +2192,7 @@ function checkBuffv2() {
             }
     
         //вообще не баффы - пропускем
-        if (['combat', 'creation', 'maladiction'].indexOf(buffs_list[spell].class) >= 0) {
+        if (!kach && ['combat', 'creation', 'maladiction'].indexOf(buffs_list[spell].class) >= 0) {
             if(test) console.log('-->not a buff');
 
             continue;
@@ -2236,12 +2254,12 @@ function checkBuffv2() {
         isSpell = buffs_list[spell_name] instanceof Spell;
         isSkill = buffs_list[spell_name] instanceof Skill;
 
-        if(test) console.log("---->["+caster+"]["+spell_name+"]"+'[key:'+buffs_list[spell_name].mgroup+"-"+buffs_list[spell_name].mbrief+']');
+        if(test) console.log("---->["+caster+"]["+spell_name+"]"+'[key:'+buffs_list[spell_name]?.mgroup+"-"+buffs_list[spell_name]?.mbrief+']');
     
         //не фулбаф, не обязательный - пропускаем
         if(!fb) {
             group_member=true;
-            if(my_char.buffs_needs[spell_name].always==false) {
+            if(!kach && my_char.buffs_needs[spell_name].always==false) {
                 if(test) console.log('------>not fullbuff not required spell skipped!');
                 continue;
             }
@@ -2259,7 +2277,7 @@ function checkBuffv2() {
                 //на меня не кастуется - пропускаем
                 if(!fb) {
                     //не фулбаф, не обязательный - пропускаем
-                    if(my_char.buffs_needs[spell_name].always==false) {
+                    if(!kach && my_char.buffs_needs[spell_name].always==false) {
                         if(test) console.log('------>spell skipped: not fullbuff not required!');
                         continue;
                     }
@@ -2839,10 +2857,13 @@ function Pchar(name, char, level) {
     this.was_fade = null;
 
     this.name = name;
+    this.clan = getClanName(name);
+    //TODO костыль
+    char.clan = this.clan;
     this.level = level;
 
     this.needsChanged = true; //проверить рулер бэйдж при входе
-    this.ruler_badge = (char===undefined || char.clan!='ruler') ? undefined : false;
+    this.ruler_badge = this.clan!='ruler' ? undefined : false;
     
     this.weapon_main = char?.weapons?.weapon_main ?? {name: char?.weapon};
     this.weapon_second = char?.weapons?.weapon_second;
@@ -3230,17 +3251,20 @@ function getSpells(char, level) {
         spells.push(['evil spirit',33]);
         spells.push(['nightfall',16]);
     }
-    if (char!==undefined && char.clan === 'ruler') {
+    if (char?.clan === 'ruler') {
         spells.push(['ruler aura',10]);
         spells.push(['ruler badge',10]);
     }
-    if (char!==undefined && char.clan === 'hunter') {
+    if (char?.clan === 'chaos') {
+        spells.push(['garble',10]);
+    }
+    if (char?.clan === 'hunter') {
         spells.push(['wolf',20]);spells.push(['detect trap',25]);spells.push(['find object',25]);
     }
-    if (char!==undefined && char.class === 'cleric') {
+    if (char?.class === 'cleric') {
         spells.push(['heal',2]);spells.push(['harm',2]);spells.push(['create water',3]);spells.push(['refresh',7]);spells.push(['create food',8]);spells.push(['observation',10]);spells.push(['cure blindness',11]);spells.push(['detect evil',11]);spells.push(['detect good',11]);spells.push(['shield',12]);spells.push(['blindness',14]);spells.push(['faerie fire',15]);spells.push(['detect magic',15]);spells.push(['fireproof',16]);spells.push(['earthquake',19]);spells.push(['cure disease',19]);spells.push(['armor',20]);spells.push(['bless',20]);spells.push(['continual light',21]);spells.push(['poison',22]);spells.push(['summon',22]);spells.push(['cure poison',23]);spells.push(['weaken',24]);spells.push(['infravision',25]);spells.push(['calm',26]);spells.push(['heating',27]);spells.push(['dispel evil',27]);spells.push(['dispel good',27]);spells.push(['spring',27]);spells.push(['control weather',28]);spells.push(['sanctuary',29]);spells.push(['fly',30]);spells.push(['locate object',30]);spells.push(['enchant armor',30]);spells.push(['awakening',31]);spells.push(['faerie fog',31]);spells.push(['teleport',32]);spells.push(['remove curse',32]);spells.push(['pass door',32]);spells.push(['word of recall',32]);spells.push(['cancellation',32]);spells.push(['curse',33]);spells.push(['plague',33]);spells.push(['enhanced armor',33]);spells.push(['remove fear',34]);spells.push(['frenzy',34]);spells.push(['portal',35]);spells.push(['learning',35]);spells.push(['mental block',35]);spells.push(['gate',35]);spells.push(['mind light',36]);spells.push(['identify',36]);spells.push(['stone skin',36]);spells.push(['ray of truth',37]);spells.push(['bluefire',37]);spells.push(['compound',37]);spells.push(['superior heal',38]);spells.push(['slow',38]);spells.push(['protective shield',38]);spells.push(['protection heat',39]);spells.push(['giant strength',39]);spells.push(['dragon skin',40]);spells.push(['healing light',41]);spells.push(['cursed lands',41]);spells.push(['sanctify lands',41]);spells.push(['flamestrike',42]);spells.push(['energy drain',42]);spells.push(['dispel affects',43]);spells.push(['protection cold',44]);spells.push(['severity force',45]);spells.push(['group defense',45]);spells.push(['improved detect',45]);spells.push(['holy word',48]);spells.push(['inspire',49]);spells.push(['cure corruption',50]);spells.push(['aid',53]);spells.push(['nexus',55]);spells.push(['master healing',58]);spells.push(['desert fist',58]);spells.push(['blade barrier',60]);spells.push(['group heal',65]);spells.push(['restoring light',71]);spells.push(['benediction',80]);//spells.push(['detect invis',17]);
     }
-    if (char!==undefined && char.class === 'necromancer') {
+    if (char?.class === 'necromancer') {
         spells.push(['dark shroud',21]);
         spells.push(['shield',12]);
         spells.push(['protective shield',18]);
@@ -3294,10 +3318,10 @@ function getSpells(char, level) {
         spells.push(['dispel affects',24]);
         spells.push(['evil spirit',33]);
     }
-    if (char!==undefined && char.class === 'samurai') {
+    if (char?.class === 'samurai') {
         spells.push(['cure blindness',20]);spells.push(['refresh',28]);spells.push(['cure poison',35]);spells.push(['calm',60]);
     }
-    if (char!==undefined && char.class === 'vampire') {
+    if (char?.class === 'vampire') {
     }
     spells = spells
         .filter(function(item, index, array){
@@ -3337,6 +3361,10 @@ function BuffQueue(sBuff, lStatus, lActionDone, action) {
 }
 var buffPatterns = [
 	// pattern, status, active
+    ['garble','^Волею Хаоса ты связываешь язык .*!$', true, true],
+    ['garble','^Ты зачем-то (завязываешь|сворачиваешь) (бантиком|узлом|в трубочку) свой собственный язык!$', true, true],
+    ['garble', '^Ты снова обретаешь дар речи\.$', false, false],
+    ['garble', '^Ты пытаешься сотворить заклинание \'garble\', но теряешь концентрацию и терпишь неудачу\.$', false, true],
     ['ruler aura', '^Аура Правителя исчезает, и ты теряешь возможность видеть незримое иным.$', false, false],
 	['ruler aura', '^Жемчужно-серая аура Правителя окружает тебя, даруя способность видеть незримое иным.$', true, true],
 	['ruler aura', '^Аура Рулера исчезает.$', false, false],
@@ -3668,6 +3696,9 @@ var buffs_list = {
 
     //ruler:
     'ruler aura': new Spell('ruler aura', 'A', 'cln', 'protective',false,false,[],['detect invis', 'detect hide']),
+
+    //chaos:
+    'garble': new Spell('garble', 'G', 'cln', 'maladiction',true,false),
 
     //protect:
     //necr
