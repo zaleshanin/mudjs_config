@@ -1136,6 +1136,7 @@ $('.trigger').on('input', function (e, text) {
     command(e, 'var', text, function (args) {
         let result;
         if(args[1]==='char') result=my_char;
+        if(args[1]==='buffs') result=buffs_list;
 
         console.log(args[1],result);
     });
@@ -1794,7 +1795,7 @@ function checking() {
     if(message!=='') echo(message);
 }
 function checkKach() {
-    if(test) console.warn("---->checkKach()", my_char.skills['counter'], my_char.skills['counter']?.progress);
+    if(test) console.warn("checkKach()");
     if(my_char.skills['counter']!=undefined && counterSkill.attacks>0 
         && my_char.skills['counter'].progress!=undefined
         && my_char.skills['counter'].progress<100) 
@@ -1982,6 +1983,13 @@ function checkKach() {
         return result;
     }
 
+    for(let spell in my_char.spells) {
+        if (buffs_list[spell]?.class!=='maladiction') {
+            if(test) console.log('---->not a maladiction');
+            continue;
+        }
+    }
+
     if(!fight && !checkPose('rest')) return result;
 
     //haggle
@@ -2131,8 +2139,7 @@ function setGroupMembersFrom(list) {
 }
 function checkBuffv2() {
 	if (test) {
-        console.log('\n->chkBffv2()');
-        console.log("chckBuffv2 started");
+        console.warn('->chkBffv2()');
         console.log("my_char.fullbuff:",my_char.fullbuff);
         console.log("my_char.buffs_needs:",my_char.buffs_needs);
     }
@@ -2178,12 +2185,12 @@ function checkBuffv2() {
     for(let spell of spellsAndSkills) {
         if(test) console.log('-->spell/skill:',spell);
         //х.з. что с этим спелом дальше делать!
-        if(!kach && my_char.buffs_needs[spell]==undefined) {
+        if(my_char.buffs_needs[spell]==undefined) {
             if(test) console.log('-->not in buffs_needs', my_char.buffs_needs);
             continue;
         }
 
-        if(!kach && (my_char.buffs_needs[spell].always
+        if((my_char.buffs_needs[spell].always
             || my_char.buffs_needs[spell].gm_always
             || my_char.buffs_needs[spell].fullbuff
             || my_char.buffs_needs[spell].gm_fullbuff)==false) {
@@ -2192,7 +2199,7 @@ function checkBuffv2() {
             }
     
         //вообще не баффы - пропускем
-        if (!kach && ['combat', 'creation', 'maladiction'].indexOf(buffs_list[spell].class) >= 0) {
+        if (buffs_list[spell]?.class===undefined || ['maladiction', 'combat', 'creation'].indexOf(buffs_list[spell].class) >= 0) {
             if(test) console.log('-->not a buff');
 
             continue;
@@ -2259,7 +2266,7 @@ function checkBuffv2() {
         //не фулбаф, не обязательный - пропускаем
         if(!fb) {
             group_member=true;
-            if(!kach && my_char.buffs_needs[spell_name].always==false) {
+            if(my_char.buffs_needs[spell_name].always==false) {
                 if(test) console.log('------>not fullbuff not required spell skipped!');
                 continue;
             }
@@ -2277,7 +2284,7 @@ function checkBuffv2() {
                 //на меня не кастуется - пропускаем
                 if(!fb) {
                     //не фулбаф, не обязательный - пропускаем
-                    if(!kach && my_char.buffs_needs[spell_name].always==false) {
+                    if(my_char.buffs_needs[spell_name].always==false) {
                         if(test) console.log('------>spell skipped: not fullbuff not required!');
                         continue;
                     }
@@ -2949,6 +2956,13 @@ function Pchar(name, char, level) {
 
     this.hasBuff = function(cast){
         if(cast==="envenom") return envenom;
+        console.log("TEST hasBuff cast", cast);
+        console.log("TEST hasBuff buffs_list[cast]", buffs_list[cast]);
+        console.log("TEST hasBuff buffs_list[cast].mgroup", buffs_list[cast].mgroup);
+        console.log("TEST hasBuff mudprompt[buffs_list[cast].mgroup]", mudprompt[buffs_list[cast].mgroup]);
+        console.log("TEST hasBuff cast", cast);
+        console.log("TEST hasBuff cast", cast);
+
         if((mudprompt[buffs_list[cast].mgroup]!==undefined && mudprompt[buffs_list[cast].mgroup]!=='none') && mudprompt[buffs_list[cast].mgroup].a.indexOf(buffs_list[cast].mbrief)!==-1){
             if(test) console.log("------>Pchar->hasBuff("+cast+")->have one in mudprompt!");
             return true;
